@@ -10,14 +10,14 @@ import type { DocumentRequest } from '@/types'
 import { Upload } from 'lucide-react'
 
 function docStatusVariant(status: string) {
-  if (status === 'approved') return 'success'
+  if (status === 'approved') return 'default'
   if (status === 'rejected') return 'destructive'
-  if (status === 'received') return 'default'
-  return 'secondary'
+  if (status === 'needs_review') return 'secondary'
+  return 'outline'
 }
 
 function docStatusLabel(status: string) {
-  return { requested: 'Requested', received: 'Received', approved: 'Approved', rejected: 'Rejected' }[status] ?? status
+  return { requested: 'Requested', needs_review: 'Under Review', approved: 'Approved', rejected: 'Rejected' }[status] ?? status
 }
 
 function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
@@ -29,7 +29,7 @@ function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
     if (!file) return
     const path = `${clientId}/${doc.id}/${file.name}`
     await supabase.storage.from('documents').upload(path, file, { upsert: true })
-    await supabase.from('document_requests').update({ file_path: path, file_name: file.name, status: 'received', updated_at: new Date().toISOString() }).eq('id', doc.id)
+    await supabase.from('document_requests').update({ file_path: path, file_name: file.name, status: 'needs_review', updated_at: new Date().toISOString() }).eq('id', doc.id)
     await supabase.from('events').insert({ event_type: 'document_uploaded', client_id: clientId, visibility: 'internal' })
     qc.invalidateQueries({ queryKey: ['documents', clientId] })
   }

@@ -1,14 +1,10 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -16,24 +12,10 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ArrowLeft, Copy, Check, Download } from 'lucide-react'
-import type { CircleMember, Dac, Subscription, CircleMemberDocument, CircleMemberNote, KycStatus, SubscriptionStatus } from '@/types'
+import type { CircleMember, Dac, Subscription, CircleMemberDocument, CircleMemberNote, SubscriptionStatus } from '@/types'
 import { KYC_STATUS_LABELS, SUBSCRIPTION_STATUS_LABELS, CIRCLE_MEMBER_DOC_TYPE_LABELS } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
-function kycBadge(status: KycStatus) {
-  if (status === 'complete') return <Badge variant="secondary" className="bg-green-100 text-green-800">{KYC_STATUS_LABELS[status]}</Badge>
-  if (status === 'failed') return <Badge variant="destructive">{KYC_STATUS_LABELS[status]}</Badge>
-  if (status === 'in_progress') return <Badge variant="secondary" className="bg-blue-100 text-blue-800">{KYC_STATUS_LABELS[status]}</Badge>
-  return <Badge variant="secondary">{KYC_STATUS_LABELS[status]}</Badge>
-}
-
-function subStatusBadge(status: SubscriptionStatus) {
-  const label = SUBSCRIPTION_STATUS_LABELS[status] ?? status
-  if (['funded', 'active'].includes(status)) return <Badge variant="secondary" className="bg-green-100 text-green-800">{label}</Badge>
-  if (status === 'funds_requested') return <Badge variant="secondary" className="bg-amber-100 text-amber-800">{label}</Badge>
-  if (status === 'withdrawn') return <Badge variant="destructive">{label}</Badge>
-  return <Badge variant="secondary">{label}</Badge>
-}
 
 const STATUS_TIMESTAMPS: Partial<Record<SubscriptionStatus, keyof Subscription>> = {
   funds_requested: 'funds_requested_at',

@@ -1,32 +1,41 @@
-export type Role = 'client' | 'staff' | 'admin' | 'circle'
+// ─── Roles ───────────────────────────────────────────────────
+export type StaffRole = 'admin' | 'onboarding' | 'finance' | 'purchasing_agent' | 'client_success' | 'circle_relations'
 
+// 'staff' is a legacy sentinel used only in RouteGuard to mean "any staff role"
+export type Role = 'client' | 'circle' | StaffRole
+
+export const STAFF_ROLES = new Set<Role>(['admin','onboarding','finance','purchasing_agent','client_success','circle_relations'])
+
+export function isStaffRole(role: Role | undefined): role is StaffRole {
+  return !!role && STAFF_ROLES.has(role)
+}
+
+// ─── Stage types ──────────────────────────────────────────────
 export type LeadStage =
-  | 'registered'
-  | 'call_booked'
-  | 'call_complete'
-  | 'pre_qual_requested'
-  | 'pre_qual_submitted'
-  | 'pre_qual_review'
+  | 'new_lead'
+  | 'in_discovery'
+  | 'pre_qual'
+  | 'in_review'
   | 'eligible'
   | 'not_eligible'
   | 'deferred'
-  | 'mover_interest'
 
 export type ProgrammeStage =
-  | 'onboarding_docs_requested'
-  | 'onboarding_under_review'
-  | 'limit_letter_ready'
+  // Phase 2 — Property
+  | 'dac_assigned'
   | 'searching'
   | 'sale_agreed'
-  | 'valuation_in_progress'
-  | 'approval_notice_issued'
-  | 'committed'
+  | 'conveyancing'
+  | 'contracts_signed'
+  // Phase 3 — Pathway
   | 'in_home'
-  | 'servicing_active'
+  | 'servicing'
   | 'exit_prep'
-  | 'completed'
+  | 'option_window'
+  | 'pathway_complete'
   | 'exited'
 
+// ─── Doc types ───────────────────────────────────────────────
 export type DocType =
   | 'photo_id'
   | 'proof_of_address'
@@ -39,7 +48,7 @@ export type DocType =
   | 'maintenance_order'
   | 'other'
 
-export type DocStatus = 'requested' | 'received' | 'approved' | 'rejected'
+export type DocStatus = 'requested' | 'needs_review' | 'approved' | 'rejected'
 
 export type PropertyCaseStatus =
   | 'submitted'
@@ -64,20 +73,11 @@ export type SubscriptionStatus =
   | 'redeemed'
   | 'withdrawn'
 
-export type DacDocType =
-  | 'info_memo'
-  | 'bond_instrument'
-  | 'subscription_agreement'
-  | 'reporting_pack'
-  | 'other'
+export type DacDocType = 'info_memo' | 'bond_instrument' | 'subscription_agreement' | 'reporting_pack' | 'other'
 
-export type CircleMemberDocType =
-  | 'kyc'
-  | 'signed_subscription'
-  | 'reporting_pack'
-  | 'correspondence'
-  | 'other'
+export type CircleMemberDocType = 'kyc' | 'signed_subscription' | 'reporting_pack' | 'correspondence' | 'other'
 
+// ─── Interfaces ───────────────────────────────────────────────
 export interface Profile {
   id: string
   role: Role
@@ -100,6 +100,25 @@ export interface Client {
   household_size: number | null
   dac_id: string | null
   pathway_start_date: string | null
+  assigned_to: string | null
+  deferred_until: string | null
+}
+
+export interface StaffMember {
+  id: string
+  created_at: string
+  updated_at: string
+  user_id: string | null
+  created_by: string | null
+  first_name: string
+  last_name: string
+  display_name: string | null
+  email: string
+  phone: string | null
+  job_title: string | null
+  role: StaffRole
+  avatar_path: string | null
+  active: boolean
 }
 
 export interface DocumentRequest {
@@ -156,6 +175,7 @@ export interface CircleMember {
   address: string | null
   kyc_status: KycStatus
   source: string | null
+  assigned_to: string | null
 }
 
 export interface Dac {
@@ -163,6 +183,7 @@ export interface Dac {
   created_at: string
   updated_at: string
   created_by: string | null
+  purchasing_agent_id: string | null
   name: string
   cohort_label: string | null
   status: DacStatus
@@ -227,6 +248,16 @@ export interface CircleMemberNote {
   text: string
 }
 
+// ─── Label maps ───────────────────────────────────────────────
+export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
+  admin: 'Admin',
+  onboarding: 'Onboarding',
+  finance: 'Finance',
+  purchasing_agent: 'Purchasing Agent',
+  client_success: 'Client Success',
+  circle_relations: 'Circle Relations',
+}
+
 export const DOC_TYPE_LABELS: Record<DocType, string> = {
   photo_id: 'Photo ID',
   proof_of_address: 'Proof of Address',
@@ -240,32 +271,34 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   other: 'Other',
 }
 
+export const DOC_STATUS_LABELS: Record<DocStatus, string> = {
+  requested: 'Requested',
+  needs_review: 'Needs Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+}
+
 export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
-  registered: 'Registered',
-  call_booked: 'Call Booked',
-  call_complete: 'Call Complete',
-  pre_qual_requested: 'Pre-Qual Requested',
-  pre_qual_submitted: 'Pre-Qual Submitted',
-  pre_qual_review: 'Pre-Qual Review',
+  new_lead: 'New Lead',
+  in_discovery: 'In Discovery',
+  pre_qual: 'Pre-Qualification',
+  in_review: 'In Review',
   eligible: 'Eligible',
   not_eligible: 'Not Eligible',
   deferred: 'Deferred',
-  mover_interest: 'Mover Interest',
 }
 
 export const PROGRAMME_STAGE_LABELS: Record<ProgrammeStage, string> = {
-  onboarding_docs_requested: 'Documents Requested',
-  onboarding_under_review: 'Under Review',
-  limit_letter_ready: 'Eligible',
+  dac_assigned: 'DAC Assigned',
   searching: 'Searching',
   sale_agreed: 'Sale Agreed',
-  valuation_in_progress: 'Valuation In Progress',
-  approval_notice_issued: 'Approval Confirmed',
-  committed: 'Committed',
+  conveyancing: 'Conveyancing',
+  contracts_signed: 'Contracts Signed',
   in_home: 'In Home',
-  servicing_active: 'Pathway Active',
+  servicing: 'Pathway Active',
   exit_prep: 'Exit Preparation',
-  completed: 'Completed',
+  option_window: 'Option Window',
+  pathway_complete: 'Pathway Complete',
   exited: 'Exited',
 }
 
@@ -313,6 +346,7 @@ export const CIRCLE_MEMBER_DOC_TYPE_LABELS: Record<CircleMemberDocType, string> 
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
   staff_note: 'Staff note',
+  stage_changed: 'Stage updated',
   results_saved: 'You saved your calculator results',
   limit_letter_issued: 'Your Eligibility Letter is ready',
   sale_agreed_submitted: 'You submitted a property',
@@ -332,6 +366,27 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   completed: 'Programme completed',
 }
 
+// ─── Stage progression helpers ───────────────────────────────
+export const LEAD_STAGE_ORDER: LeadStage[] = [
+  'new_lead', 'in_discovery', 'pre_qual', 'in_review', 'eligible',
+]
+
+export const PROGRAMME_STAGE_ORDER: ProgrammeStage[] = [
+  'dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed',
+  'in_home', 'servicing', 'exit_prep', 'option_window', 'pathway_complete',
+]
+
+export function nextLeadStage(current: LeadStage): LeadStage | null {
+  const i = LEAD_STAGE_ORDER.indexOf(current)
+  return i >= 0 && i < LEAD_STAGE_ORDER.length - 1 ? LEAD_STAGE_ORDER[i + 1] : null
+}
+
+export function nextProgrammeStage(current: ProgrammeStage): ProgrammeStage | null {
+  const i = PROGRAMME_STAGE_ORDER.indexOf(current)
+  return i >= 0 && i < PROGRAMME_STAGE_ORDER.length - 1 ? PROGRAMME_STAGE_ORDER[i + 1] : null
+}
+
+// ─── Misc ─────────────────────────────────────────────────────
 export const IRISH_COUNTIES = [
   'Antrim', 'Armagh', 'Carlow', 'Cavan', 'Clare', 'Cork', 'Derry',
   'Donegal', 'Down', 'Dublin', 'Fermanagh', 'Galway', 'Kerry', 'Kildare',

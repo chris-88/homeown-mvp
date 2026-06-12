@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
 export type CalcVariant = 'eligible' | 'income_gap' | 'mover' | null

@@ -27,7 +27,7 @@ export default function PropertyPage() {
   const [submitted, setSubmitted] = useState(false)
   const form = useForm<FormValues>({ resolver: zodResolver(schema) })
 
-  const eligible = client?.programme_stage === 'searching' || client?.programme_stage === 'limit_letter_ready'
+  const eligible = client?.programme_stage === 'searching' || client?.programme_stage === 'dac_assigned'
 
   if (!client) return null
 

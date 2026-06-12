@@ -25,7 +25,7 @@ export default function LoginPage() {
     if (!loading && user && profile) {
       if (profile.role === 'client') navigate('/app/client', { replace: true })
       else if (profile.role === 'circle') navigate('/app/circle', { replace: true })
-      else navigate('/app/staff', { replace: true })
+      else navigate('/app/staff', { replace: true })  // any staff role
     }
   }, [user, profile, loading, navigate])
 

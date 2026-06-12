@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Download } from 'lucide-react'
 import type { Subscription, DacDocument, SubscriptionStatus } from '@/types'
-import { SUBSCRIPTION_STATUS_LABELS, DAC_DOC_TYPE_LABELS } from '@/types'
+import { DAC_DOC_TYPE_LABELS } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface SubWithDac extends Subscription {
