@@ -91,11 +91,11 @@ export default function ClientsPage() {
           <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All stages</SelectItem>
-            <SelectItem value="" disabled className="text-xs font-semibold text-muted-foreground uppercase">Phase 2</SelectItem>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phase 2</div>
             {PHASE2_STAGES.map(s => (
               <SelectItem key={s} value={s}>{PROGRAMME_STAGE_LABELS[s]}</SelectItem>
             ))}
-            <SelectItem value="" disabled className="text-xs font-semibold text-muted-foreground uppercase">Phase 3</SelectItem>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phase 3</div>
             {PHASE3_STAGES.map(s => (
               <SelectItem key={s} value={s}>{PROGRAMME_STAGE_LABELS[s]}</SelectItem>
             ))}

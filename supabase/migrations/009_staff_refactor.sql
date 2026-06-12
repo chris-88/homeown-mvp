@@ -5,6 +5,17 @@
 -- ============================================================
 
 -- ─────────────────────────────────────────────────────────────
+-- 0. UTILITY FUNCTION (idempotent)
+-- ─────────────────────────────────────────────────────────────
+
+create or replace function update_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end; $$;
+
+-- ─────────────────────────────────────────────────────────────
 -- 1. CREATE staff_members TABLE
 -- ─────────────────────────────────────────────────────────────
 
@@ -258,8 +269,62 @@ end;
 $$;
 
 -- ─────────────────────────────────────────────────────────────
--- 8. auth_role() helper: ensure new roles work in RLS policies
+-- 8. FIX EXISTING RLS POLICIES
+-- Old policies checked auth_role() = 'staff' which no longer
+-- exists. Replace with NOT IN ('client','circle') so all granular
+-- staff roles (admin, onboarding, finance, etc.) are covered.
 -- ─────────────────────────────────────────────────────────────
--- auth_role() is already defined in earlier migrations and reads
--- from profiles, so no change needed — it returns whatever role
--- string is stored there, including the new granular roles.
+
+-- clients
+drop policy if exists "clients: staff read all" on clients;
+drop policy if exists "clients: staff update all" on clients;
+create policy "clients: staff read all" on clients for select using (auth_role() not in ('client','circle'));
+create policy "clients: staff update all" on clients for update using (auth_role() not in ('client','circle'));
+
+-- dacs
+drop policy if exists "dacs: staff all" on dacs;
+create policy "dacs: staff all" on dacs for all using (auth_role() not in ('client','circle'));
+
+-- document_requests
+drop policy if exists "doc_requests: staff all" on document_requests;
+create policy "doc_requests: staff all" on document_requests for all using (auth_role() not in ('client','circle'));
+
+-- events
+drop policy if exists "events: staff read all" on events;
+drop policy if exists "events: staff insert" on events;
+create policy "events: staff read all" on events for select using (auth_role() not in ('client','circle'));
+create policy "events: staff insert" on events for insert with check (auth_role() not in ('client','circle'));
+
+-- property_cases
+drop policy if exists "property_cases: staff all" on property_cases;
+create policy "property_cases: staff all" on property_cases for all using (auth_role() not in ('client','circle'));
+
+-- calculator_snapshots
+drop policy if exists "snapshots: staff read all" on calculator_snapshots;
+create policy "snapshots: staff read all" on calculator_snapshots for select using (auth_role() not in ('client','circle'));
+
+-- consents
+drop policy if exists "consents: staff read all" on consents;
+create policy "consents: staff read all" on consents for select using (auth_role() not in ('client','circle'));
+
+-- circle_members
+drop policy if exists "circle_members: staff all" on circle_members;
+create policy "circle_members: staff all" on circle_members for all using (auth_role() not in ('client','circle'));
+
+-- circle_member_documents
+drop policy if exists "circle_member_documents: staff all" on circle_member_documents;
+create policy "circle_member_documents: staff all" on circle_member_documents for all using (auth_role() not in ('client','circle'));
+
+-- circle_member_notes
+drop policy if exists "circle_member_notes: staff select" on circle_member_notes;
+drop policy if exists "circle_member_notes: staff insert" on circle_member_notes;
+create policy "circle_member_notes: staff select" on circle_member_notes for select using (auth_role() not in ('client','circle'));
+create policy "circle_member_notes: staff insert" on circle_member_notes for insert with check (auth_role() not in ('client','circle'));
+
+-- dac_documents
+drop policy if exists "dac_documents: staff all" on dac_documents;
+create policy "dac_documents: staff all" on dac_documents for all using (auth_role() not in ('client','circle'));
+
+-- subscriptions
+drop policy if exists "subscriptions: staff all" on subscriptions;
+create policy "subscriptions: staff all" on subscriptions for all using (auth_role() not in ('client','circle'));
