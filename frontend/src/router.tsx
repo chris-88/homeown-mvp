@@ -17,6 +17,13 @@ import ForgotPage from '@/pages/auth/ForgotPage'
 import LogoutPage from '@/pages/auth/LogoutPage'
 import SignUpPage from '@/pages/auth/SignUpPage'
 
+// Legal pages
+import PrivacyPage from '@/pages/legal/PrivacyPage'
+import CookiePage from '@/pages/legal/CookiePage'
+import TermsPage from '@/pages/legal/TermsPage'
+import KfsPage from '@/pages/legal/KfsPage'
+import ComplaintsPage from '@/pages/legal/ComplaintsPage'
+
 // Circle join (public)
 import CircleJoinPage from '@/pages/circle/join/JoinPage'
 
@@ -89,6 +96,11 @@ export const router = createHashRouter([
   { path: '/auth/forgot', element: <ForgotPage /> },
   { path: '/auth/logout', element: <LogoutPage /> },
   { path: '/auth/signup', element: <SignUpPage /> },
+  { path: '/privacy', element: <PrivacyPage /> },
+  { path: '/cookies', element: <CookiePage /> },
+  { path: '/terms', element: <TermsPage /> },
+  { path: '/kfs', element: <KfsPage /> },
+  { path: '/complaints', element: <ComplaintsPage /> },
   { path: '/circle/join', element: <CircleJoinPage /> },
   { path: '/staff/join', element: <StaffJoinPage /> },
   {
