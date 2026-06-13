@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCalcWizard, ROI_COUNTIES, DUBLIN_POSTCODES } from '@/lib/calcWizard'
@@ -28,6 +27,30 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
   )
 }
 
+// ── Price input group ─────────────────────────────────────────
+function PriceInput({
+  value,
+  onChange,
+  onBlur,
+}: {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onBlur: () => void
+}) {
+  return (
+    <div className="flex max-w-[200px] items-center rounded-md border bg-background px-3 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0">
+      <span className="shrink-0 text-sm text-muted-foreground select-none">€</span>
+      <input
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        inputMode="numeric"
+        className="w-full bg-transparent py-2 pl-1 text-sm font-medium outline-none"
+      />
+    </div>
+  )
+}
+
 // ── Radio card ────────────────────────────────────────────────
 function RadioCard({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -47,17 +70,18 @@ function RadioCard({ selected, onClick, children }: { selected: boolean; onClick
 // ── Step 1 — Property Target ──────────────────────────────────
 function Step1({ onNext }: { onNext: () => void }) {
   const { state, setPrice } = useCalcWizard()
-  const [inputValue, setInputValue] = useState(state.propertyPrice.toString())
+  const [inputValue, setInputValue] = useState(state.propertyPrice.toLocaleString('en-IE'))
 
   function handleSlider(e: React.ChangeEvent<HTMLInputElement>) {
     const v = parseInt(e.target.value)
     setPrice(v)
-    setInputValue(v.toString())
+    setInputValue(v.toLocaleString('en-IE'))
   }
 
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/[^0-9]/g, '')
     setInputValue(e.target.value)
-    const v = parseInt(e.target.value.replace(/[^0-9]/g, ''))
+    const v = parseInt(raw)
     if (!isNaN(v)) setPrice(v)
   }
 
@@ -66,7 +90,7 @@ function Step1({ onNext }: { onNext: () => void }) {
     const clamped = isNaN(v) ? 350000 : Math.min(800000, Math.max(200000, v))
     const snapped = Math.round(clamped / 5000) * 5000
     setPrice(snapped)
-    setInputValue(snapped.toString())
+    setInputValue(snapped.toLocaleString('en-IE'))
   }
 
   const valid = state.propertyPrice >= 200000 && state.propertyPrice <= 800000
@@ -78,7 +102,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         <p className="mt-1 text-sm text-muted-foreground">Properties between €200,000 and €800,000 are eligible.</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <input
           type="range"
           min={200000}
@@ -92,36 +116,29 @@ function Step1({ onNext }: { onNext: () => void }) {
           <span>€200,000</span>
           <span>€800,000</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">€</span>
-          <Input
-            value={inputValue}
-            onChange={handleInput}
-            onBlur={handleInputBlur}
-            className="max-w-[180px] font-medium"
-          />
-        </div>
+        <PriceInput value={inputValue} onChange={handleInput} onBlur={handleInputBlur} />
       </div>
 
       <Card className="bg-muted/30">
-        <CardContent className="pt-4 pb-4 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Monthly service fee (Domiter)</span>
-            <span className="font-semibold">{formatCurrency(state.monthlyDomiter)} / month</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Entry Stake</span>
-            <span className="font-semibold">{formatCurrency(state.entryStake)} <span className="text-muted-foreground font-normal">(1% of property price)</span></span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Purchase option price</span>
-            <span className="font-semibold">{formatCurrency(state.strikePrice)} <span className="text-muted-foreground font-normal">(fixed at 10% below today's price)</span></span>
-          </div>
+        <CardContent className="divide-y pt-0 pb-0">
+          {[
+            { label: 'Monthly service fee', sub: 'Domiter, per month for 60 months', value: `${formatCurrency(state.monthlyDomiter)} / mo` },
+            { label: 'Entry Stake', sub: '1% of property price, paid once', value: formatCurrency(state.entryStake) },
+            { label: 'Purchase option price', sub: 'Fixed at 10% below acquisition price', value: formatCurrency(state.strikePrice) },
+          ].map(({ label, sub, value }) => (
+            <div key={label} className="flex items-center justify-between gap-4 py-3.5">
+              <div>
+                <p className="text-sm font-medium">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
+              </div>
+              <p className="text-sm font-semibold tabular-nums shrink-0">{value}</p>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        These figures are illustrative. The monthly service fee is your choice — Homeown does not assess whether it suits your budget.
+        These figures are illustrative. The monthly service fee is your decision; Homeown does not assess whether it suits your budget.
       </p>
 
       <Button onClick={onNext} disabled={!valid} className="w-full">Next</Button>
@@ -250,9 +267,12 @@ function Step3({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => 
 function Step4({ onBack }: { onBack: () => void }) {
   const { state, update } = useCalcWizard()
   const navigate = useNavigate()
-  const [ghiInput, setGhiInput] = useState(state.ghi > 0 ? state.ghi.toString() : '')
+  const [ghiInput, setGhiInput] = useState(state.ghi > 0 ? state.ghi.toLocaleString('en-IE') : '')
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const ghiRaw = parseInt(ghiInput.replace(/[^0-9]/g, '')) || 0
+  const maxMortgageHint = ghiRaw >= 10000 ? ghiRaw * 4 : null
 
   async function handleNext() {
     const errs: Record<string, string> = {}
@@ -295,36 +315,43 @@ function Step4({ onBack }: { onBack: () => void }) {
   }
 
   const incomeLabel = state.householdType === 'couple'
-    ? 'Combined gross annual income (both applicants)'
+    ? 'Combined gross annual income'
     : 'Gross annual income'
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">What is your household's gross annual income?</h2>
-        <p className="mt-3 text-sm text-muted-foreground">
-          To complete the pathway, you purchase the property via a regulated mortgage at the end of the term.
-          We use your income to check whether the property is within a range where a regulated mortgage at exit
-          is a realistic outcome — not to assess whether you can afford the monthly service fee.
+        <p className="mt-2 text-sm text-muted-foreground">
+          We use this to check whether your target property is within range for a regulated mortgage at the end of the term. It is not a credit check.
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-1.5">
           <label className="text-sm font-medium">{incomeLabel}</label>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">€</span>
-            <Input
-              value={ghiInput}
-              onChange={(e) => setGhiInput(e.target.value)}
-              onBlur={() => {
-                const v = parseInt(ghiInput.replace(/[^0-9]/g, ''))
-                if (!isNaN(v)) { setGhiInput(v.toString()); update({ ghi: v }) }
-              }}
-              placeholder="75000"
-              className="max-w-[200px]"
-            />
-          </div>
+          <PriceInput
+            value={ghiInput}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^0-9]/g, '')
+              setGhiInput(e.target.value)
+              const v = parseInt(raw)
+              if (!isNaN(v)) update({ ghi: v })
+            }}
+            onBlur={() => {
+              const v = parseInt(ghiInput.replace(/[^0-9]/g, ''))
+              if (!isNaN(v)) {
+                setGhiInput(v.toLocaleString('en-IE'))
+                update({ ghi: v })
+              }
+            }}
+          />
+          {maxMortgageHint && (
+            <p className="text-xs text-muted-foreground">
+              At 4× income, a standard mortgage supports up to{' '}
+              <span className="font-medium text-foreground">{formatCurrency(maxMortgageHint)}</span>
+            </p>
+          )}
           {errors.ghi && <p className="text-sm text-destructive">{errors.ghi}</p>}
         </div>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,10 +7,11 @@ import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { supabase } from '@/lib/supabase'
 import { useCalcWizard } from '@/lib/calcWizard'
+import { formatCurrency } from '@/lib/utils'
+import { CheckCircle2 } from 'lucide-react'
 
 const schema = z.object({
   first_name: z.string().min(1, 'Required'),
@@ -21,16 +22,38 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
-const HEADINGS: Record<string, string> = {
-  eligible: 'Save your results',
-  income_gap: 'Stay in touch',
-  mover: 'Stay in touch',
+const COPY: Record<string, { heading: string; sub: string; button: string }> = {
+  eligible: {
+    heading: 'Save your results and book a call',
+    sub: 'Leave your details and we\'ll be in touch to book a 20-minute discovery call.',
+    button: 'Save and request a call',
+  },
+  income_gap: {
+    heading: 'Stay in touch',
+    sub: 'Leave your details and we\'ll reach out as things change.',
+    button: 'Stay in touch',
+  },
+  mover: {
+    heading: 'Keep me posted',
+    sub: 'We\'ll reach out when the mover pathway opens.',
+    button: 'Keep me posted',
+  },
 }
 
-const SUCCESS: Record<string, (name: string) => string> = {
-  eligible: (n) => `Thanks ${n}, we'll be in touch to book your discovery call.`,
-  income_gap: (n) => `Thanks ${n}, we'll reach out as things change.`,
-  mover: (n) => `Thanks ${n}, we'll be in touch when the mover pathway opens.`,
+const NEXT_STEPS: Record<string, string[]> = {
+  eligible: [
+    'We\'ll review your details within 1 business day',
+    'You\'ll get an email to book your discovery call — 20 minutes, no obligation',
+    'The call is a two-way conversation; we\'ll answer your questions too',
+  ],
+  income_gap: [
+    'We\'ll keep your details on file',
+    'We\'ll reach out if programme parameters change or new options open up',
+  ],
+  mover: [
+    'We\'ll notify you as soon as the mover pathway opens',
+    'No commitment required at this stage',
+  ],
 }
 
 export default function SavePage() {
@@ -39,7 +62,7 @@ export default function SavePage() {
   const [savedName, setSavedName] = useState('')
 
   const variant = state.variant ?? 'eligible'
-  const heading = HEADINGS[variant] ?? 'Save your results'
+  const copy = COPY[variant] ?? COPY.eligible
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -75,7 +98,7 @@ export default function SavePage() {
     })
 
     if (error) {
-      form.setError('root', { message: 'Something went wrong — please try again.' })
+      form.setError('root', { message: 'Something went wrong. Please try again.' })
       return
     }
 
@@ -83,14 +106,42 @@ export default function SavePage() {
   }
 
   if (savedName) {
-    const message = SUCCESS[variant]?.(savedName) ?? `Thanks ${savedName}.`
+    const nextSteps = NEXT_STEPS[variant] ?? NEXT_STEPS.eligible
     return (
       <div className="min-h-screen bg-background">
         <PublicNav />
-        <main className="mx-auto max-w-lg px-6 py-24 text-center">
-          <div className="rounded-xl border bg-muted/30 p-10 space-y-4">
-            <h1 className="text-2xl font-semibold">{message}</h1>
-            <Button variant="outline" onClick={() => navigate('/')}>Back to home</Button>
+        <main className="mx-auto max-w-lg px-6 py-24">
+          <div className="text-center">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle2 className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold">
+              {variant === 'eligible' ? `You're on the list, ${savedName}.` : `Thanks, ${savedName}.`}
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              {variant === 'eligible'
+                ? 'Check your inbox — we\'ll be in touch shortly to book your call.'
+                : 'We\'ll keep your details and reach out when something changes.'}
+            </p>
+          </div>
+
+          <div className="mt-8 rounded-xl border bg-muted/30 p-5">
+            <p className="text-sm font-medium">What happens next</p>
+            <ul className="mt-3 space-y-2">
+              {nextSteps.map((step) => (
+                <li key={step} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="mt-0.5 shrink-0 text-primary">•</span>
+                  {step}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button variant="outline" className="flex-1" onClick={() => navigate('/')}>Back to home</Button>
+            <Button asChild variant="outline" className="flex-1">
+              <Link to="/calc">Run the calculator again</Link>
+            </Button>
           </div>
         </main>
       </div>
@@ -100,78 +151,102 @@ export default function SavePage() {
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
-      <main className="mx-auto max-w-lg px-6 py-16">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">{heading}</h1>
+      <main className="mx-auto max-w-lg px-6 py-16 space-y-8">
+
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{copy.heading}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{copy.sub}</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Your details</CardTitle>
-            <CardDescription>We'll use these to get in touch with you.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField control={form.control} name="first_name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First name</FormLabel>
-                      <FormControl><Input placeholder="Jane" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="last_name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last name</FormLabel>
-                      <FormControl><Input placeholder="Smith" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+        {/* Results summary — eligible only */}
+        {variant === 'eligible' && state.propertyPrice > 0 && (
+          <div className="divide-y rounded-xl border bg-muted/30">
+            {[
+              { label: 'Monthly service fee', value: `${formatCurrency(state.monthlyDomiter)} / mo` },
+              { label: 'Entry Stake', value: formatCurrency(state.entryStake) },
+              { label: 'Purchase option price', value: formatCurrency(state.strikePrice) },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-muted-foreground">{label}</span>
+                <span className="font-semibold tabular-nums">{value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Form */}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField control={form.control} name="first_name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First name</FormLabel>
+                  <FormControl><Input placeholder="Jane" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="last_name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last name</FormLabel>
+                  <FormControl><Input placeholder="Smith" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email address</FormLabel>
+                <FormControl><Input type="email" placeholder="jane@example.com" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="consent_contact" render={({ field }) => (
+              <FormItem className="flex items-start gap-3 space-y-0">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <div>
+                  <FormLabel className="font-normal">I agree to be contacted about the Homeown pathway</FormLabel>
+                  <FormMessage />
                 </div>
+              </FormItem>
+            )} />
 
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email address</FormLabel>
-                    <FormControl><Input type="email" placeholder="jane@example.com" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+            <FormField control={form.control} name="consent_privacy" render={({ field }) => (
+              <FormItem className="flex items-start gap-3 space-y-0">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <div>
+                  <FormLabel className="font-normal">
+                    I agree to the{' '}
+                    <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">
+                      privacy notice
+                    </Link>
+                  </FormLabel>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )} />
 
-                <FormField control={form.control} name="consent_contact" render={({ field }) => (
-                  <FormItem className="flex items-start gap-3 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <div>
-                      <FormLabel className="font-normal">I agree to be contacted about the Homeown pathway</FormLabel>
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )} />
+            {form.formState.errors.root && (
+              <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
+            )}
 
-                <FormField control={form.control} name="consent_privacy" render={({ field }) => (
-                  <FormItem className="flex items-start gap-3 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <div>
-                      <FormLabel className="font-normal">I agree to the privacy notice</FormLabel>
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )} />
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? 'Saving...' : copy.button}
+            </Button>
+          </form>
+        </Form>
 
-                {form.formState.errors.root && (
-                  <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
-                )}
-                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? 'Saving...' : heading}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+        <p className="text-center text-xs text-muted-foreground">
+          <Link to="/calc/results" className="underline underline-offset-2 hover:text-foreground">
+            Back to my results
+          </Link>
+        </p>
       </main>
     </div>
   )
