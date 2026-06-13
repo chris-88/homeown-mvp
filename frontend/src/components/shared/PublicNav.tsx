@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
+import { Logo } from './Logo'
 
 const NAV_LINKS = [
   { to: '/how-it-works', label: 'How it works' },
@@ -16,7 +17,9 @@ export function PublicNav() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="text-lg font-semibold tracking-tight">Homeown</Link>
+        <Link to="/" className="flex items-center">
+          <Logo className="h-7 w-auto text-foreground" />
+        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-6 md:flex">
@@ -29,6 +32,7 @@ export function PublicNav() {
               {label}
             </Link>
           ))}
+          <Link to="/auth/login" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Sign in</Link>
           <Button asChild size="sm">
             <Link to="/calc">Check your numbers →</Link>
           </Button>
@@ -58,6 +62,7 @@ export function PublicNav() {
                 {label}
               </Link>
             ))}
+            <Link to="/auth/login" onClick={() => setOpen(false)} className="text-sm text-muted-foreground">Sign in</Link>
             <Button asChild size="sm" className="w-full">
               <Link to="/calc" onClick={() => setOpen(false)}>Check your numbers</Link>
             </Button>

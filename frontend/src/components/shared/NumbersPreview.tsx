@@ -50,7 +50,7 @@ export function NumbersPreview({ defaultPrice = 350000 }: NumbersPreviewProps) {
         <div className="rounded-lg border bg-background p-4">
           <p className="text-xs text-muted-foreground">Entry Stake</p>
           <p className="mt-1 text-2xl font-bold">{fmt(entryStake)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">1% — paid once at the start</p>
+          <p className="mt-1 text-xs text-muted-foreground">1%, paid once at the start</p>
         </div>
         <div className="rounded-lg border bg-background p-4">
           <p className="text-xs text-muted-foreground">Purchase option price</p>

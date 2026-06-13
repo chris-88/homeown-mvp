@@ -23,7 +23,7 @@ export default function KfsPage() {
           <li>Homeown (as servicer) coordinates the acquisition of a property through a ring-fenced Designated Activity Company (DAC)</li>
           <li>You pay a monthly service fee (Domiter) for 60 months</li>
           <li>You hold a 1% beneficial interest in the property from day one</li>
-          <li>You have a contractual right — but not an obligation — to purchase the property at the end of the term at a fixed option price</li>
+          <li>You have a contractual right, but not an obligation, to purchase the property at the end of the term at a fixed option price</li>
         </ul>
       </LegalSection>
 
@@ -68,13 +68,13 @@ export default function KfsPage() {
         <ul className="space-y-1 list-disc list-inside text-sm">
           <li><strong className="text-foreground">Duration:</strong> 60 months (5 years)</li>
           <li><strong className="text-foreground">Early exit:</strong> You may exit at any time with 30 days' notice</li>
-          <li><strong className="text-foreground">Early completion:</strong> Not available — the term is fixed at 60 months</li>
+          <li><strong className="text-foreground">Early completion:</strong> Not available; the term is fixed at 60 months</li>
           <li><strong className="text-foreground">Option window:</strong> Opens in the final 30 days of the term</li>
         </ul>
       </LegalSection>
 
       <LegalSection heading="Your beneficial interest">
-        <p>From the moment you pay your Entry Stake, you hold a 1% beneficial interest in the property. This is a legal interest in the property — it is not a tenancy right or a credit arrangement.</p>
+        <p>From the moment you pay your Entry Stake, you hold a 1% beneficial interest in the property. This is a legal interest in the property; it is not a tenancy right or a credit arrangement.</p>
         <p>The beneficial interest does not increase over the term. At the end of the term, you have the right to purchase the remaining 99% at the fixed option price.</p>
       </LegalSection>
 
@@ -82,7 +82,7 @@ export default function KfsPage() {
         <p>The purchase option is a contractual right to buy the property at the end of the 60-month term at the fixed option price (90% of Homeown's acquisition price). Key facts:</p>
         <ul className="space-y-1 list-disc list-inside text-sm">
           <li>The option price is fixed on the day Homeown acquires the property and does not change</li>
-          <li>Exercising the option requires arranging a regulated mortgage with an independent lender — Homeown does not provide this</li>
+          <li>Exercising the option requires arranging a regulated mortgage with an independent lender; Homeown does not provide this</li>
           <li>You are not obligated to exercise the option</li>
           <li>If you do not exercise the option, there is no debt owed to Homeown</li>
         </ul>
@@ -92,16 +92,16 @@ export default function KfsPage() {
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm space-y-2">
           <p className="font-semibold text-foreground">You should be aware of the following risks before entering the programme:</p>
           <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-            <li><strong className="text-foreground">Entry Stake is equity at risk.</strong> If you exit the programme — for any reason — your Entry Stake is not refunded as cash. It is treated as equity contributed to the property structure.</li>
-            <li><strong className="text-foreground">Mortgage approval is not guaranteed.</strong> At the end of the term, you must arrange your own mortgage with an independent regulated lender. Homeown cannot guarantee approval. If approval is not forthcoming, you can exit — but your Entry Stake remains at risk.</li>
+            <li><strong className="text-foreground">Entry Stake is equity at risk.</strong> If you exit the programme, for any reason, your Entry Stake is not refunded as cash. It is treated as equity contributed to the property structure.</li>
+            <li><strong className="text-foreground">Mortgage approval is not guaranteed.</strong> At the end of the term, you must arrange your own mortgage with an independent regulated lender. Homeown cannot guarantee approval. If approval is not forthcoming, you can exit, but your Entry Stake remains at risk.</li>
             <li><strong className="text-foreground">Non-payment risk.</strong> Persistent non-payment of the monthly service fee will result in programme cancellation. Review the payment governance provisions in the Homeown Pathway Agreement before signing.</li>
-            <li><strong className="text-foreground">Property value risk.</strong> Property values may fall. Your option price is fixed regardless of market movements — you are not obligated to exercise the option if the property has declined in value.</li>
+            <li><strong className="text-foreground">Property value risk.</strong> Property values may fall. Your option price is fixed regardless of market movements; you are not obligated to exercise the option if the property has declined in value.</li>
           </ul>
         </div>
       </LegalSection>
 
       <LegalSection heading="The property structure">
-        <p>Legal title to the property is held by a ring-fenced Designated Activity Company (DAC) — a separate legal entity established specifically for each property cohort. The DAC is funded by a combination of senior capital (institutional) and subordinated capital (private investors).</p>
+        <p>Legal title to the property is held by a ring-fenced Designated Activity Company (DAC), a separate legal entity established specifically for each property cohort. The DAC is funded by a combination of senior capital (institutional) and subordinated capital (private investors).</p>
         <p>Homeown Limited acts as servicer to the DAC. It does not own the property and is not your landlord.</p>
         <p>Your beneficial interest and purchase option are governed by the Homeown Pathway Agreement, which is a legally binding contract between you and the DAC.</p>
       </LegalSection>

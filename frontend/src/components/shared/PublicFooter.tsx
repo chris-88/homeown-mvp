@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Logo } from './Logo'
 
 export function PublicFooter() {
   return (
@@ -7,8 +8,8 @@ export function PublicFooter() {
         <div className="grid gap-8 sm:grid-cols-3">
           {/* Col 1 */}
           <div>
-            <p className="font-semibold">Homeown</p>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            <Logo className="h-6 w-auto text-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               A structured property ownership pathway for first-time buyers in Ireland.
             </p>
           </div>

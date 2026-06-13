@@ -35,7 +35,7 @@ export default function PrivacyPage() {
           <p>If you proceed beyond the initial interest stage, we collect additional personal data to assess your programme participation eligibility and to administer the programme.</p>
           <ul className="space-y-1 list-disc list-inside text-sm">
             <li><em>Personal data:</em> Identity documents (photo ID, proof of address); income evidence (payslips, employer letters, tax documents, bank statements); other financial documents as required</li>
-            <li><em>Legal basis:</em> Contract performance (Article 6(1)(b)) — necessary to enter and administer the programme agreement; Legal obligation (Article 6(1)(c)) — KYC/AML compliance under Irish law</li>
+            <li><em>Legal basis:</em> Contract performance (Article 6(1)(b)), necessary to enter and administer the programme agreement; Legal obligation (Article 6(1)(c)), KYC/AML compliance under Irish law</li>
             <li><em>Purpose:</em> Programme eligibility assessment; identity verification; AML compliance; programme administration</li>
           </ul>
         </div>
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
         <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
           <p className="font-medium text-foreground">e) Contact and enquiries</p>
           <p>If you contact us by email, we process the data you include in that communication.</p>
-          <p className="text-sm"><em>Legal basis:</em> Legitimate interests (Article 6(1)(f)) — responding to your enquiry</p>
+          <p className="text-sm"><em>Legal basis:</em> Legitimate interests (Article 6(1)(f)), responding to your enquiry</p>
         </div>
       </LegalSection>
 
@@ -69,8 +69,8 @@ export default function PrivacyPage() {
         <p>We do not sell your personal data. We share it only with:</p>
         <p className="font-medium text-foreground">Service providers (data processors):</p>
         <ul className="space-y-2 list-disc list-inside text-sm">
-          <li><strong className="text-foreground">Supabase</strong> — our database and authentication provider. Data is stored in the EU (Ireland). Supabase processes data under a Data Processing Agreement.</li>
-          <li><strong className="text-foreground">Postmark</strong> — our email delivery provider. Postmark is certified under the EU-US Data Privacy Framework. Email addresses are shared only to deliver transactional emails you have requested.</li>
+          <li><strong className="text-foreground">Supabase:</strong> our database and authentication provider. Data is stored in the EU (Ireland). Supabase processes data under a Data Processing Agreement.</li>
+          <li><strong className="text-foreground">Postmark:</strong> our email delivery provider. Postmark is certified under the EU-US Data Privacy Framework. Email addresses are shared only to deliver transactional emails you have requested.</li>
         </ul>
         <p className="font-medium text-foreground">Professional advisors:</p>
         <p>We may share data with our legal counsel or accountants where necessary and subject to confidentiality obligations.</p>
@@ -85,13 +85,13 @@ export default function PrivacyPage() {
       <LegalSection heading="6. Your rights">
         <p>Under GDPR and the Data Protection Acts 2018, you have the following rights:</p>
         <ul className="space-y-2 list-disc list-inside text-sm">
-          <li><strong className="text-foreground">Right of access</strong> — to request a copy of the personal data we hold about you</li>
-          <li><strong className="text-foreground">Right to rectification</strong> — to correct inaccurate personal data</li>
-          <li><strong className="text-foreground">Right to erasure</strong> — to request deletion of your data in certain circumstances</li>
-          <li><strong className="text-foreground">Right to restriction</strong> — to request that we limit how we use your data</li>
-          <li><strong className="text-foreground">Right to data portability</strong> — to receive your data in a structured, machine-readable format</li>
-          <li><strong className="text-foreground">Right to object</strong> — to object to processing based on legitimate interests or for direct marketing</li>
-          <li><strong className="text-foreground">Right to withdraw consent</strong> — where processing is based on consent, you can withdraw it at any time without affecting the lawfulness of prior processing</li>
+          <li><strong className="text-foreground">Right of access:</strong> to request a copy of the personal data we hold about you</li>
+          <li><strong className="text-foreground">Right to rectification:</strong> to correct inaccurate personal data</li>
+          <li><strong className="text-foreground">Right to erasure:</strong> to request deletion of your data in certain circumstances</li>
+          <li><strong className="text-foreground">Right to restriction:</strong> to request that we limit how we use your data</li>
+          <li><strong className="text-foreground">Right to data portability:</strong> to receive your data in a structured, machine-readable format</li>
+          <li><strong className="text-foreground">Right to object:</strong> to object to processing based on legitimate interests or for direct marketing</li>
+          <li><strong className="text-foreground">Right to withdraw consent:</strong> where processing is based on consent, you can withdraw it at any time without affecting the lawfulness of prior processing</li>
         </ul>
         <p>To exercise any of these rights, contact us at <a href="mailto:privacy@homeown.ie" className="underline underline-offset-2 hover:text-foreground">privacy@homeown.ie</a>. We will respond within one month.</p>
       </LegalSection>

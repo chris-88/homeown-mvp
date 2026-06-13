@@ -14,11 +14,11 @@ const FAQ_PREVIEW = [
   },
   {
     q: 'What if I can\'t get a mortgage at the end?',
-    a: 'You are not obligated to purchase. If you choose not to exercise your option — or if mortgage approval is not forthcoming — you can exit the programme with 30 days\' notice. There is no debt owed to Homeown.',
+    a: 'You are not obligated to purchase. If you choose not to exercise your option, or if mortgage approval is not forthcoming, you can exit the programme with 30 days\' notice. There is no debt owed to Homeown.',
   },
   {
     q: 'Who owns the property?',
-    a: 'Legal title is held by a ring-fenced Designated Activity Company, not by Homeown Limited. Homeown acts as the servicer — it manages the programme but does not own the property.',
+    a: 'Legal title is held by a ring-fenced Designated Activity Company, not by Homeown Limited. Homeown acts as the servicer. It manages the programme but does not own the property.',
   },
 ]
 
@@ -71,7 +71,7 @@ export default function HomePage() {
         <section className="border-t bg-muted/20 py-20">
           <div className="mx-auto max-w-2xl px-6 space-y-4 text-muted-foreground leading-relaxed">
             <p>You pay a monthly service fee and hold a 1% beneficial interest in the property from day one.</p>
-            <p>The purchase option price is fixed at the moment Homeown acquires the property — 10% below what we paid — and does not change over the 60-month term.</p>
+            <p>The purchase option price is fixed at the moment Homeown acquires the property, at 10% below what we paid, and does not change over the 60-month term.</p>
             <p>At the end of the term, you have the right to purchase the remaining 99% at that fixed price through a standard regulated mortgage arranged with an independent lender.</p>
             <p className="text-sm">Homeown does not provide mortgage credit. The purchase option is a right, not an obligation.</p>
           </div>
@@ -96,7 +96,7 @@ export default function HomePage() {
                 {
                   n: '3',
                   title: 'Buy it',
-                  body: 'Over 60 months you pay the monthly service fee and hold your beneficial interest. At the end of the term, you exercise your option to purchase — or you exit. The choice is yours.',
+                  body: 'Over 60 months you pay the monthly service fee and hold your beneficial interest. At the end of the term, you exercise your option to purchase, or you exit. The choice is yours.',
                 },
               ].map(step => (
                 <div key={step.n} className="flex gap-4">
@@ -166,7 +166,7 @@ export default function HomePage() {
               <div>
                 <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">What protects you</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  The property is held in a ring-fenced Designated Activity Company — a separate legal entity established specifically for each property cohort. Your beneficial interest and your option to purchase are governed by a legally binding agreement. The purchase option price is contractually fixed from the moment of acquisition.
+                  The property is held in a ring-fenced Designated Activity Company, a separate legal entity established specifically for each property cohort. Your beneficial interest and your option to purchase are governed by a legally binding agreement. The purchase option price is contractually fixed from the moment of acquisition.
                 </p>
               </div>
             </div>

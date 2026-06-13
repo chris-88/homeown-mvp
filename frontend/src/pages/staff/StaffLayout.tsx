@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { canViewProspects, canViewClients, canViewCircle, canViewDACs, canManageTeam } from '@/lib/rbac'
 import type { StaffRole } from '@/types'
+import { Logo } from '@/components/shared/Logo'
 
 type NavItem = {
   to: string
@@ -38,7 +39,10 @@ export default function StaffLayout() {
       <div className="flex min-h-screen bg-background">
         <aside className="hidden w-56 shrink-0 border-r md:flex md:flex-col">
           <div className="flex h-14 items-center border-b px-6">
-            <Link to="/" className="text-sm font-semibold tracking-tight">Homeown Staff</Link>
+            <Link to="/" className="flex flex-col gap-0.5">
+              <Logo className="h-5 w-auto text-foreground" />
+              <span className="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">Staff</span>
+            </Link>
           </div>
           <nav className="flex flex-1 flex-col gap-1 p-3">
             {NAV.filter(item => !item.show || item.show(role)).map(({ to, label, icon, exact }) => {

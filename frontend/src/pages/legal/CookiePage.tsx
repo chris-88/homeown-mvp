@@ -5,7 +5,7 @@ export default function CookiePage() {
     <LegalLayout title="Cookie Policy" lastUpdated="12 June 2026">
 
       <LegalSection heading="What are cookies?">
-        <p>Cookies are small text files placed on your device by websites you visit. They are widely used to make websites work, to remember your preferences, and — in some cases — to collect analytics data about how visitors use a site.</p>
+        <p>Cookies are small text files placed on your device by websites you visit. They are widely used to make websites work, to remember your preferences, and in some cases to collect analytics data about how visitors use a site.</p>
       </LegalSection>
 
       <LegalSection heading="What cookies does Homeown use?">
@@ -29,7 +29,7 @@ export default function CookiePage() {
       </LegalSection>
 
       <LegalSection heading="Strictly necessary cookies">
-        <p>Strictly necessary cookies are essential for the portal to function. They keep you authenticated when you are logged in. They cannot be disabled without preventing portal access. Under Irish ePrivacy regulations, strictly necessary cookies do not require your consent — but we are required to tell you about them.</p>
+        <p>Strictly necessary cookies are essential for the portal to function. They keep you authenticated when you are logged in. They cannot be disabled without preventing portal access. Under Irish ePrivacy regulations, strictly necessary cookies do not require your consent, but we are required to tell you about them.</p>
       </LegalSection>
 
       <LegalSection heading="How to control cookies">

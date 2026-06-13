@@ -108,23 +108,32 @@ export default function SubscriptionDetailPage() {
           {isWithdrawn ? (
             <Badge variant="destructive">Withdrawn</Badge>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-0">
+            <div className="relative">
+              {/* Single track line behind the dots */}
+              <div className="absolute top-[5px] flex w-full px-[calc(100%/12)]">
+                {STATUS_STEPS.slice(0, -1).map((_, i) => (
+                  <div key={i} className={`h-0.5 flex-1 ${i < currentStep ? 'bg-primary' : 'bg-muted'}`} />
+                ))}
+              </div>
+              {/* Dots + labels grid */}
+              <div className="relative grid" style={{ gridTemplateColumns: `repeat(${STATUS_STEPS.length}, 1fr)` }}>
                 {STATUS_STEPS.map((step, i) => {
                   const done = i <= currentStep
                   const current = i === currentStep
                   const ts = step.tsField ? sub[step.tsField] as string | null : null
                   return (
-                    <div key={step.key} className="flex flex-1 flex-col items-center">
-                      <div className="flex items-center w-full">
-                        {i > 0 && <div className={`h-0.5 flex-1 ${done ? 'bg-primary' : 'bg-muted'}`} />}
-                        <div className={`h-3 w-3 shrink-0 rounded-full border-2 ${done ? 'border-primary bg-primary' : 'border-muted bg-background'} ${current ? 'ring-2 ring-primary ring-offset-2' : ''}`} />
-                        {i < STATUS_STEPS.length - 1 && <div className={`h-0.5 flex-1 ${i < currentStep ? 'bg-primary' : 'bg-muted'}`} />}
-                      </div>
-                      <p className={`mt-1.5 text-center text-xs ${current ? 'font-semibold' : done ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
+                    <div key={step.key} className="flex flex-col items-center">
+                      <div className={`relative z-10 h-2.5 w-2.5 shrink-0 rounded-full border-2
+                        ${done ? 'border-primary bg-primary' : 'border-muted bg-background'}
+                        ${current ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                      />
+                      <p className={`mt-2 text-center text-xs leading-tight
+                        ${current ? 'font-semibold text-foreground' : done ? 'text-muted-foreground' : 'text-muted-foreground/40'}`}>
                         {step.label}
                       </p>
-                      {ts && <p className="text-xs text-muted-foreground">{formatDate(ts)}</p>}
+                      <p className="min-h-[1rem] mt-0.5 text-center text-[10px] text-muted-foreground">
+                        {ts ? formatDate(ts) : ''}
+                      </p>
                     </div>
                   )
                 })}

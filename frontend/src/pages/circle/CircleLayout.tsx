@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { RouteGuard } from '@/components/shared/RouteGuard'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, TrendingUp, PieChart, FileText, User, LogOut } from 'lucide-react'
+import { Logo } from '@/components/shared/Logo'
 
 const nav = [
   { to: '/app/circle', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" />, exact: true },
@@ -18,7 +19,10 @@ export default function CircleLayout() {
       <div className="flex min-h-screen bg-background">
         <aside className="hidden w-56 shrink-0 border-r md:flex md:flex-col">
           <div className="flex h-14 items-center border-b px-6">
-            <Link to="/" className="text-sm font-semibold tracking-tight">Homeown Circle</Link>
+            <Link to="/" className="flex flex-col gap-0.5">
+              <Logo className="h-5 w-auto text-foreground" />
+              <span className="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">Circle</span>
+            </Link>
           </div>
           <nav className="flex flex-1 flex-col gap-1 p-3">
             {nav.map(({ to, label, icon, exact }) => {

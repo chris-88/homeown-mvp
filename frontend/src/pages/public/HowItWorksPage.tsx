@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 const SCENARIOS = [
   {
     q: 'Can I leave before the 60 months are up?',
-    a: 'Yes. You can exit at any time with 30 days\' notice. There is no obligation to stay for the full term. Your Entry Stake is equity at risk — it is not refunded as cash on exit.',
+    a: 'Yes. You can exit at any time with 30 days\' notice. There is no obligation to stay for the full term. Your Entry Stake is equity at risk; it is not refunded as cash on exit.',
   },
   {
     q: 'What if I lose my job or can\'t make a payment?',
@@ -43,7 +43,7 @@ export default function HowItWorksPage() {
             <div className="flex-1">
               <h2 className="text-xl font-semibold">Check your programme fit</h2>
               <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
-                <p>The calculator checks whether the property you have in mind is within range for a regulated mortgage at the end of the 60-month term — using standard Irish lending parameters. It is not a credit assessment and it does not check whether you can afford the monthly service fee. That decision is yours.</p>
+                <p>The calculator checks whether the property you have in mind is within range for a regulated mortgage at the end of the 60-month term, using standard Irish lending parameters. It is not a credit assessment and it does not check whether you can afford the monthly service fee. That decision is yours.</p>
                 <p>The calculator takes two minutes and gives you a clear result: the programme either fits your situation, or it tells you what price range works better for your income.</p>
               </div>
               <div className="mt-4 space-y-1 text-sm text-muted-foreground">
@@ -85,13 +85,13 @@ export default function HowItWorksPage() {
               <h2 className="text-xl font-semibold">Finding your property and moving in</h2>
               <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
                 <p>Once accepted onto the programme, a Homeown purchasing agent works with you to identify properties that meet your brief and pass our go/no-go checks. Homeown acquires the property through a ring-fenced Designated Activity Company established specifically for your cohort.</p>
-                <p>You pay your Entry Stake (1% of the purchase price) at the sale agreed stage. This establishes your 1% beneficial interest in the property. On completion, you receive your pathway agreement — the legally binding document that governs your option to purchase — and you move in.</p>
+                <p>You pay your Entry Stake (1% of the purchase price) at the sale agreed stage. This establishes your 1% beneficial interest in the property. On completion, you receive your pathway agreement, the legally binding document that governs your option to purchase, and you move in.</p>
               </div>
               <div className="mt-4 text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">What the Entry Stake is:</p>
                 <ul className="mt-2 space-y-1 list-disc list-inside">
-                  <li>Your 1% beneficial interest — you hold a stake in the property from day one</li>
-                  <li>Equity at risk — if you exit the programme, the Entry Stake is not refunded as cash; it is treated as equity contributed</li>
+                  <li>Your 1% beneficial interest: you hold a stake in the property from day one</li>
+                  <li>Equity at risk: if you exit the programme, the Entry Stake is not refunded as cash; it is treated as equity contributed</li>
                 </ul>
               </div>
             </div>
@@ -104,12 +104,12 @@ export default function HowItWorksPage() {
               <h2 className="text-xl font-semibold">Living on the pathway</h2>
               <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
                 <p>Each month you pay the service fee (Domiter), calculated as your property's purchase price × 8.2% ÷ 12. This is not rent and it is not a credit repayment. It is the service fee for operating the pathway.</p>
-                <p>Your purchase option price was fixed on the day Homeown acquired the property — 10% below what Homeown paid. It does not change over the 60-month term regardless of what happens to property values.</p>
-                <p>Approximately six months before the end of the term, Homeown will contact you to confirm your intent and begin exit preparation. In the final 30 days, the option window opens. You can exercise your option to purchase — arranging a regulated mortgage through an independent lender — or you can exit.</p>
+                <p>Your purchase option price was fixed on the day Homeown acquired the property, at 10% below what Homeown paid. It does not change over the 60-month term regardless of what happens to property values.</p>
+                <p>Approximately six months before the end of the term, Homeown will contact you to confirm your intent and begin exit preparation. In the final 30 days, the option window opens. You can exercise your option to purchase, arranging a regulated mortgage through an independent lender, or you can exit.</p>
               </div>
               <div className="mt-4 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">The Domiter split</p>
-                <p className="mt-1">Part of your monthly service fee covers Homeown's obligations to the capital providers who funded the property acquisition. The remainder is Homeown's service income. You are not a lender, a creditor, or a bondholder — this is purely contextual information about how the service operates.</p>
+                <p className="mt-1">Part of your monthly service fee covers Homeown's obligations to the capital providers who funded the property acquisition. The remainder is Homeown's service income. You are not a lender, a creditor, or a bondholder. This is purely contextual information about how the service operates.</p>
               </div>
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function HowItWorksPage() {
                 </div>
                 <div className="rounded-lg border p-4">
                   <p className="font-semibold text-sm">Exit</p>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">You give 30 days' notice. The programme ends. There is no debt owed to Homeown. Your Entry Stake is equity at risk and is not returned as cash. You leave with your life and circumstances intact — just not as an owner of this property.</p>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">You give 30 days' notice. The programme ends. There is no debt owed to Homeown. Your Entry Stake is equity at risk and is not returned as cash. You leave with your life and circumstances intact, just not as an owner of this property.</p>
                 </div>
               </div>
             </div>

@@ -8,13 +8,13 @@ export default function TermsPage() {
         <p>This website is operated by Homeown Limited, a private limited company incorporated in Ireland. By using this website, you agree to these terms.</p>
       </LegalSection>
 
-      <LegalSection heading="2. Information only — not financial advice">
+      <LegalSection heading="2. Information only: not financial advice">
         <p>Nothing on this website constitutes financial advice, investment advice, legal advice, or any other regulated advice. The information on this site is provided for general information purposes only. You should seek independent professional advice before making any financial decision.</p>
         <p>In particular, Homeown does not assess mortgage affordability or creditworthiness. The calculator on this site provides illustrative figures only. It is not an approval, a pre-approval, an agreement in principle, or any indication of mortgage eligibility. Mortgage approval is provided only by independent regulated lenders at the end of the programme term and is not guaranteed.</p>
       </LegalSection>
 
       <LegalSection heading="3. The programme agreement">
-        <p>Your participation in the Homeown programme, if you proceed, is governed by the Homeown Pathway Agreement and associated documentation — not by these website terms. These website terms apply only to your use of this website.</p>
+        <p>Your participation in the Homeown programme, if you proceed, is governed by the Homeown Pathway Agreement and associated documentation, not by these website terms. These website terms apply only to your use of this website.</p>
       </LegalSection>
 
       <LegalSection heading="4. Accuracy of information">
@@ -26,7 +26,7 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection heading="6. Intellectual property">
-        <p>All content on this website — including text, design, graphics, and software — is owned by or licensed to Homeown Limited. You may not reproduce, distribute, or use any content from this website for commercial purposes without our written permission.</p>
+        <p>All content on this website, including text, design, graphics, and software, is owned by or licensed to Homeown Limited. You may not reproduce, distribute, or use any content from this website for commercial purposes without our written permission.</p>
       </LegalSection>
 
       <LegalSection heading="7. Third-party links">

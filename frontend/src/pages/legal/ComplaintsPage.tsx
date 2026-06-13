@@ -42,7 +42,7 @@ export default function ComplaintsPage() {
       </LegalSection>
 
       <LegalSection heading="Vulnerable customers">
-        <p>If you need assistance making a complaint — for example, due to a disability, language barrier, or other circumstance — please let us know and we will do everything we can to accommodate you.</p>
+        <p>If you need assistance making a complaint, for example due to a disability, language barrier, or other circumstance, please let us know and we will do everything we can to accommodate you.</p>
       </LegalSection>
 
     </LegalLayout>

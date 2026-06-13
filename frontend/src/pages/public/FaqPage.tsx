@@ -11,7 +11,7 @@ const GROUPS = [
     faqs: [
       {
         q: 'Is the monthly service fee rent?',
-        a: 'No. The monthly service fee (Domiter) is not rent, and there is no tenancy agreement between you and Homeown. From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property and a contractual right to purchase it. The monthly payment is the service fee for operating that pathway — it is not a payment for occupation of the property.',
+        a: 'No. The monthly service fee (Domiter) is not rent, and there is no tenancy agreement between you and Homeown. From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property and a contractual right to purchase it. The monthly payment is the service fee for operating that pathway. It is not a payment for occupation of the property.',
       },
       {
         q: 'How is the monthly service fee calculated?',
@@ -19,11 +19,11 @@ const GROUPS = [
       },
       {
         q: 'Is the purchase option price guaranteed?',
-        a: 'The option price is contractually fixed at the moment Homeown acquires the property — set at 10% below what Homeown paid. It does not change over the 60-month term. It is not subject to market adjustments, valuation changes, or renegotiation.',
+        a: 'The option price is contractually fixed at the moment Homeown acquires the property, set at 10% below what Homeown paid. It does not change over the 60-month term. It is not subject to market adjustments, valuation changes, or renegotiation.',
       },
       {
         q: 'What is the Entry Stake?',
-        a: 'The Entry Stake is 1% of the property purchase price, paid once at the sale agreed stage. It establishes your 1% beneficial interest in the property. It is equity at risk — if you exit the programme, it is not refunded as cash. It is not a deposit in the traditional sense: it is your stake in the property from day one.',
+        a: 'The Entry Stake is 1% of the property purchase price, paid once at the sale agreed stage. It establishes your 1% beneficial interest in the property. It is equity at risk: if you exit the programme, it is not refunded as cash. It is not a deposit in the traditional sense; it is your stake in the property from day one.',
       },
       {
         q: 'Is this rent-to-buy?',
@@ -36,7 +36,7 @@ const GROUPS = [
     faqs: [
       {
         q: 'Who owns the property?',
-        a: 'Legal title to the property is held by a Designated Activity Company (DAC) — a separate legal entity established specifically for each property cohort. Homeown Limited does not own the property. The DAC is funded by third-party capital providers and is operationally passive — Homeown manages it as servicer.',
+        a: 'Legal title to the property is held by a Designated Activity Company (DAC), a separate legal entity established specifically for each property cohort. Homeown Limited does not own the property. The DAC is funded by third-party capital providers and is operationally passive. Homeown manages it as servicer.',
       },
       {
         q: 'What is Homeown\'s role?',
@@ -44,7 +44,7 @@ const GROUPS = [
       },
       {
         q: 'Is Homeown regulated?',
-        a: 'Homeown is structured to operate outside the regulatory perimeter for retail credit and residential tenancies — because the programme is not a credit product and does not involve a tenancy. Homeown\'s structure and documentation have been designed with this regulatory posture in mind. Legal counsel has reviewed the structure. This is not the same as being unregulated — it means the programme is designed to be demonstrably different from regulated products.',
+        a: 'Homeown is structured to operate outside the regulatory perimeter for retail credit and residential tenancies, because the programme is not a credit product and does not involve a tenancy. Homeown\'s structure and documentation have been designed with this regulatory posture in mind. Legal counsel has reviewed the structure. This is not the same as being unregulated. It means the programme is designed to be demonstrably different from regulated products.',
       },
       {
         q: 'What capital providers fund the property acquisition?',
@@ -57,19 +57,19 @@ const GROUPS = [
     faqs: [
       {
         q: 'Who is the programme for?',
-        a: 'The programme is designed for first-time buyers who can sustain mortgage-level monthly service fee payments but have not yet accumulated sufficient capital for a standard mortgage entry. It is not for everyone — the programme fit calculator will tell you whether your situation aligns.',
+        a: 'The programme is designed for first-time buyers who can sustain mortgage-level monthly service fee payments but have not yet accumulated sufficient capital for a standard mortgage entry. It is not for everyone. The programme fit calculator will tell you whether your situation aligns.',
       },
       {
         q: 'How does the programme fit check work?',
-        a: 'The calculator checks one thing: whether the property price you are targeting is within range for a regulated mortgage at the end of the 60-month term, based on standard Irish lending parameters. It is not a credit assessment. It does not check whether you can afford the monthly service fee — that is your decision. The full check is completed in two minutes.',
+        a: 'The calculator checks one thing: whether the property price you are targeting is within range for a regulated mortgage at the end of the 60-month term, based on standard Irish lending parameters. It is not a credit assessment. It does not check whether you can afford the monthly service fee. That is your decision. The full check is completed in two minutes.',
       },
       {
         q: 'Will my credit rating be checked?',
-        a: 'Homeown does not run a credit check at entry. The programme participation assessment checks income verification and payment operability only — not creditworthiness. A credit assessment will be conducted by the independent regulated lender of your choice when you arrange your mortgage at the end of the term.',
+        a: 'Homeown does not run a credit check at entry. The programme participation assessment checks income verification and payment operability only, not creditworthiness. A credit assessment will be conducted by the independent regulated lender of your choice when you arrange your mortgage at the end of the term.',
       },
       {
         q: 'What documents are required?',
-        a: 'Standard income evidence: payslips, bank statements (6 months), and proof of identity and address. For self-employed applicants: accounts, tax documentation, and an accountant letter. Documents are used to verify income consistency and confirm payment operability — not to assess creditworthiness.',
+        a: 'Standard income evidence: payslips, bank statements (6 months), and proof of identity and address. For self-employed applicants: accounts, tax documentation, and an accountant letter. Documents are used to verify income consistency and confirm payment operability, not to assess creditworthiness.',
       },
       {
         q: 'What areas does Homeown operate in?',
@@ -82,7 +82,7 @@ const GROUPS = [
     faqs: [
       {
         q: 'What are the risks?',
-        a: 'The Entry Stake is equity at risk. If you exit the programme before the end of the term, it is not refunded as cash. The 60-month term is fixed — there is no early completion. Mortgage approval at the end of the term is not guaranteed by Homeown; it depends on an independent lender\'s assessment at that time. If you cannot arrange a mortgage at exit, you can choose not to exercise your option — but your Entry Stake remains at risk.',
+        a: 'The Entry Stake is equity at risk. If you exit the programme before the end of the term, it is not refunded as cash. The 60-month term is fixed; there is no early completion. Mortgage approval at the end of the term is not guaranteed by Homeown; it depends on an independent lender\'s assessment at that time. If you cannot arrange a mortgage at exit, you can choose not to exercise your option, but your Entry Stake remains at risk.',
       },
       {
         q: 'What happens if I miss a payment?',
