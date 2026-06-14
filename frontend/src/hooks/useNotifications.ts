@@ -31,8 +31,9 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return
 
-    channelRef.current = supabase
-      .channel(`notifications:${user.id}`)
+    // Unique name prevents Supabase reusing a stale already-subscribed channel
+    const channel = supabase
+      .channel(`notifications:${user.id}:${Math.random()}`)
       .on(
         'postgres_changes',
         {
@@ -47,11 +48,11 @@ export function useNotifications() {
       )
       .subscribe()
 
+    channelRef.current = channel
+
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
-        channelRef.current = null
-      }
+      supabase.removeChannel(channel)
+      channelRef.current = null
     }
   }, [user?.id])
 
