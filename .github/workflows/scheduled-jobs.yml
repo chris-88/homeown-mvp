@@ -1,0 +1,40 @@
+name: Scheduled Jobs
+
+on:
+  schedule:
+    - cron: '0 8 * * *'    # daily at 08:00 UTC
+    - cron: '0 8 1 * *'    # monthly at 08:00 UTC on 1st
+  workflow_dispatch:
+    inputs:
+      job_type:
+        description: 'Job type to run'
+        required: true
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - monthly
+
+jobs:
+  run-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine job type
+        id: job_type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.job_type }}" >> $GITHUB_OUTPUT
+          elif [ "$(date +%d)" = "01" ]; then
+            echo "type=monthly" >> $GITHUB_OUTPUT
+          else
+            echo "type=daily" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Call scheduled-jobs Edge Function
+        run: |
+          curl -s -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/scheduled-jobs" \
+            -H "Content-Type: application/json" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -d '{"job_type":"${{ steps.job_type.outputs.type }}"}' \
+            --fail-with-body

@@ -48,7 +48,7 @@ export type DocType =
   | 'maintenance_order'
   | 'other'
 
-export type DocStatus = 'requested' | 'needs_review' | 'approved' | 'rejected'
+export type DocStatus = 'requested' | 'received' | 'needs_review' | 'approved' | 'rejected'
 
 export type PropertyCaseStatus =
   | 'submitted'
@@ -282,6 +282,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
 
 export const DOC_STATUS_LABELS: Record<DocStatus, string> = {
   requested: 'Requested',
+  received: 'Received',
   needs_review: 'Needs Review',
   approved: 'Approved',
   rejected: 'Rejected',
@@ -402,6 +403,29 @@ export function nextLeadStage(current: LeadStage): LeadStage | null {
 export function nextProgrammeStage(current: ProgrammeStage): ProgrammeStage | null {
   const i = PROGRAMME_STAGE_ORDER.indexOf(current)
   return i >= 0 && i < PROGRAMME_STAGE_ORDER.length - 1 ? PROGRAMME_STAGE_ORDER[i + 1] : null
+}
+
+// ─── Notifications ───────────────────────────────────────────
+export type NotificationType =
+  | 'doc_received' | 'doc_approved' | 'doc_needs_action'
+  | 'stage_advanced' | 'property_update' | 'domiter_reminder' | 'domiter_failed' | 'milestone'
+  | 'new_lead' | 'doc_exception' | 'sla_breach' | 'stage_event' | 'client_milestone'
+  | 'dac_published' | 'subscription_update'
+  | 'system_alert'
+
+export const HIGH_PRIORITY_NOTIFICATIONS = new Set<NotificationType>([
+  'domiter_failed', 'sla_breach', 'system_alert',
+])
+
+export interface Notification {
+  id: string
+  created_at: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string | null
+  action_url: string | null
+  read_at: string | null
 }
 
 // ─── Misc ─────────────────────────────────────────────────────

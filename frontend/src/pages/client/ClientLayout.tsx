@@ -4,6 +4,7 @@ import { RouteGuard } from '@/components/shared/RouteGuard'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, FileText, Home, Clock, User, LogOut, Menu, X } from 'lucide-react'
 import { Logo } from '@/components/shared/Logo'
+import { NotificationBell } from '@/components/shared/NotificationBell'
 
 const nav = [
   { to: '/app/client',           label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" />, exact: true },
@@ -61,8 +62,9 @@ export default function ClientLayout() {
 
         {/* ── Desktop sidebar ───────────────────────────────────── */}
         <aside className="hidden w-56 shrink-0 border-r md:flex md:flex-col">
-          <div className="flex h-14 items-center border-b px-6">
+          <div className="flex h-14 items-center justify-between border-b px-4">
             <Link to="/"><Logo className="h-5 w-auto text-foreground" /></Link>
+            <NotificationBell />
           </div>
           <SidebarContent pathname={pathname} />
         </aside>
@@ -72,13 +74,16 @@ export default function ClientLayout() {
           {/* Mobile header */}
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b bg-card px-4 md:hidden">
             <Link to="/"><Logo className="h-5 w-auto text-foreground" /></Link>
-            <button
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Open menu"
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <button
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open menu"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </div>
           </header>
 
           <main className="flex-1 overflow-auto"><Outlet /></main>

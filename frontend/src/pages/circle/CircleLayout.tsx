@@ -4,6 +4,7 @@ import { RouteGuard } from '@/components/shared/RouteGuard'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, TrendingUp, PieChart, FileText, User, LogOut, Menu, X } from 'lucide-react'
 import { Logo } from '@/components/shared/Logo'
+import { NotificationBell } from '@/components/shared/NotificationBell'
 
 const nav = [
   { to: '/app/circle',                label: 'Dashboard',    icon: <LayoutDashboard className="h-4 w-4" />, exact: true },
@@ -59,11 +60,12 @@ export default function CircleLayout() {
 
         {/* ── Desktop sidebar ───────────────────────────────────── */}
         <aside className="hidden w-60 shrink-0 md:flex md:flex-col bg-brand-burgundy text-brand-cream">
-          <div className="flex h-14 items-center border-b border-white/10 px-6">
+          <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
             <Link to="/" className="flex flex-col gap-0.5">
               <Logo className="h-5 w-auto text-brand-cream" />
               <span className="text-[10px] font-medium tracking-widest text-brand-cream/60 uppercase">Circle</span>
             </Link>
+            <NotificationBell iconClassName="text-brand-cream/80" />
           </div>
           <SidebarContent pathname={pathname} />
         </aside>
@@ -76,13 +78,16 @@ export default function CircleLayout() {
               <Logo className="h-5 w-auto text-brand-cream" />
               <span className="text-[10px] font-medium tracking-widest text-brand-cream/60 uppercase">Circle</span>
             </Link>
-            <button
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Open menu"
-              className="rounded-md p-1.5 text-brand-cream/70 hover:bg-white/10 hover:text-brand-cream transition-colors"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <NotificationBell iconClassName="text-brand-cream/80" />
+              <button
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open menu"
+                className="rounded-md p-1.5 text-brand-cream/70 hover:bg-white/10 hover:text-brand-cream transition-colors"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </div>
           </header>
 
           <main className="flex-1 overflow-auto"><Outlet /></main>
