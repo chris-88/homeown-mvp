@@ -48,7 +48,10 @@ export function useNotifications() {
       .subscribe()
 
     return () => {
-      channelRef.current?.unsubscribe()
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
     }
   }, [user?.id])
 
