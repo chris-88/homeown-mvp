@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,13 +18,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { ArrowLeft, Download, Trash2 } from 'lucide-react'
-import type { Dac, DacDocument, DacStatus, CircleMember, Subscription, SubscriptionStatus } from '@/types'
-import { DAC_STATUS_LABELS, DAC_DOC_TYPE_LABELS, SUBSCRIPTION_STATUS_LABELS } from '@/types'
+import type { Dac, DacDocument, DacStatus, CircleMember, Subscription, SubscriptionStatus, SeniorStage } from '@/types'
+import { DAC_STATUS_LABELS, DAC_DOC_TYPE_LABELS, SUBSCRIPTION_STATUS_LABELS, SENIOR_STAGE_LABELS } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 const STATUS_TIMESTAMPS: Partial<Record<SubscriptionStatus, keyof Subscription>> = {
   funds_requested: 'funds_requested_at',
   funded: 'funded_at',
+}
+
+const SENIOR_STAGES: SeniorStage[] = ['pre_market', 'indicative', 'credit_approved', 'documented', 'drawn', 'repaid']
+
+function seniorStageIndex(stage: SeniorStage | null | undefined) {
+  return SENIOR_STAGES.indexOf((stage ?? 'pre_market') as SeniorStage)
+}
+
+function isSeniorCommitted(stage: SeniorStage | null | undefined) {
+  return seniorStageIndex(stage) >= seniorStageIndex('credit_approved')
 }
 
 function dacStatusBadge(status: DacStatus) {
@@ -34,9 +45,47 @@ function dacStatusBadge(status: DacStatus) {
   return <Badge variant="secondary">{label}</Badge>
 }
 
-
 interface SubWithMember extends Subscription {
   circle_members: { first_name: string; last_name: string } | null
+}
+
+// ── Summary bar ────────────────────────────────────────────────
+function SummaryBar({ dac, subAmounts }: { dac: Dac; subAmounts: { amount: number; status: string }[] }) {
+  const subCommitted = subAmounts
+    .filter(s => !['soft_commit', 'withdrawn'].includes(s.status))
+    .reduce((sum, s) => sum + s.amount, 0)
+
+  const subFunded = subAmounts
+    .filter(s => ['funded', 'active'].includes(s.status))
+    .reduce((sum, s) => sum + s.amount, 0)
+
+  const seniorCommitted = isSeniorCommitted(dac.senior_stage) ? (dac.senior_committed_amount ?? 0) : 0
+  const seniorFunded = dac.senior_drawn_amount ?? 0
+
+  const totalTarget = (dac.target_sub_amount ?? 0) + (dac.target_senior_amount ?? 0)
+  const totalCommitted = subCommitted + seniorCommitted
+  const totalFunded = subFunded + seniorFunded
+  const totalGap = Math.max(0, totalTarget - totalCommitted)
+
+  if (totalTarget === 0) return null
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-4">
+      {[
+        { label: 'Target', value: formatCurrency(totalTarget) },
+        { label: 'Committed', value: formatCurrency(totalCommitted) },
+        { label: 'Funded', value: formatCurrency(totalFunded) },
+        { label: 'Gap', value: formatCurrency(totalGap) },
+      ].map(({ label, value }) => (
+        <Card key={label}>
+          <CardContent className="pt-4">
+            <p className="text-lg font-bold numeric">{value}</p>
+            <p className="text-sm text-muted-foreground">{label}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
 }
 
 // ── Fundamentals tab ──────────────────────────────────────────
@@ -367,16 +416,6 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
     },
   })
 
-  const committed = (subscriptions ?? [])
-    .filter(s => !['soft_commit', 'withdrawn'].includes(s.status))
-    .reduce((sum, s) => sum + s.amount, 0)
-
-  const funded = (subscriptions ?? [])
-    .filter(s => ['funded', 'active'].includes(s.status))
-    .reduce((sum, s) => sum + s.amount, 0)
-
-  const target = dac.target_sub_amount ?? 0
-
   async function addSub() {
     if (!newSub.member_id || !newSub.amount) return
     setSaving(true)
@@ -395,6 +434,7 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
     setDialogOpen(false)
     setNewSub({ member_id: '', amount: '', status: 'soft_commit', notes: '' })
     qc.invalidateQueries({ queryKey: ['staff-dac-subs', dac.id] })
+    qc.invalidateQueries({ queryKey: ['staff-dac-sub-amounts', dac.id] })
   }
 
   async function updateStatus(subId: string, status: SubscriptionStatus) {
@@ -404,29 +444,12 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
     if (ts) extra[ts as string] = new Date().toISOString()
     await supabase.from('subscriptions').update({ status, ...extra, updated_at: new Date().toISOString() }).eq('id', subId)
     qc.invalidateQueries({ queryKey: ['staff-dac-subs', dac.id] })
+    qc.invalidateQueries({ queryKey: ['staff-dac-sub-amounts', dac.id] })
     setStatusLoading(null)
   }
 
   return (
     <div className="space-y-4">
-      {target > 0 && (
-        <div className="grid gap-3 sm:grid-cols-4">
-          {[
-            { label: 'Target', value: formatCurrency(target) },
-            { label: 'Committed', value: formatCurrency(committed) },
-            { label: 'Funded', value: formatCurrency(funded) },
-            { label: 'Gap', value: formatCurrency(Math.max(0, target - committed)) },
-          ].map(({ label, value }) => (
-            <Card key={label}>
-              <CardContent className="pt-4">
-                <p className="text-lg font-bold">{value}</p>
-                <p className="text-sm text-muted-foreground">{label}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setDialogOpen(true)}>Add subscription</Button>
       </div>
@@ -456,7 +479,7 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
                         {s.circle_members ? `${s.circle_members.first_name} ${s.circle_members.last_name}` : '-'}
                       </Link>
                     </td>
-                    <td className="py-3 pr-3">{formatCurrency(s.amount)}</td>
+                    <td className="py-3 pr-3 numeric">{formatCurrency(s.amount)}</td>
                     <td className="py-3 pr-3">{s.coupon_rate_locked ? `${s.coupon_rate_locked}%` : '-'}</td>
                     <td className="py-3 pr-3 capitalize">{s.initiated_by}</td>
                     <td className="py-3 pr-3 text-muted-foreground">{s.committed_at ? formatDate(s.committed_at) : '-'}</td>
@@ -535,6 +558,174 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
   )
 }
 
+// ── Senior tab ────────────────────────────────────────────────
+const seniorSchema = z.object({
+  senior_lender:           z.string().optional(),
+  senior_stage:            z.string(),
+  senior_committed_amount: z.coerce.number().int().min(0).optional().nullable(),
+  senior_drawn_amount:     z.coerce.number().int().min(0).optional().nullable(),
+  senior_term_sheet_date:  z.string().optional().nullable(),
+  senior_approval_date:    z.string().optional().nullable(),
+  senior_draw_date:        z.string().optional().nullable(),
+  senior_notes:            z.string().optional(),
+})
+type SeniorValues = z.infer<typeof seniorSchema>
+
+function SeniorTab({ dac, onRefresh }: { dac: Dac; onRefresh: () => void }) {
+  const form = useForm<SeniorValues>({
+    resolver: zodResolver(seniorSchema),
+    defaultValues: {
+      senior_lender:           dac.senior_lender ?? '',
+      senior_stage:            dac.senior_stage ?? 'pre_market',
+      senior_committed_amount: dac.senior_committed_amount,
+      senior_drawn_amount:     dac.senior_drawn_amount,
+      senior_term_sheet_date:  dac.senior_term_sheet_date,
+      senior_approval_date:    dac.senior_approval_date,
+      senior_draw_date:        dac.senior_draw_date,
+      senior_notes:            dac.senior_notes ?? '',
+    },
+  })
+
+  const watchedStage = form.watch('senior_stage') as SeniorStage
+  const currentIdx = seniorStageIndex(watchedStage)
+
+  async function onSubmit(values: SeniorValues) {
+    await supabase.from('dacs').update({
+      senior_lender:           values.senior_lender || null,
+      senior_stage:            values.senior_stage,
+      senior_committed_amount: values.senior_committed_amount ?? null,
+      senior_drawn_amount:     values.senior_drawn_amount ?? null,
+      senior_term_sheet_date:  values.senior_term_sheet_date || null,
+      senior_approval_date:    values.senior_approval_date || null,
+      senior_draw_date:        values.senior_draw_date || null,
+      senior_notes:            values.senior_notes || null,
+      updated_at:              new Date().toISOString(),
+    }).eq('id', dac.id)
+    onRefresh()
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+        {/* Stage stepper */}
+        <Card>
+          <CardContent className="pt-4 pb-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-4">Facility stage</p>
+            <div className="flex items-start gap-0">
+              {SENIOR_STAGES.map((stage, i) => {
+                const isPast    = i < currentIdx
+                const isCurrent = i === currentIdx
+                return (
+                  <div key={stage} className="flex items-start flex-1 min-w-0">
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      <div className={cn(
+                        'h-2.5 w-2.5 rounded-full shrink-0 transition-colors',
+                        isCurrent ? 'bg-primary ring-2 ring-primary/30' : isPast ? 'bg-primary/50' : 'bg-border',
+                      )} />
+                      <span className={cn(
+                        'mt-2 text-center text-[10px] leading-tight px-0.5',
+                        isCurrent ? 'text-foreground font-medium' : 'text-muted-foreground',
+                      )}>
+                        {SENIOR_STAGE_LABELS[stage]}
+                      </span>
+                    </div>
+                    {i < SENIOR_STAGES.length - 1 && (
+                      <div className={cn(
+                        'mt-1 h-px flex-1 shrink-0 transition-colors',
+                        isPast || isCurrent ? 'bg-primary/40' : 'bg-border',
+                      )} />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Form fields */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField control={form.control} name="senior_lender" render={({ field }) => (
+            <FormItem className="sm:col-span-2">
+              <FormLabel>Senior lender</FormLabel>
+              <FormControl><Input placeholder="e.g. AIB, Bank of Ireland" {...field} /></FormControl>
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="senior_stage" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Stage</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                <SelectContent>
+                  {SENIOR_STAGES.map(s => (
+                    <SelectItem key={s} value={s}>{SENIOR_STAGE_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="senior_committed_amount" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Facility size / committed (€)</FormLabel>
+              <FormControl>
+                <Input type="number" min={0} placeholder={String(dac.target_senior_amount ?? '')} {...field} value={field.value ?? ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="senior_drawn_amount" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount drawn (€)</FormLabel>
+              <FormControl>
+                <Input type="number" min={0} {...field} value={field.value ?? ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormField control={form.control} name="senior_term_sheet_date" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Term sheet received</FormLabel>
+              <FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl>
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="senior_approval_date" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Credit approval</FormLabel>
+              <FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl>
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="senior_draw_date" render={({ field }) => (
+            <FormItem>
+              <FormLabel>First draw</FormLabel>
+              <FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl>
+            </FormItem>
+          )} />
+        </div>
+
+        <FormField control={form.control} name="senior_notes" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Facility notes</FormLabel>
+            <FormControl><Textarea rows={3} placeholder="Lender contacts, conditions precedent, covenants…" {...field} /></FormControl>
+          </FormItem>
+        )} />
+
+        <Button type="submit" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? 'Saving…' : 'Save changes'}
+        </Button>
+      </form>
+    </Form>
+  )
+}
+
 // ── Page root ──────────────────────────────────────────────────
 export default function StaffDacDetail() {
   const { id } = useParams<{ id: string }>()
@@ -549,16 +740,30 @@ export default function StaffDacDetail() {
     enabled: !!id,
   })
 
+  const { data: subAmounts } = useQuery({
+    queryKey: ['staff-dac-sub-amounts', id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('subscriptions').select('amount, status').eq('dac_id', id!)
+      return (data ?? []) as { amount: number; status: string }[]
+    },
+    enabled: !!id,
+  })
+
   if (isLoading) return <div className="p-8 text-muted-foreground">Loading…</div>
   if (!dac) return <div className="p-8 text-muted-foreground">DAC not found.</div>
 
-  function refresh() { qc.invalidateQueries({ queryKey: ['staff-dac', id] }) }
+  function refresh() {
+    qc.invalidateQueries({ queryKey: ['staff-dac', id] })
+    qc.invalidateQueries({ queryKey: ['staff-dac-sub-amounts', id] })
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <Link to="/app/staff/dacs" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />DACs
       </Link>
+
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">{dac.name}</h1>
@@ -567,16 +772,21 @@ export default function StaffDacDetail() {
         {dacStatusBadge(dac.status as DacStatus)}
       </div>
 
+      {/* Summary bar — always visible across all tabs */}
+      <SummaryBar dac={dac} subAmounts={subAmounts ?? []} />
+
       <Tabs defaultValue="fundamentals">
         <TabsList>
           <TabsTrigger value="fundamentals">Fundamentals</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="senior">Senior</TabsTrigger>
         </TabsList>
         <div className="mt-6">
           <TabsContent value="fundamentals"><FundamentalsTab dac={dac} onRefresh={refresh} /></TabsContent>
           <TabsContent value="documents"><DocumentsTab dac={dac} /></TabsContent>
           <TabsContent value="subscriptions"><SubscriptionsTab dac={dac} /></TabsContent>
+          <TabsContent value="senior"><SeniorTab dac={dac} onRefresh={refresh} /></TabsContent>
         </div>
       </Tabs>
     </div>

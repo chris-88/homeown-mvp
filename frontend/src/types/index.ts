@@ -62,6 +62,7 @@ export type PropertyCaseStatus =
 export type KycStatus = 'pending' | 'in_progress' | 'complete' | 'failed'
 
 export type DacStatus = 'draft' | 'upcoming' | 'open' | 'closed' | 'matured'
+export type SeniorStage = 'pre_market' | 'indicative' | 'credit_approved' | 'documented' | 'drawn' | 'repaid'
 
 export type SubscriptionStatus =
   | 'soft_commit'
@@ -198,6 +199,14 @@ export interface Dac {
   open_date: string | null
   close_date: string | null
   notes: string | null
+  senior_lender: string | null
+  senior_stage: SeniorStage
+  senior_committed_amount: number | null
+  senior_drawn_amount: number | null
+  senior_term_sheet_date: string | null
+  senior_approval_date: string | null
+  senior_draw_date: string | null
+  senior_notes: string | null
 }
 
 export interface Subscription {
@@ -326,6 +335,15 @@ export const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, string> = {
   redeeming: 'Redeeming',
   redeemed: 'Redeemed',
   withdrawn: 'Withdrawn',
+}
+
+export const SENIOR_STAGE_LABELS: Record<SeniorStage, string> = {
+  pre_market:     'Pre-market',
+  indicative:     'Indicative Terms',
+  credit_approved:'Credit Approved',
+  documented:     'Documented',
+  drawn:          'Drawn',
+  repaid:         'Repaid',
 }
 
 export const DAC_DOC_TYPE_LABELS: Record<DacDocType, string> = {
