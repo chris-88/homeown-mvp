@@ -10,7 +10,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 const FAQ_PREVIEW = [
   {
     q: 'Is this rent?',
-    a: 'No. The monthly service fee is not rent and there is no tenancy agreement. From day one you own a 1% share of the property — a beneficial interest — and have a legally binding right to buy the rest at the agreed price.',
+    a: 'No. The monthly service fee is not rent and there is no tenancy agreement. From day one you own a 1% share of the property (a beneficial interest) and have a legally binding right to buy the rest at the agreed price.',
   },
   {
     q: 'What if I can\'t get a mortgage at the end?',
@@ -70,9 +70,9 @@ export default function HomePage() {
         {/* ── Section 2: The Concept ──────────────────────────── */}
         <section className="border-t bg-muted/20 py-20 md:py-28">
           <div className="mx-auto max-w-2xl px-6 space-y-4 text-muted-foreground leading-relaxed">
-            <p>From the moment you move in, you own a 1% share of the property. You pay a fixed monthly fee for 60 months — not rent, not a mortgage repayment.</p>
+            <p>From the moment you move in, you own a 1% share of the property. You pay a fixed monthly fee for 60 months: not rent, not a mortgage repayment.</p>
             <p>Before we buy the property, we agree a fixed purchase price with you: 10% below what Homeown paid. That price is locked in writing and does not change over the 60-month term, no matter what happens to the market.</p>
-            <p>At month 60, you arrange a standard mortgage with any bank of your choice and complete the purchase. Or you walk away — no debt, no penalty.</p>
+            <p>At month 60, you arrange a standard mortgage with any bank of your choice and complete the purchase. Or you walk away, with no debt and no penalty.</p>
             <p className="text-sm">Homeown does not lend money and does not charge interest. The purchase option is a right, not an obligation.</p>
           </div>
         </section>
@@ -97,7 +97,7 @@ export default function HomePage() {
                 {
                   n: '3',
                   title: 'Buy it',
-                  body: 'Over 60 months you pay the monthly fee and your ownership share stays in place. At the end of the term, arrange a mortgage and buy your home at the agreed price — or walk away. The choice is yours.',
+                  body: 'Over 60 months you pay the monthly fee and your ownership share stays in place. At the end of the term, arrange a mortgage and buy your home at the agreed price, or walk away. The choice is yours.',
                 },
               ].map(step => (
                 <div key={step.n} className="flex gap-4">
@@ -129,11 +129,11 @@ export default function HomePage() {
               {[
                 {
                   label: 'Monthly service fee',
-                  desc: 'Your fixed monthly payment for 60 months. Not rent. Not a mortgage repayment. A fee for operating the pathway — the same amount every month for the full term.',
+                  desc: 'Your fixed monthly payment for 60 months. Not rent. Not a mortgage repayment. A fee for operating the pathway, the same amount every month for the full term.',
                 },
                 {
                   label: 'Entry Stake',
-                  desc: 'Paid once when you move in. This is your 1% share of the property from day one. It is equity in the property, not a deposit — it is at risk if you choose to exit before the term ends.',
+                  desc: 'Paid once when you move in. This is your 1% share of the property from day one. It is equity in the property, not a deposit. It is at risk if you choose to exit before the term ends.',
                 },
                 {
                   label: 'Purchase option price',

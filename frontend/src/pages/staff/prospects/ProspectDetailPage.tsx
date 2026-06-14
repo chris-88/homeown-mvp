@@ -82,7 +82,7 @@ function AdvanceModal({
                 </SelectContent>
               </Select>
             ) : (
-              <Badge>{next ? LEAD_STAGE_LABELS[next] : '—'}</Badge>
+              <Badge>{next ? LEAD_STAGE_LABELS[next] : '-'}</Badge>
             )}
           </div>
           <Textarea
@@ -381,11 +381,11 @@ export default function ProspectDetailPage() {
             <h2 className="font-semibold text-sm">Details</h2>
             <dl className="space-y-2 text-sm">
               {[
-                ['Phone', client.phone ?? '—'],
-                ['Target price', client.target_price ? `€${client.target_price.toLocaleString()}` : '—'],
-                ['Target areas', client.target_areas ?? '—'],
-                ['Household size', client.household_size ?? '—'],
-                ['Deferred until', client.deferred_until ? fmtDate(client.deferred_until) : '—'],
+                ['Phone', client.phone ?? '-'],
+                ['Target price', client.target_price ? `€${client.target_price.toLocaleString()}` : '-'],
+                ['Target areas', client.target_areas ?? '-'],
+                ['Household size', client.household_size ?? '-'],
+                ['Deferred until', client.deferred_until ? fmtDate(client.deferred_until) : '-'],
                 ['Joined', fmtDate(client.created_at)],
               ].map(([k, v]) => (
                 <div key={String(k)} className="flex justify-between gap-2">

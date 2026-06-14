@@ -112,7 +112,7 @@ export default function CircleDacDetail() {
       committed_at: new Date().toISOString(),
     })
     if (error) {
-      form.setError('root', { message: 'Could not register subscription — please try again.' })
+      form.setError('root', { message: 'Could not register subscription. Please try again.' })
       return
     }
     setSubscribedAmount(amount)

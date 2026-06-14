@@ -128,7 +128,7 @@ function OverviewTab({ member, onRefresh }: { member: CircleMember; onRefresh: (
             <Textarea
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
-              placeholder="Internal note — not visible to the member…"
+              placeholder="Internal note (not visible to the member)…"
               rows={3}
             />
             <Button size="sm" onClick={postNote} disabled={!noteText.trim() || posting}>

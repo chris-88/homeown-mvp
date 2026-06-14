@@ -94,7 +94,7 @@ export default function TeamDetailPage() {
       {joinUrl && (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20">
           <CardContent className="pt-4 space-y-2">
-            <p className="text-sm font-medium">Pending activation — share join link</p>
+            <p className="text-sm font-medium">Pending activation: share join link</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 rounded bg-background px-2 py-1 text-xs break-all">{joinUrl}</code>
               <Button variant="outline" size="icon" className="shrink-0" onClick={copyJoinUrl}>

@@ -75,7 +75,7 @@ function AdvanceModal({ open, onClose, client, onAdvanced }: {
                 </SelectContent>
               </Select>
             ) : (
-              <Badge>{next ? PROGRAMME_STAGE_LABELS[next] : '—'}</Badge>
+              <Badge>{next ? PROGRAMME_STAGE_LABELS[next] : '-'}</Badge>
             )}
           </div>
           <Textarea placeholder="Optional note…" value={note} onChange={e => setNote(e.target.value)} rows={3} />
@@ -327,9 +327,9 @@ export default function StaffClientDetailPage() {
             <h2 className="font-semibold text-sm">Details</h2>
             <dl className="space-y-2 text-sm">
               {[
-                ['Phone', client.phone ?? '—'],
-                ['Target price', client.target_price ? `€${client.target_price.toLocaleString()}` : '—'],
-                ['Target areas', client.target_areas ?? '—'],
+                ['Phone', client.phone ?? '-'],
+                ['Target price', client.target_price ? `€${client.target_price.toLocaleString()}` : '-'],
+                ['Target areas', client.target_areas ?? '-'],
                 ['Joined', fmtDateTime(client.created_at)],
               ].map(([k, v]) => (
                 <div key={String(k)} className="flex justify-between gap-2">

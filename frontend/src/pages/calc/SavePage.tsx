@@ -52,7 +52,7 @@ const COPY: Record<string, { heading: string; sub: string; button: string }> = {
 const NEXT_STEPS: Record<string, string[]> = {
   eligible: [
     "We'll review your details within 1 business day",
-    "You'll get an email to book your discovery call — 20 minutes, no obligation",
+    "You'll get an email to book your discovery call (20 minutes, no obligation)",
     "The call is a two-way conversation; we'll answer your questions too",
   ],
   income_gap: [
@@ -196,7 +196,7 @@ export default function SavePage() {
             </h1>
             <p className="mt-2 text-muted-foreground">
               {variant === 'eligible'
-                ? "Check your inbox — we'll be in touch shortly to book your call."
+                ? "Check your inbox. We'll be in touch shortly to book your call."
                 : "We'll keep your details and reach out when something changes."}
             </p>
           </div>

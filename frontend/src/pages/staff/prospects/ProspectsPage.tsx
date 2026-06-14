@@ -54,7 +54,7 @@ export default function ProspectsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Prospects</h1>
-          <p className="mt-1 text-muted-foreground">Phase 1 pipeline — discovery through eligibility.</p>
+          <p className="mt-1 text-muted-foreground">Phase 1 pipeline: discovery through eligibility.</p>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export default function ProspectsPage() {
                         {days}d
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{c.target_areas ?? '—'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{c.target_areas ?? '-'}</td>
                   </tr>
                 )
               })}

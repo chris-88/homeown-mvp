@@ -97,15 +97,15 @@ function AdminQueue() {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Onboarding — stale</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Onboarding: stale</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{staleProspects}</p><p className="text-xs text-muted-foreground">Prospects not updated in 3+ days</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Finance — eligible</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{eligibleCount ?? '—'}</p><p className="text-xs text-muted-foreground">Awaiting DAC assignment</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Finance: eligible</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{eligibleCount ?? '-'}</p><p className="text-xs text-muted-foreground">Awaiting DAC assignment</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Property — stale</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Property: stale</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{staleClients}</p><p className="text-xs text-muted-foreground">Clients not updated in 7+ days</p></CardContent>
         </Card>
         <Card>
@@ -202,7 +202,7 @@ function FinanceQueue() {
   return (
     <div className="grid gap-8 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-3">
-        <h2 className="font-semibold">Eligible — awaiting DAC ({eligible?.length ?? 0})</h2>
+        <h2 className="font-semibold">Eligible: awaiting DAC ({eligible?.length ?? 0})</h2>
         {eligible?.length === 0 && <p className="text-sm text-muted-foreground">No eligible prospects awaiting assignment.</p>}
         {eligible?.map(c => <ProspectRow key={c.id} client={c} />)}
       </div>
@@ -219,7 +219,7 @@ function FinanceQueue() {
               <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
               </div>
-              <p className="text-xs text-muted-foreground">{formatCurrency(raised)} / {target ? formatCurrency(target) : '—'}</p>
+              <p className="text-xs text-muted-foreground">{formatCurrency(raised)} / {target ? formatCurrency(target) : '-'}</p>
             </Link>
           )
         })}

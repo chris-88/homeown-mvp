@@ -11,19 +11,19 @@ const GROUPS = [
     faqs: [
       {
         q: 'Is the monthly service fee rent?',
-        a: 'No. The monthly service fee is not rent, and there is no tenancy agreement between you and Homeown. From the moment you complete your entry stake, you own a 1% share of the property — a beneficial interest — and have a contractual right to purchase the rest. The monthly payment is the fee for operating that pathway, not a payment for occupying the property.',
+        a: 'No. The monthly service fee is not rent, and there is no tenancy agreement between you and Homeown. From the moment you complete your entry stake, you own a 1% share of the property (a beneficial interest) and have a contractual right to purchase the rest. The monthly payment is the fee for operating that pathway, not a payment for occupying the property.',
       },
       {
         q: 'How is the monthly service fee calculated?',
-        a: 'The fee is: property purchase price × 8.2% ÷ 12. For a €400,000 property, that is €2,733 per month. The rate is fixed for the full term of the programme — it does not change.',
+        a: 'The fee is: property purchase price × 8.2% ÷ 12. For a €400,000 property, that is €2,733 per month. The rate is fixed for the full term of the programme. It does not change.',
       },
       {
         q: 'Is the purchase price guaranteed?',
-        a: 'Yes. The purchase price is fixed in the pathway agreement at the moment Homeown buys the property, set at 10% below what Homeown paid. It does not change over the 60-month term — no market adjustments, no renegotiation.',
+        a: 'Yes. The purchase price is fixed in the pathway agreement at the moment Homeown buys the property, set at 10% below what Homeown paid. It does not change over the 60-month term: no market adjustments, no renegotiation.',
       },
       {
         q: 'What is the entry stake?',
-        a: 'The entry stake is 1% of the property purchase price, paid once at the sale agreed stage. It gives you a 1% ownership share in the property from day one. It is equity at risk: if you exit the programme, it is not refunded as cash. It is not a deposit in the traditional sense — it is your stake in the property.',
+        a: 'The entry stake is 1% of the property purchase price, paid once at the sale agreed stage. It gives you a 1% ownership share in the property from day one. It is equity at risk: if you exit the programme, it is not refunded as cash. It is not a deposit in the traditional sense; it is your stake in the property.',
       },
       {
         q: 'Is this rent-to-buy?',
@@ -36,7 +36,7 @@ const GROUPS = [
     faqs: [
       {
         q: 'Who owns the property?',
-        a: 'Legal title is held by a separate company — a Designated Activity Company (DAC) — set up specifically for your property. Homeown Limited does not own the property. The DAC holds the property and nothing else; it is funded by third-party investors. Homeown manages the programme as servicer.',
+        a: 'Legal title is held by a separate company, a Designated Activity Company (DAC), set up specifically for your property. Homeown Limited does not own the property. The DAC holds the property and nothing else; it is funded by third-party investors. Homeown manages the programme as servicer.',
       },
       {
         q: 'What is Homeown\'s role?',
@@ -44,7 +44,7 @@ const GROUPS = [
       },
       {
         q: 'Is Homeown regulated?',
-        a: 'The programme is designed so that it does not fall under the regulations that apply to mortgage lenders or to landlords — because Homeown does not lend money and there is no tenancy. The structure has been reviewed by legal counsel. This is not the same as being unregulated: it means the programme is deliberately built to be different from those products, and that difference is clearly documented.',
+        a: 'The programme is designed so that it does not fall under the regulations that apply to mortgage lenders or to landlords, because Homeown does not lend money and there is no tenancy. The structure has been reviewed by legal counsel. This is not the same as being unregulated: it means the programme is deliberately built to be different from those products, and that difference is clearly documented.',
       },
       {
         q: 'Who funds the property acquisition?',
@@ -61,15 +61,15 @@ const GROUPS = [
       },
       {
         q: 'How does the programme fit check work?',
-        a: 'The calculator checks whether the property price you are targeting is within reach of a standard mortgage at the end of 60 months — using typical Irish bank lending rules, currently around 3.5× your gross household income. It is not a credit check. It does not assess whether you can afford the monthly service fee; that is your decision. The full check takes two minutes.',
+        a: 'The calculator checks whether the property price you are targeting is within reach of a standard mortgage at the end of 60 months, using typical Irish bank lending rules, currently around 3.5x your gross household income. It is not a credit check. It does not assess whether you can afford the monthly service fee; that is your decision. The full check takes two minutes.',
       },
       {
         q: 'Will my credit rating be checked?',
-        a: 'Homeown does not run a credit check at entry. The entry assessment checks that your income is consistent and that the monthly payment is genuinely within your means — nothing more. A full credit and affordability assessment will be carried out by the independent bank of your choice when you arrange your mortgage at month 60.',
+        a: 'Homeown does not run a credit check at entry. The entry assessment checks that your income is consistent and that the monthly payment is genuinely within your means. Nothing more. A full credit and affordability assessment will be carried out by the independent bank of your choice when you arrange your mortgage at month 60.',
       },
       {
         q: 'What documents are required?',
-        a: 'Standard income evidence: payslips, 6 months of bank statements, and proof of identity and address. For self-employed applicants: accounts, tax documentation, and an accountant\'s letter. These are used to confirm consistent income and that you can make the monthly payment — not to assess your creditworthiness.',
+        a: 'Standard income evidence: payslips, 6 months of bank statements, and proof of identity and address. For self-employed applicants: accounts, tax documentation, and an accountant\'s letter. These are used to confirm consistent income and that you can make the monthly payment, not to assess your creditworthiness.',
       },
       {
         q: 'What areas does Homeown operate in?',
@@ -82,11 +82,11 @@ const GROUPS = [
     faqs: [
       {
         q: 'What are the risks?',
-        a: 'The entry stake is equity at risk: if you exit before the end of the term, it is not returned as cash. The 60-month term is fixed — there is no early completion. Mortgage approval at the end of the term is not guaranteed by Homeown; it depends on an independent bank\'s assessment at that time. If you cannot arrange a mortgage at exit, you can choose not to buy, but the entry stake remains at risk.',
+        a: 'The entry stake is equity at risk: if you exit before the end of the term, it is not returned as cash. The 60-month term is fixed; there is no early completion. Mortgage approval at the end of the term is not guaranteed by Homeown; it depends on an independent bank\'s assessment at that time. If you cannot arrange a mortgage at exit, you can choose not to buy, but the entry stake remains at risk.',
       },
       {
         q: 'What happens if I miss a payment?',
-        a: 'A single missed payment does not end the programme. There are defined cure windows — periods during which you can catch up — and a clear process before any programme action is taken. Ongoing non-payment will eventually result in a breach and programme cancellation. The full details are set out in the Homeown Pathway Agreement.',
+        a: 'A single missed payment does not end the programme. There are defined cure windows (periods during which you can catch up) and a clear process before any programme action is taken. Ongoing non-payment will eventually result in a breach and programme cancellation. The full details are set out in the Homeown Pathway Agreement.',
       },
       {
         q: 'Can I leave early?',

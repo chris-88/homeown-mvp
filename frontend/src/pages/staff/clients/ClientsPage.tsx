@@ -68,14 +68,14 @@ export default function ClientsPage() {
           className={`rounded-xl border p-4 text-left transition-colors ${phaseFilter === 'phase2' ? 'border-primary bg-primary/5' : 'bg-card hover:bg-accent'}`}
         >
           <p className="text-2xl font-bold">{phase2Count}</p>
-          <p className="text-sm text-muted-foreground">Phase 2 — Property search</p>
+          <p className="text-sm text-muted-foreground">Phase 2: Property search</p>
         </button>
         <button
           onClick={() => setPhaseFilter(phaseFilter === 'phase3' ? 'all' : 'phase3')}
           className={`rounded-xl border p-4 text-left transition-colors ${phaseFilter === 'phase3' ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'bg-card hover:bg-accent'}`}
         >
           <p className="text-2xl font-bold">{phase3Count}</p>
-          <p className="text-sm text-muted-foreground">Phase 3 — On pathway</p>
+          <p className="text-sm text-muted-foreground">Phase 3: On pathway</p>
         </button>
       </div>
 
@@ -136,7 +136,7 @@ export default function ClientsPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {c.dacs?.name ?? '—'}
+                    {c.dacs?.name ?? '-'}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{c.email}</td>
                 </tr>

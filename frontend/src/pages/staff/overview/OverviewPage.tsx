@@ -44,7 +44,7 @@ function StageBox({ stage, count, color }: { stage: string; count: number; color
   return (
     <div className={`flex-1 min-w-0 rounded-lg border p-3 text-center ${color}`}>
       <p className={`text-2xl font-bold tabular-nums ${count === 0 ? 'text-muted-foreground/30' : ''}`}>
-        {count === 0 ? '—' : count}
+        {count === 0 ? '-' : count}
       </p>
       <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
         {LEAD_STAGE_LABELS[stage as keyof typeof LEAD_STAGE_LABELS] ??
@@ -133,22 +133,22 @@ export default function OverviewPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="On pathway"
-            value={metrics?.on_pathway_count ?? '—'}
+            value={metrics?.on_pathway_count ?? '-'}
             sub="Families in their home"
           />
           <StatCard
             label="Pathway complete"
-            value={metrics?.pathway_complete_count ?? '—'}
+            value={metrics?.pathway_complete_count ?? '-'}
             sub="Completed the programme"
           />
           <StatCard
             label="Active prospects"
-            value={metrics?.total_prospects ?? '—'}
+            value={metrics?.total_prospects ?? '-'}
             sub={metrics ? `${metrics.eligible_unassigned} eligible, awaiting DAC` : undefined}
           />
           <StatCard
             label="Circle members"
-            value={metrics?.circle_member_count ?? '—'}
+            value={metrics?.circle_member_count ?? '-'}
             sub={metrics ? `${metrics.circle_kyc_complete} KYC complete` : undefined}
           />
         </div>
@@ -159,19 +159,19 @@ export default function OverviewPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Pipeline funnel</h2>
         <div className="space-y-4 rounded-xl border bg-card p-5">
           <PhaseGroup
-            label="Phase 1 — Discovery"
+            label="Phase 1: Discovery"
             stages={LEAD_STAGE_ORDER}
             counts={stageCounts}
             color={PHASE1_COLOR}
           />
           <PhaseGroup
-            label="Phase 2 — Property"
+            label="Phase 2: Property"
             stages={['dac_assigned','searching','sale_agreed','conveyancing','contracts_signed']}
             counts={stageCounts}
             color={PHASE2_COLOR}
           />
           <PhaseGroup
-            label="Phase 3 — Pathway"
+            label="Phase 3: Pathway"
             stages={['in_home','servicing','exit_prep','option_window','pathway_complete']}
             counts={stageCounts}
             color={PHASE3_COLOR}
@@ -223,7 +223,7 @@ export default function OverviewPage() {
                     <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {formatCurrency(raised)} / {target ? formatCurrency(target) : '—'} ({pct}%)
+                    {formatCurrency(raised)} / {target ? formatCurrency(target) : '-'} ({pct}%)
                   </p>
                 </div>
               )
@@ -269,17 +269,17 @@ export default function OverviewPage() {
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
             label="Total committed"
-            value={metrics ? formatCurrency(metrics.total_committed) : '—'}
+            value={metrics ? formatCurrency(metrics.total_committed) : '-'}
             sub="Subscribed + funded"
           />
           <StatCard
             label="Total funded"
-            value={metrics ? formatCurrency(metrics.total_funded) : '—'}
+            value={metrics ? formatCurrency(metrics.total_funded) : '-'}
             sub="Funds received"
           />
           <StatCard
             label="Open DACs"
-            value={metrics?.open_dac_count ?? '—'}
+            value={metrics?.open_dac_count ?? '-'}
             sub="Currently fundraising"
           />
         </div>

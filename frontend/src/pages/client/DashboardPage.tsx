@@ -11,7 +11,7 @@ const LEAD_INFO: Record<LeadStage | 'null', { label: string; nextStep: string }>
   in_discovery: { label: 'In Discovery',   nextStep: "We're getting to know your situation. Look out for a call from our team." },
   pre_qual:     { label: 'Pre-Qualification', nextStep: "We're assessing your pre-qualification. We'll be in touch with the outcome." },
   in_review:    { label: 'Under Review',   nextStep: "Your documents are being reviewed by our team." },
-  eligible:     { label: 'Eligible',       nextStep: "Great news — you're eligible for Homeown. Our team will assign you to a property cohort shortly." },
+  eligible:     { label: 'Eligible',       nextStep: "Great news. You're eligible for Homeown. Our team will assign you to a property cohort shortly." },
   not_eligible: { label: 'Application Closed', nextStep: 'Unfortunately your application did not meet our current criteria. Our team will contact you with more details.' },
   deferred:     { label: 'Deferred',       nextStep: "We've noted your interest for a future date. Our team will be in touch when the time is right." },
 }
@@ -26,7 +26,7 @@ const PROGRAMME_INFO: Record<ProgrammeStage, { label: string; nextStep: string }
   servicing:       { label: 'Pathway Active',  nextStep: 'Your pathway is active. Keep your insurance and payments up to date.' },
   exit_prep:       { label: 'Exit Preparation',nextStep: "We're preparing for the option window. Our team will be in contact to walk through next steps." },
   option_window:   { label: 'Option Window',   nextStep: "Your option window is now open. Contact us to begin the purchase process." },
-  pathway_complete:{ label: 'Pathway Complete',nextStep: "Congratulations — you've completed the Homeown pathway and own your home!" },
+  pathway_complete:{ label: 'Pathway Complete',nextStep: "Congratulations. You've completed the Homeown pathway and own your home!" },
   exited:          { label: 'Exited',          nextStep: 'Your pathway has ended. Thank you for being part of Homeown.' },
 }
 

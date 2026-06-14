@@ -59,7 +59,7 @@ export default function CircleMemberNewPage() {
         <div className="rounded-lg border border-green-200 bg-green-50 p-6 space-y-3">
           <p className="font-semibold text-green-800">Member created</p>
           <p className="text-sm text-green-700">
-            Share this link with {createdMember.first_name} — they'll use it to set their password and access the portal.
+            Share this link with {createdMember.first_name}. They'll use it to set their password and access the portal.
           </p>
         </div>
 

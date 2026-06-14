@@ -53,7 +53,7 @@ export default function JoinPage() {
     }
     const { error: signInError } = await supabase.auth.signInWithPassword({ email: invite.email, password })
     if (signInError) {
-      form.setError('root', { message: 'Account created — please sign in.' })
+      form.setError('root', { message: 'Account created. Please sign in.' })
       navigate('/auth/login')
       return
     }
