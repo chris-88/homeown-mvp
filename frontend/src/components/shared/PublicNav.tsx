@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -13,9 +13,18 @@ const NAV_LINKS = [
 export function PublicNav() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+    <header className={cn(
+      'sticky top-0 z-40 transition-all duration-200',
+      scrolled ? 'bg-card shadow-sm border-b' : 'bg-transparent'
+    )}>
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center">
           <Logo className="h-7 w-auto text-foreground" />

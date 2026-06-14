@@ -36,12 +36,12 @@ export default function StaffLayout() {
 
   return (
     <RouteGuard requiredRole="staff">
-      <div className="flex min-h-screen bg-background">
-        <aside className="hidden w-56 shrink-0 border-r md:flex md:flex-col">
-          <div className="flex h-14 items-center border-b px-6">
+      <div className="portal-context flex min-h-screen bg-background">
+        <aside className="hidden w-60 shrink-0 md:flex md:flex-col bg-brand-green text-brand-cream">
+          <div className="flex h-14 items-center border-b border-white/10 px-6">
             <Link to="/" className="flex flex-col gap-0.5">
-              <Logo className="h-5 w-auto text-foreground" />
-              <span className="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">Staff</span>
+              <Logo className="h-5 w-auto text-brand-cream" />
+              <span className="text-[10px] font-medium tracking-widest text-brand-cream/60 uppercase">Staff</span>
             </Link>
           </div>
           <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -54,8 +54,8 @@ export default function StaffLayout() {
                   className={cn(
                     'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                     active
-                      ? 'bg-accent text-accent-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                      ? 'bg-white/15 text-brand-cream font-medium'
+                      : 'text-brand-cream/70 hover:bg-white/10 hover:text-brand-cream',
                   )}
                 >
                   {icon}{label}
@@ -63,10 +63,10 @@ export default function StaffLayout() {
               )
             })}
           </nav>
-          <div className="border-t p-3">
+          <div className="border-t border-white/10 p-3">
             <Link
               to="/auth/logout"
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-brand-cream/70 transition-colors hover:bg-white/10 hover:text-brand-cream"
             >
               <LogOut className="h-4 w-4" />Sign out
             </Link>

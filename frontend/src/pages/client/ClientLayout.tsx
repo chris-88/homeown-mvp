@@ -16,7 +16,7 @@ export default function ClientLayout() {
   const { pathname } = useLocation()
   return (
     <RouteGuard requiredRole="client">
-      <div className="flex min-h-screen bg-background">
+      <div className="portal-context flex min-h-screen bg-background">
         {/* Sidebar */}
         <aside className="hidden w-56 shrink-0 border-r md:flex md:flex-col">
           <div className="flex h-14 items-center border-b px-6">

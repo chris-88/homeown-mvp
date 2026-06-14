@@ -8,19 +8,19 @@ import { Button } from '@/components/ui/button'
 const SCENARIOS = [
   {
     q: 'Can I leave before the 60 months are up?',
-    a: 'Yes. You can exit at any time with 30 days\' notice. There is no obligation to stay for the full term. Your Entry Stake is equity at risk; it is not refunded as cash on exit.',
+    a: 'Yes. You can exit at any time with 30 days\' notice. There is no obligation to stay for the full term. Your entry stake is your 1% share of the property — it is equity at risk and is not refunded as cash if you leave early.',
   },
   {
     q: 'What if I lose my job or can\'t make a payment?',
-    a: 'The programme has a defined payment governance structure. A single missed payment does not automatically end the programme. There are cure windows and a defined process. The full details are in the Homeown Pathway Agreement, which you receive and review before signing.',
+    a: 'A single missed payment does not automatically end the programme. There are defined cure windows — a period of time to catch up — and a clear process before any programme action is taken. The full details are in the Homeown Pathway Agreement, which you receive and review before signing anything.',
   },
   {
     q: 'What if property values fall?',
-    a: 'Your purchase option price is fixed at 10% below what Homeown paid on the day of acquisition. If property values have fallen significantly by month 60, you are not obligated to exercise your option. You can simply exit.',
+    a: 'Your purchase price is fixed at 10% below what Homeown paid on the day the property was bought. If values have fallen significantly by month 60, you are not obligated to exercise your option. You can simply exit.',
   },
   {
     q: 'What if property values rise significantly?',
-    a: 'Your option price is fixed. If the property has increased in value, the benefit of that growth is reflected in the equity you capture at purchase. This is one of the structural features of the pathway.',
+    a: 'Your purchase price is fixed regardless. If the property has increased in value by the end of the term, that increase is reflected in the equity you capture when you buy. This is one of the structural benefits of agreeing the price upfront.',
   },
 ]
 
@@ -30,7 +30,7 @@ export default function HowItWorksPage() {
       <PublicNav />
 
       <main className="mx-auto max-w-3xl px-6 py-16">
-        <h1 className="text-3xl font-bold tracking-tight">The Homeown pathway</h1>
+        <h1 className="text-3xl font-normal tracking-tight">The Homeown pathway</h1>
         <p className="mt-4 text-muted-foreground leading-relaxed">
           A 60-month structured route to homeownership. Move in now, complete the purchase at the end of the term.
         </p>
@@ -43,16 +43,16 @@ export default function HowItWorksPage() {
             <div className="flex-1">
               <h2 className="text-xl font-semibold">Check your programme fit</h2>
               <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
-                <p>The calculator checks whether the property you have in mind is within range for a regulated mortgage at the end of the 60-month term, using standard Irish lending parameters. It is not a credit assessment and it does not check whether you can afford the monthly service fee. That decision is yours.</p>
-                <p>The calculator takes two minutes and gives you a clear result: the programme either fits your situation, or it tells you what price range works better for your income.</p>
+                <p>The calculator checks whether the property price you have in mind is within reach of a standard mortgage at the end of 60 months. It uses typical Irish bank lending parameters — currently around 3.5× your gross household income. It is not a credit assessment, and it does not check whether you can afford the monthly service fee. That decision is yours.</p>
+                <p>The calculator takes two minutes and gives you a clear result: the programme either fits, or it shows you what price range works better for your income.</p>
               </div>
               <div className="mt-4 space-y-1 text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">What you'll find out:</p>
                 <ul className="mt-2 space-y-1 list-disc list-inside">
                   <li>Your monthly service fee at your target property price</li>
-                  <li>Your Entry Stake (1% of the purchase price)</li>
-                  <li>Your fixed purchase option price (10% below acquisition price)</li>
-                  <li>Whether the programme fits based on standard mortgage lending parameters</li>
+                  <li>Your entry stake (1% of the purchase price)</li>
+                  <li>Your fixed purchase price (10% below what Homeown paid)</li>
+                  <li>Whether the programme fits based on standard mortgage lending rules</li>
                 </ul>
               </div>
               <Button asChild className="mt-6">
@@ -67,12 +67,12 @@ export default function HowItWorksPage() {
             <div className="flex-1">
               <h2 className="text-xl font-semibold">A conversation about fit</h2>
               <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
-                <p>If the calculator shows programme fit, the next step is a 20-minute discovery call. This is not a sales call. It is a structured conversation to confirm the programme is right for your situation and that you understand what you are signing up to.</p>
-                <p>After the call, we ask for a standard set of documents to verify your income and confirm operational feasibility of the monthly service fee. We do not assess creditworthiness. We do not provide an approval in principle. We confirm programme participation criteria only.</p>
+                <p>If the calculator shows programme fit, the next step is a 20-minute call. This is not a sales call. It is a structured conversation to confirm the programme is right for your situation and that you understand what you are signing up to.</p>
+                <p>After the call, we ask for a standard set of documents to verify your income and confirm that the monthly payment is genuinely within your means. We do not run a credit check. We do not assess your creditworthiness. That happens only when you arrange your mortgage at the end of the 60 months.</p>
               </div>
               <Alert className="mt-6">
                 <AlertDescription>
-                  These checks are to confirm you meet the programme participation criteria and that payments are operationally feasible. Homeown does not assess mortgage affordability or creditworthiness at entry. Mortgage assessment is completed only by an independent regulated lender at exit.
+                  The entry checks confirm that your income is consistent and the monthly payment is realistic for your situation. Mortgage affordability and creditworthiness are assessed only by an independent bank when you complete your purchase at month 60.
                 </AlertDescription>
               </Alert>
             </div>
@@ -84,14 +84,14 @@ export default function HowItWorksPage() {
             <div className="flex-1">
               <h2 className="text-xl font-semibold">Finding your property and moving in</h2>
               <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
-                <p>Once accepted onto the programme, a Homeown purchasing agent works with you to identify properties that meet your brief and pass our go/no-go checks. Homeown acquires the property through a ring-fenced Designated Activity Company established specifically for your cohort.</p>
-                <p>You pay your Entry Stake (1% of the purchase price) at the sale agreed stage. This establishes your 1% beneficial interest in the property. On completion, you receive your pathway agreement, the legally binding document that governs your option to purchase, and you move in.</p>
+                <p>Once accepted onto the programme, a Homeown purchasing agent works with you to find properties that match your brief and pass our checks. Homeown buys the property through a separate ring-fenced company — a Designated Activity Company (DAC) — set up specifically for your property.</p>
+                <p>You pay your entry stake (1% of the purchase price) at the sale agreed stage. This is your 1% ownership share in the property from that moment. On completion, you receive your pathway agreement — the legally binding document that governs your right to purchase — and you move in.</p>
               </div>
               <div className="mt-4 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">What the Entry Stake is:</p>
+                <p className="font-medium text-foreground">What the entry stake is:</p>
                 <ul className="mt-2 space-y-1 list-disc list-inside">
-                  <li>Your 1% beneficial interest: you hold a stake in the property from day one</li>
-                  <li>Equity at risk: if you exit the programme, the Entry Stake is not refunded as cash; it is treated as equity contributed</li>
+                  <li>Your 1% ownership share — you hold a real stake in the property from day one</li>
+                  <li>Equity at risk — if you exit the programme early, the stake is not refunded as cash; it is treated as equity you contributed to the property</li>
                 </ul>
               </div>
             </div>
@@ -103,13 +103,13 @@ export default function HowItWorksPage() {
             <div className="flex-1">
               <h2 className="text-xl font-semibold">Living on the pathway</h2>
               <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
-                <p>Each month you pay the service fee (Domiter), calculated as your property's purchase price × 8.2% ÷ 12. This is not rent and it is not a credit repayment. It is the service fee for operating the pathway.</p>
-                <p>Your purchase option price was fixed on the day Homeown acquired the property, at 10% below what Homeown paid. It does not change over the 60-month term regardless of what happens to property values.</p>
-                <p>Approximately six months before the end of the term, Homeown will contact you to confirm your intent and begin exit preparation. In the final 30 days, the option window opens. You can exercise your option to purchase, arranging a regulated mortgage through an independent lender, or you can exit.</p>
+                <p>Each month you pay the service fee, calculated as your property's purchase price × 8.2% ÷ 12. This is not rent and it is not a credit repayment. It is the cost of running the pathway — the same amount every month for the full 60 months.</p>
+                <p>Your purchase price was fixed on the day Homeown bought the property, at 10% below what Homeown paid. It does not change over the term, regardless of what happens to property values in either direction.</p>
+                <p>Around six months before the end of the term, Homeown contacts you to confirm your intent and start exit preparation. In the final 30 days, the option window opens: you can exercise your right to purchase and arrange your mortgage, or you can exit the programme.</p>
               </div>
-              <div className="mt-4 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">The Domiter split</p>
-                <p className="mt-1">Part of your monthly service fee covers Homeown's obligations to the capital providers who funded the property acquisition. The remainder is Homeown's service income. You are not a lender, a creditor, or a bondholder. This is purely contextual information about how the service operates.</p>
+              <div className="mt-4 rounded border bg-muted/30 p-4 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Where the monthly fee goes</p>
+                <p className="mt-1">Part of the monthly fee covers obligations to the investors who funded the property purchase. The remainder is Homeown's income for managing the programme. You are not a lender or investor — this is background context on how the service works, not something you need to manage.</p>
               </div>
             </div>
           </div>
@@ -121,13 +121,13 @@ export default function HowItWorksPage() {
               <h2 className="text-xl font-semibold">The end of the term</h2>
               <p className="mt-4 text-muted-foreground">At the end of 60 months, you have two choices.</p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border p-4">
-                  <p className="font-semibold text-sm">Exercise your option</p>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">You arrange a regulated mortgage with an independent lender for the fixed option price (10% below Homeown's original acquisition price). On completion, Homeown transfers full legal title to you. You own your home.</p>
+                <div className="rounded border p-4">
+                  <p className="font-semibold text-sm">Buy your home</p>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">You arrange a mortgage with any independent bank for the fixed purchase price (10% below what Homeown originally paid). On completion, Homeown transfers full legal title to you. You own your home.</p>
                 </div>
-                <div className="rounded-lg border p-4">
-                  <p className="font-semibold text-sm">Exit</p>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">You give 30 days' notice. The programme ends. There is no debt owed to Homeown. Your Entry Stake is equity at risk and is not returned as cash. You leave with your life and circumstances intact, just not as an owner of this property.</p>
+                <div className="rounded border p-4">
+                  <p className="font-semibold text-sm">Walk away</p>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">You give 30 days' notice and exit the programme. There is no debt owed to Homeown. Your entry stake is equity at risk and is not returned as cash. You leave with no obligations.</p>
                 </div>
               </div>
             </div>
@@ -136,7 +136,8 @@ export default function HowItWorksPage() {
 
         {/* What if things change */}
         <div className="mt-20 border-t pt-16">
-          <h2 className="text-2xl font-bold">What if your circumstances change?</h2>
+          <div className="w-8 h-0.5 bg-primary mb-4" />
+          <h2 className="text-2xl font-normal tracking-tight">What if your circumstances change?</h2>
           <div className="mt-8 space-y-6">
             {SCENARIOS.map(s => (
               <div key={s.q} className="border-l-2 border-border pl-4">
@@ -148,10 +149,10 @@ export default function HowItWorksPage() {
         </div>
 
         {/* Final CTA */}
-        <div className="mt-20 rounded-xl bg-foreground px-8 py-10 text-center text-background">
-          <h2 className="text-xl font-bold">Ready to check your numbers?</h2>
-          <p className="mt-2 text-background/70 text-sm">Two minutes. No account needed.</p>
-          <Button asChild variant="secondary" className="mt-6">
+        <div className="mt-20 rounded bg-brand-green px-8 py-10 text-center text-brand-cream">
+          <h2 className="text-xl font-normal">Ready to check your numbers?</h2>
+          <p className="mt-2 text-brand-cream/70 text-sm">Two minutes. No account needed.</p>
+          <Button asChild size="lg" className="mt-6 bg-brand-cream text-brand-green hover:bg-brand-cream/90">
             <Link to="/calc">Check your numbers</Link>
           </Button>
         </div>

@@ -18,7 +18,7 @@ export function NumbersPreview({ defaultPrice = 350000 }: NumbersPreviewProps) {
   const optionPrice = price * 0.90
 
   return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm">
+    <div className="rounded border bg-card p-6 shadow-sm">
       {/* Slider */}
       <div className="mb-6">
         <div className="mb-2 flex items-center justify-between">
@@ -42,18 +42,18 @@ export function NumbersPreview({ defaultPrice = 350000 }: NumbersPreviewProps) {
 
       {/* Numbers */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border bg-background p-4">
-          <p className="text-xs text-muted-foreground">Monthly service fee</p>
+        <div className="rounded border bg-brand-cream-light border-brand-cream p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Monthly service fee</p>
           <p className="mt-1 text-2xl font-bold">{fmt(domiter)}</p>
           <p className="mt-1 text-xs text-muted-foreground">Per month, for 60 months</p>
         </div>
-        <div className="rounded-lg border bg-background p-4">
-          <p className="text-xs text-muted-foreground">Entry Stake</p>
+        <div className="rounded border bg-brand-cream-light border-brand-cream p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Entry Stake</p>
           <p className="mt-1 text-2xl font-bold">{fmt(entryStake)}</p>
           <p className="mt-1 text-xs text-muted-foreground">1%, paid once at the start</p>
         </div>
-        <div className="rounded-lg border bg-background p-4">
-          <p className="text-xs text-muted-foreground">Purchase option price</p>
+        <div className="rounded border bg-brand-cream-light border-brand-cream p-4">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Purchase option price</p>
           <p className="mt-1 text-2xl font-bold">{fmt(optionPrice)}</p>
           <p className="mt-1 text-xs text-muted-foreground">Fixed from day one (10% below acquisition price)</p>
         </div>
