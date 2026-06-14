@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { LegalLayout, LegalSection, LegalTable } from './LegalLayout'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function PrivacyPage() {
   return (
