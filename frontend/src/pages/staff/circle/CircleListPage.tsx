@@ -74,7 +74,7 @@ export default function CircleListPage() {
       </div>
 
       <Card>
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 overflow-x-auto">
           {isLoading ? (
             <p className="text-sm text-muted-foreground py-4">Loading…</p>
           ) : !filtered.length ? (

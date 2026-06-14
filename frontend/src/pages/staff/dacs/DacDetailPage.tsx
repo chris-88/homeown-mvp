@@ -455,7 +455,7 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
       </div>
 
       <Card>
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 overflow-x-auto">
           {!subscriptions?.length ? (
             <p className="text-sm text-muted-foreground py-4">No subscriptions yet.</p>
           ) : (
