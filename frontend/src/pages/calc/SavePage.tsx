@@ -70,7 +70,7 @@ export default function SavePage() {
   })
 
   async function onSubmit({ first_name, last_name, email }: FormValues) {
-    const leadStage = variant === 'mover' ? 'mover_interest' : 'registered'
+    const leadStage = variant === 'mover' ? 'deferred' : 'new_lead'
     const targetArea = state.county
       ? state.county + (state.dublinPostcode ? ` ${state.dublinPostcode}` : '')
       : null
