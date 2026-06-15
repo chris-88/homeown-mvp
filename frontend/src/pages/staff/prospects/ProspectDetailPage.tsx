@@ -119,18 +119,14 @@ function stageBadgeVariant(stage: LeadStage) {
 function AdvanceModal({
   open, onClose, client, onAdvanced,
 }: { open: boolean; onClose: () => void; client: Client; onAdvanced: () => void }) {
-  const { user, staffMember } = useAuth()
+  const { user } = useAuth()
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const isAdmin = staffMember?.role === 'admin'
 
   const next = nextLeadStage(client.lead_stage)
-
-  // Admin can pick any forward stage
-  const [targetStage, setTargetStage] = useState<LeadStage>(next ?? client.lead_stage)
-  const currentIdx = STAGE_ORDER.indexOf(client.lead_stage)
-  const forwardStages = STAGE_ORDER.slice(currentIdx + 1)
+  const otherStages = STAGE_ORDER.filter(s => s !== client.lead_stage)
+  const [targetStage, setTargetStage] = useState<LeadStage>(next ?? otherStages[0] ?? client.lead_stage)
 
   async function handleAdvance() {
     setLoading(true); setError('')
@@ -150,23 +146,19 @@ function AdvanceModal({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Advance stage</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Change stage</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">{LEAD_STAGE_LABELS[client.lead_stage]}</span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            {isAdmin ? (
-              <Select value={targetStage} onValueChange={v => setTargetStage(v as LeadStage)}>
-                <SelectTrigger className="h-8 w-48 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {forwardStages.map(s => (
-                    <SelectItem key={s} value={s}>{LEAD_STAGE_LABELS[s]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Badge>{next ? LEAD_STAGE_LABELS[next] : '-'}</Badge>
-            )}
+            <Select value={targetStage} onValueChange={v => setTargetStage(v as LeadStage)}>
+              <SelectTrigger className="h-8 w-48 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {otherStages.map(s => (
+                  <SelectItem key={s} value={s}>{LEAD_STAGE_LABELS[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Textarea
             placeholder="Optional note (recorded internally)…"
@@ -178,7 +170,7 @@ function AdvanceModal({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleAdvance} disabled={loading || (!next && !isAdmin)}>
+          <Button onClick={handleAdvance} disabled={loading}>
             {loading ? 'Saving…' : 'Confirm'}
           </Button>
         </DialogFooter>
@@ -423,8 +415,8 @@ export default function ProspectDetailPage() {
                     {linkCopied ? 'Copied!' : 'Copy portal link'}
                   </Button>
                 )}
-                {inPhase1Terminal && staffMember?.role === 'admin' && (
-                  <Button variant="outline" size="sm" onClick={() => setAdvanceOpen(true)}>Override stage (admin)</Button>
+                {inPhase1Terminal && (
+                  <Button variant="outline" size="sm" onClick={() => setAdvanceOpen(true)}>Change stage</Button>
                 )}
               </div>
 
