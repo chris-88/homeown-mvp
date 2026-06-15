@@ -407,7 +407,7 @@ export function nextProgrammeStage(current: ProgrammeStage): ProgrammeStage | nu
 
 // ─── Notifications ───────────────────────────────────────────
 export type NotificationType =
-  | 'doc_received' | 'doc_approved' | 'doc_needs_action'
+  | 'doc_received' | 'doc_approved' | 'doc_needs_action' | 'doc_requested'
   | 'stage_advanced' | 'property_update' | 'domiter_reminder' | 'domiter_failed' | 'milestone'
   | 'new_lead' | 'doc_exception' | 'sla_breach' | 'stage_event' | 'client_milestone'
   | 'dac_published' | 'subscription_update'
