@@ -13,17 +13,27 @@ const NAV_LINKS = [
 export function PublicNav() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
+  const [pastHero, setPastHero] = useState(false)
+
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 40)
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    const sentinel = document.getElementById('nav-sentinel')
+    if (!sentinel) {
+      // No hero sentinel on this page: show solid nav immediately
+      setPastHero(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setPastHero(!entry.isIntersecting),
+      { threshold: 0 }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [pathname])
 
   return (
     <header className={cn(
       'sticky top-0 z-40 transition-all duration-200',
-      scrolled ? 'bg-card shadow-sm border-b' : 'bg-transparent'
+      pastHero ? 'bg-card shadow-sm border-b' : 'bg-transparent'
     )}>
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center">
@@ -36,14 +46,16 @@ export function PublicNav() {
             <Link
               key={to}
               to={to}
-              className={cn('text-sm transition-colors hover:text-foreground', pathname === to ? 'font-medium text-foreground' : 'text-muted-foreground')}
+              className={cn(
+                'text-sm transition-colors hover:text-foreground',
+                pathname === to ? 'font-medium text-foreground' : 'text-muted-foreground'
+              )}
             >
               {label}
             </Link>
           ))}
-          <Link to="/auth/login" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Sign in</Link>
           <Button asChild size="sm">
-            <Link to="/calc">Check your numbers →</Link>
+            <Link to="/calc">Check your numbers</Link>
           </Button>
         </nav>
 
@@ -66,12 +78,14 @@ export function PublicNav() {
                 key={to}
                 to={to}
                 onClick={() => setOpen(false)}
-                className={cn('text-sm', pathname === to ? 'font-medium text-foreground' : 'text-muted-foreground')}
+                className={cn(
+                  'text-sm',
+                  pathname === to ? 'font-medium text-foreground' : 'text-muted-foreground'
+                )}
               >
                 {label}
               </Link>
             ))}
-            <Link to="/auth/login" onClick={() => setOpen(false)} className="text-sm text-muted-foreground">Sign in</Link>
             <Button asChild size="sm" className="w-full">
               <Link to="/calc" onClick={() => setOpen(false)}>Check your numbers</Link>
             </Button>

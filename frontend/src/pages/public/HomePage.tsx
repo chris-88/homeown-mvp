@@ -1,323 +1,291 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
-import { NumbersPreview } from '@/components/shared/NumbersPreview'
+import { DualComparisonWidget } from '@/components/shared/DualComparisonWidget'
 import { CookieBanner } from '@/components/shared/CookieBanner'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
-// The one wow interaction: fires 600ms after mount, counts 0 → 11 with ease-out
-function useCountUp(target: number, delay = 600, duration = 1800) {
-  const [count, setCount] = useState(0)
-  const [done, setDone] = useState(false)
+const RECOGNITION = [
+  'I can afford the monthly cost. I cannot save the upfront amount.',
+  'Every time I get close, the price moves again.',
+  'My bank will approve the mortgage. The deposit is the part I can never get ahead of.',
+  'I have been searching for years. I am further away now than when I started.',
+]
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const started = performance.now()
-      const tick = (now: number) => {
-        const p = Math.min((now - started) / duration, 1)
-        const eased = 1 - Math.pow(1 - p, 3)
-        setCount(Math.round(eased * target))
-        if (p < 1) requestAnimationFrame(tick)
-        else setDone(true)
-      }
-      requestAnimationFrame(tick)
-    }, delay)
-    return () => clearTimeout(timer)
-  }, [target, delay, duration])
-
-  return { count, done }
-}
-
-const FAQS = [
+const PROTECTION_CARDS = [
   {
-    q: 'Is this the same as renting?',
-    a: 'No. There is no tenancy agreement. From day one you hold a beneficial ownership stake in the property and have a legally binding right to buy the rest at the agreed price. The monthly service fee is not a form of rent.',
+    heading: 'Your option price is fixed in writing on the day of acquisition',
+    body: "The purchase option price is set at the moment Homeown acquires the property and written into your pathway agreement before you move in. It is 10% below what Homeown paid. It does not move with the market over the 60-month term.",
   },
   {
-    q: 'What if I cannot get a mortgage at the end of the term?',
-    a: 'You are not obligated to buy. If you choose not to, or if approval is not available at that point, you exit with 30 days notice. There is no debt owed to Homeown.',
+    heading: 'The property is legally ring-fenced',
+    body: "Legal title to the property is held by a Designated Activity Company (DAC) set up specifically for your property cohort. Homeown Limited does not hold legal title and cannot deal with the property outside the programme governance. The DAC's sole purpose is to hold the asset and discharge its obligations under the pathway agreements.",
   },
   {
-    q: 'Who actually owns the property?',
-    a: 'Legal title is held by a Designated Activity Company — a separate ring-fenced legal entity set up specifically for your property. Homeown manages the programme but does not own the property.',
+    heading: 'You hold a beneficial interest from day one',
+    body: "From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property. This is not a tenancy. There is no landlord-tenant relationship between you and Homeown. Your beneficial interest and your option to purchase are governed by a legally binding agreement.",
+  },
+  {
+    heading: 'No debt between you and Homeown',
+    body: "You owe nothing to Homeown at any point in the programme. There is no amortisation schedule and no interest charge. The monthly service fee is a service fee, not a credit repayment. If you exit, you leave with no obligation to Homeown.",
   },
 ]
 
-function FaqItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="border-b last:border-0">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-4 py-5 text-left font-medium hover:text-foreground/80 transition-colors"
-      >
-        <span>{q}</span>
-        {open
-          ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-          : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
-      </button>
-      {open && (
-        <p className="pb-5 text-muted-foreground leading-relaxed">{a}</p>
-      )}
-    </div>
-  )
-}
+const STAGE_ALERT = 'These checks confirm you meet the programme participation criteria and that payments are operationally feasible. Homeown does not assess mortgage affordability or creditworthiness at entry. Mortgage assessment is completed only by an independent regulated lender at exit.'
+
+const STAGES = [
+  {
+    n: 1,
+    heading: 'Check your fit',
+    body: 'The calculator checks one thing: whether the property price you are targeting is within range for a regulated mortgage at the end of the 60-month term. It uses standard Irish mortgage lending parameters. It is not a credit assessment. It does not determine whether you can afford the monthly service fee, which is your decision.',
+    alert: null as string | null,
+  },
+  {
+    n: 2,
+    heading: 'A conversation about fit',
+    body: 'If the calculator shows programme fit, a 20-minute discovery call follows. This is a structured conversation to confirm the programme is right for your situation. It is not a sales call. After the call, you submit a standard set of documents to verify income and confirm payment operability. No credit check is run.',
+    alert: STAGE_ALERT,
+  },
+  {
+    n: 3,
+    heading: 'The property search',
+    body: "Ireland's property market is supply-constrained. Finding the right property takes time. Once accepted onto the programme, a Homeown purchasing agent works with you on the search. Most participants search for several months before identifying a suitable property. When a property passes the go/no-go review, Homeown proceeds to acquire it through a ring-fenced Designated Activity Company. You pay your Entry Stake at sale agreed stage, establishing your beneficial interest.",
+    alert: null as string | null,
+  },
+  {
+    n: 4,
+    heading: 'Move in and the 60-month pathway',
+    body: 'On completion, you move in. Your monthly service fee (Domiter) begins on the first day of the following month. Your option price was fixed on the day of acquisition, set at 10% below what Homeown paid. It does not change over the 60-month term regardless of what happens to property values in the market.',
+    alert: null as string | null,
+  },
+  {
+    n: 5,
+    heading: 'Your option window',
+    body: 'In the final 30 days of the term, your option window opens. You can exercise your option to purchase the property at the fixed option price by arranging a regulated mortgage through an independent lender of your choice. Or you can choose not to exercise your option and exit. If you exit: 30 days notice. No debt owed to Homeown. Your Entry Stake is equity at risk and is not returned as cash.',
+    alert: null as string | null,
+  },
+]
+
+const FAQ_ITEMS = [
+  {
+    q: 'Is this the same as renting?',
+    a: 'No. There is no tenancy agreement and no landlord-tenant relationship. From the day you complete your Entry Stake, you hold a beneficial interest in the property and a contractual right to purchase it at the fixed option price. The monthly service fee is not rent. It is the service fee for operating the pathway.',
+  },
+  {
+    q: 'What if I cannot get a mortgage at the end of the term?',
+    a: 'The option to purchase is a right, not an obligation. If mortgage approval is not available to you at the end of the term, you are not forced to complete the purchase. You can exit with 30 days notice. There is no debt owed to Homeown. Your Entry Stake is equity at risk.',
+  },
+  {
+    q: 'Who actually owns the property?',
+    a: 'Legal title is held by a ring-fenced Designated Activity Company, a separate legal entity established specifically for your property cohort. Homeown Limited manages the programme as servicer but does not hold legal title and is not your landlord.',
+  },
+]
 
 export default function HomePage() {
-  const { count, done } = useCountUp(11)
-
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
       <main>
-        {/* ── 1. HERO: Recognition ──────────────────────────────────── */}
-        <section className="mx-auto max-w-5xl px-6 pt-20 pb-16 md:pt-32 md:pb-24">
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-green/60 mb-8">
-            Irish Property Ownership Pathway
-          </p>
-
-          <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4.5rem] max-w-3xl leading-[1.06]">
-            You can afford<br className="hidden sm:block" /> the home.
-            <br />
-            The deposit is<br className="hidden sm:block" /> what's stopping you.
-          </h1>
-
-          <p className="mt-6 text-lg text-muted-foreground max-w-lg leading-relaxed">
-            Move in now. Buy it in five years at a price agreed today.
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-3 items-center">
-            <Button asChild size="lg" className="text-base px-6">
-              <Link to="/calc">Check your numbers →</Link>
-            </Button>
-            <Button asChild size="lg" variant="ghost" className="text-base px-6 text-muted-foreground">
-              <Link to="/how-it-works">How it works</Link>
-            </Button>
+        {/* ── Section 1: Hero ───────────────────────────────────────── */}
+        <section className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
+          <div className="mx-auto w-full max-w-6xl px-6 py-16 md:py-0 grid gap-12 md:grid-cols-2 md:items-center">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6">
+                Homeown
+              </p>
+              <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] max-w-xl">
+                You can afford the home. The deposit is what's stopping you.
+              </h1>
+              <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-md">
+                Homeown is a 60-month structured pathway to homeownership. You move in, pay a monthly service fee, and hold a contractual right to purchase the property at a price fixed from the day of acquisition.
+              </p>
+              <div className="mt-8">
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <Link to="/calc">Check your numbers</Link>
+                </Button>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">Two minutes. No account required.</p>
+            </div>
+            <div>
+              <DualComparisonWidget />
+            </div>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">2 minutes. No account needed.</p>
+          <div id="nav-sentinel" />
+        </section>
 
-          {/* THE WOW: deposit years vs this year */}
-          <div className="mt-16 grid grid-cols-2 gap-3 max-w-xl">
-            <div className="rounded-2xl border bg-card p-6 md:p-8">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-5">
-                Saving a 10% deposit
-              </p>
-              <div className="flex items-end gap-2 leading-none">
-                <span
-                  className="text-7xl font-normal text-foreground/70 tabular-nums"
-                  style={{ fontFamily: 'var(--font-serif)' }}
-                >
-                  {count}
-                </span>
-                <span
-                  className={`text-2xl text-muted-foreground mb-1 transition-opacity duration-700 ${done ? 'opacity-100' : 'opacity-0'}`}
-                >
-                  yrs
-                </span>
-              </div>
-              <p className="mt-4 text-xs text-muted-foreground leading-snug">
-                Avg. Irish household, avg. Dublin home price
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-brand-green p-6 md:p-8 flex flex-col justify-between">
-              <p className="text-xs font-semibold uppercase tracking-widest text-brand-cream/50 mb-5">
-                With Homeown
-              </p>
-              <div>
-                <p
-                  className="text-4xl md:text-5xl font-normal text-brand-cream leading-[1.1]"
-                  style={{ fontFamily: 'var(--font-serif)' }}
-                >
-                  This<br />year.
+        {/* ── Section 2: Recognition ────────────────────────────────── */}
+        <section className="border-b py-20 md:py-28">
+          <div className="mx-auto max-w-2xl px-6 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-10">
+              The Problem
+            </p>
+            <div className="space-y-8">
+              {RECOGNITION.map(statement => (
+                <p key={statement} className="text-xl font-medium leading-snug md:text-2xl">
+                  {statement}
                 </p>
-                <p className="mt-4 text-xs text-brand-cream/50 leading-snug">
-                  Price fixed before<br />you move in
-                </p>
-              </div>
+              ))}
             </div>
+            <p className="mt-10 text-muted-foreground">
+              If any of these are true, the Homeown pathway may apply to you.
+            </p>
+            <Link
+              to="/calc"
+              className="mt-4 inline-block text-sm font-medium text-brand-green underline underline-offset-4 hover:text-brand-green-light transition-colors"
+            >
+              Check whether you qualify
+            </Link>
           </div>
         </section>
 
-        {/* ── 2. RELIEF: Built for people like me ──────────────────── */}
-        <section className="border-t py-20 md:py-28">
+        {/* ── Section 3: Numbers ───────────────────────────────────── */}
+        <section className="border-b py-20 md:py-28 bg-muted/20">
           <div className="mx-auto max-w-5xl px-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-green/60 mb-5">
-              Who this is for
-            </p>
-            <h2 className="text-3xl md:text-4xl font-normal max-w-2xl leading-snug">
-              Designed for people who can afford to own —<br className="hidden md:block" /> just not all at once.
+            <h2 className="text-3xl font-normal md:text-4xl mb-3">
+              What would it actually cost?
             </h2>
+            <p className="text-muted-foreground mb-10 max-w-xl">
+              Adjust the property price to see your numbers. The comparison on the right shows how long it would take to save a traditional 10% deposit at the same monthly amount.
+            </p>
+            <DualComparisonWidget />
+            <p className="mt-4 text-xs text-muted-foreground">
+              These figures are illustrative. The full programme fit assessment, including exit mortgage plausibility, is completed in the calculator.
+            </p>
+            <Button asChild className="mt-6">
+              <Link to="/calc">Check your full numbers</Link>
+            </Button>
+          </div>
+        </section>
 
-            <div className="mt-12 grid gap-5 sm:grid-cols-3">
-              {[
-                {
-                  role: 'Teacher, Wicklow',
-                  copy: 'Can afford €1,800 a month. Could never pull together €36,000 upfront.',
-                },
-                {
-                  role: 'Nurse, Dublin 8',
-                  copy: 'Three years searching. Every time she got close, the price moved.',
-                },
-                {
-                  role: 'Couple, Cork',
-                  copy: "Monthly repayments are fine. It's the first lump sum that keeps them out.",
-                },
-              ].map(({ role, copy }) => (
-                <div key={role} className="rounded-2xl border bg-card p-6">
-                  <p className="text-sm font-semibold text-brand-green">{role}</p>
-                  <p className="mt-2 text-muted-foreground leading-relaxed">{copy}</p>
+        {/* ── Section 4: Pathway (5 stages) ────────────────────────── */}
+        <section className="border-b py-20 md:py-28">
+          <div className="mx-auto max-w-6xl px-6">
+            <h2 className="text-3xl font-normal md:text-4xl mb-2">
+              What actually happens
+            </h2>
+            <p className="text-muted-foreground mb-14">
+              Five stages, over five years. Buying a home is not simple. We do not pretend otherwise.
+            </p>
+
+            {/* Desktop: 5-column grid */}
+            <div className="hidden md:grid md:grid-cols-5 md:gap-5">
+              {STAGES.map((stage, i) => (
+                <div key={stage.n}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-primary text-xs font-bold text-primary">
+                      {stage.n}
+                    </span>
+                    {i < STAGES.length - 1 && <div className="flex-1 h-px bg-border" />}
+                  </div>
+                  <h3 className="font-semibold text-sm mb-2">{stage.heading}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{stage.body}</p>
+                  {stage.alert && (
+                    <Alert className="mt-3">
+                      <AlertDescription className="text-xs">{stage.alert}</AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* ── 3. POSSIBILITY: Live numbers ─────────────────────────── */}
-        <section className="border-t bg-brand-green-muted/40 py-20 md:py-28">
-          <div className="mx-auto max-w-5xl px-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-green/60 mb-5">
-              Your numbers
-            </p>
-            <h2 className="text-3xl md:text-4xl font-normal mb-10">
-              What would it actually cost?
-            </h2>
-            <NumbersPreview />
-          </div>
-        </section>
-
-        {/* ── 4. CLARITY: How it works ─────────────────────────────── */}
-        <section className="border-t py-20 md:py-28">
-          <div className="mx-auto max-w-5xl px-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-green/60 mb-5">
-              The pathway
-            </p>
-            <h2 className="text-3xl md:text-4xl font-normal mb-14">
-              Three steps. Five years. Your home.
-            </h2>
-
-            <div className="grid gap-10 md:gap-6 md:grid-cols-3">
-              {[
-                {
-                  n: '01',
-                  title: 'Check your fit',
-                  body: 'Two minutes in the calculator gives you three numbers: the monthly fee, the upfront entry stake, and the fixed purchase price.',
-                },
-                {
-                  n: '02',
-                  title: 'Move in',
-                  body: 'We find the property together. We buy it through a ring-fenced legal entity, you pay your entry stake, and you move in — holding a 1% ownership stake from day one.',
-                },
-                {
-                  n: '03',
-                  title: 'Buy it',
-                  body: 'At month 60, arrange a standard mortgage with any bank and complete the purchase at the price agreed before you moved in. Or walk away — no obligation, no debt.',
-                },
-              ].map(({ n, title, body }) => (
-                <div key={n}>
-                  <span
-                    className="block text-6xl font-normal text-border leading-none mb-4 select-none"
-                    style={{ fontFamily: 'var(--font-serif)' }}
-                  >
-                    {n}
+            {/* Mobile: vertical stack */}
+            <div className="space-y-10 md:hidden">
+              {STAGES.map(stage => (
+                <div key={stage.n} className="flex gap-5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-primary text-sm font-bold text-primary">
+                    {stage.n}
                   </span>
-                  <h3 className="text-lg font-semibold mb-2">{title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+                  <div className="flex-1">
+                    <h3 className="font-semibold mb-2">{stage.heading}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{stage.body}</p>
+                    {stage.alert && (
+                      <Alert className="mt-4">
+                        <AlertDescription className="text-sm">{stage.alert}</AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
 
             <div className="mt-12">
-              <Button asChild variant="outline">
-                <Link to="/how-it-works">Full pathway details</Link>
-              </Button>
+              <Link
+                to="/how-it-works"
+                className="text-sm font-medium text-brand-green underline underline-offset-4 hover:text-brand-green-light transition-colors"
+              >
+                Full pathway detail and all stages
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* ── 5. TRUST: Structure and protection ───────────────────── */}
-        <section className="border-t bg-brand-green-muted/40 py-20 md:py-28">
+        {/* ── Section 5: Protection ────────────────────────────────── */}
+        <section className="border-b py-20 md:py-28 bg-muted/20">
           <div className="mx-auto max-w-5xl px-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-green/60 mb-5">
-              Protection
-            </p>
-            <h2 className="text-3xl md:text-4xl font-normal mb-12 max-w-xl">
+            <h2 className="text-3xl font-normal md:text-4xl mb-12">
               The structure is designed to protect you.
             </h2>
-
             <div className="grid gap-5 sm:grid-cols-2">
-              {[
-                {
-                  title: 'Your price is fixed in writing before you move in',
-                  body: 'The purchase option price is agreed and written into your contract at the start. It does not change over the 60-month term, regardless of what the market does.',
-                },
-                {
-                  title: 'The property is legally ring-fenced',
-                  body: 'Title is held by a Designated Activity Company set up specifically for your property. Homeown manages the programme but does not own the property.',
-                },
-                {
-                  title: 'You hold an ownership stake from day one',
-                  body: 'From the moment you move in, you hold a beneficial ownership interest. This is not a tenancy. There is no landlord relationship between you and Homeown.',
-                },
-                {
-                  title: 'No debt if you exit',
-                  body: 'The purchase option is a right, not an obligation. If you choose to leave, you give 30 days notice. Nothing is owed to Homeown.',
-                },
-              ].map(({ title, body }) => (
-                <div key={title} className="rounded-2xl border bg-card p-6">
+              {PROTECTION_CARDS.map(card => (
+                <div key={card.heading} className="rounded-xl border bg-card p-6">
                   <div className="w-5 h-0.5 bg-brand-green mb-4" />
-                  <h3 className="font-semibold">{title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{body}</p>
+                  <h3 className="font-semibold mb-2">{card.heading}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{card.body}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── 6. FAQ: Common questions ─────────────────────────────── */}
-        <section className="border-t py-20 md:py-28">
+        {/* ── Section 6: FAQ Preview ───────────────────────────────── */}
+        <section className="border-b py-20 md:py-28">
           <div className="mx-auto max-w-3xl px-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-green/60 mb-5">
-              Questions
-            </p>
-            <h2 className="text-3xl md:text-4xl font-normal mb-10">
+            <h2 className="text-3xl font-normal md:text-4xl mb-10">
               The questions people ask first.
             </h2>
-
-            <div className="divide-y border-y">
-              {FAQS.map(item => (
-                <FaqItem key={item.q} {...item} />
+            <Accordion type="single" collapsible className="divide-y border-y">
+              {FAQ_ITEMS.map(item => (
+                <AccordionItem key={item.q} value={item.q} className="border-none">
+                  <AccordionTrigger className="text-left font-medium py-5 hover:no-underline">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </div>
-
+            </Accordion>
             <div className="mt-8">
-              <Button asChild variant="outline">
+              <Button asChild variant="secondary">
                 <Link to="/faq">All questions</Link>
               </Button>
             </div>
           </div>
         </section>
 
-        {/* ── ACTION: Final CTA ─────────────────────────────────────── */}
-        <section className="bg-brand-green py-24 md:py-32">
+        {/* ── Section 7: Final CTA ─────────────────────────────────── */}
+        <section className="bg-primary py-24 md:py-32">
           <div className="mx-auto max-w-2xl px-6 text-center">
-            <h2
-              className="text-4xl md:text-5xl font-normal text-brand-cream leading-tight"
-            >
-              Ready to see if the<br />pathway fits you?
+            <h2 className="text-4xl font-normal text-primary-foreground md:text-5xl leading-tight">
+              Ready to see if the programme fits?
             </h2>
-            <p className="mt-5 text-brand-cream/50 text-lg">
-              Two minutes. No account. No commitment.
+            <p className="mt-5 text-primary-foreground/70 text-lg">
+              The calculator takes two minutes. No account. No commitment.
             </p>
             <Button
               asChild
               size="lg"
-              className="mt-10 bg-brand-cream text-brand-green hover:bg-brand-cream/90 text-base h-auto px-8 py-4"
+              className="mt-10 bg-primary-foreground text-primary hover:bg-primary-foreground/90 h-auto px-8 py-4 text-base"
             >
-              <Link to="/calc">Check your numbers →</Link>
+              <Link to="/calc">Check your numbers</Link>
             </Button>
           </div>
         </section>
