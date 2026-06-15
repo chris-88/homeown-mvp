@@ -190,9 +190,6 @@ export default function HomePage() {
         <section className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
           <div className="mx-auto w-full max-w-6xl px-6 py-16 md:py-0 grid gap-12 md:grid-cols-2 md:items-center">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6">
-                Homeown
-              </p>
               <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] max-w-xl">
                 You can afford the home. The deposit is what's stopping you.
               </h1>
@@ -229,22 +226,6 @@ export default function HomePage() {
             >
               Check whether you qualify
             </Link>
-          </div>
-        </section>
-
-        {/* ── Section 3: Numbers ───────────────────────────────────── */}
-        <section className="border-b py-20 md:py-28 bg-muted/20">
-          <div className="mx-auto max-w-5xl px-6">
-            <h2 className="text-3xl font-normal md:text-4xl mb-3">
-              What would it actually cost?
-            </h2>
-            <p className="text-muted-foreground mb-10 max-w-xl">
-              Adjust the property price to see your numbers. The comparison on the right shows how long it would take to save a traditional 10% deposit at the same monthly amount.
-            </p>
-            <DualComparisonWidget />
-            <p className="mt-4 text-xs text-muted-foreground">
-              These figures are illustrative. The full programme fit assessment, including exit mortgage plausibility, is completed in the calculator.
-            </p>
           </div>
         </section>
 

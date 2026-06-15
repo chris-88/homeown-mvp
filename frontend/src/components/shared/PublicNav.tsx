@@ -54,6 +54,9 @@ export function PublicNav() {
               {label}
             </Link>
           ))}
+          <Link to="/auth/login" className="text-sm text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+            Sign in
+          </Link>
           <Button asChild size="sm">
             <Link to="/calc">Check your numbers</Link>
           </Button>
@@ -86,6 +89,9 @@ export function PublicNav() {
                 {label}
               </Link>
             ))}
+            <Link to="/auth/login" onClick={() => setOpen(false)} className="text-sm text-muted-foreground/60">
+              Sign in to portal
+            </Link>
             <Button asChild size="sm" className="w-full">
               <Link to="/calc" onClick={() => setOpen(false)}>Check your numbers</Link>
             </Button>

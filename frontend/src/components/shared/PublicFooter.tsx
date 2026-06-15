@@ -32,7 +32,7 @@ export function PublicFooter() {
           <div>
             <p className="text-sm font-medium">Contact</p>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li><a href="mailto:hello@homeown.ie" className="hover:text-foreground transition-colors">hello@homeown.ie</a></li>
+              <li><a href="mailto:info@homeown.ie" className="hover:text-foreground transition-colors">info@homeown.ie</a></li>
             </ul>
           </div>
         </div>
