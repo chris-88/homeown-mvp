@@ -16,7 +16,90 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, ChevronRight, FileText } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+// Stage meta — what's true now and what needs to happen to progress
+const STAGE_META: Record<LeadStage, { current: string; toProgress: string; nextPreview: string }> = {
+  new_lead: {
+    current: 'This prospect has submitted the calculator. No discovery call has been scheduled yet.',
+    toProgress: 'Contact the prospect and schedule a discovery call.',
+    nextPreview: 'The prospect moves into active discovery. A confirmation is sent and the call is logged.',
+  },
+  in_discovery: {
+    current: 'A discovery call has been booked or is in progress with this prospect.',
+    toProgress: 'Hold the discovery call and confirm the prospect wants to proceed to pre-qualification.',
+    nextPreview: 'Documents are requested from the prospect and their application enters pre-qualification.',
+  },
+  pre_qual: {
+    current: 'Document collection is underway. The prospect has been asked to upload their required files.',
+    toProgress: 'Receive all required documents from the prospect.',
+    nextPreview: 'The full application enters internal review by the team.',
+  },
+  in_review: {
+    current: 'All documents have been received and the application is under internal review.',
+    toProgress: 'Complete the internal review and confirm the prospect meets all eligibility criteria.',
+    nextPreview: 'The prospect is confirmed as eligible. They can then be matched with a DAC to begin Phase 2.',
+  },
+  eligible: {
+    current: 'This prospect has been confirmed as eligible for the Homeown pathway.',
+    toProgress: 'Assign the prospect to an available DAC to move them into Phase 2.',
+    nextPreview: 'The prospect enters Phase 2 and begins their property search.',
+  },
+  not_eligible: {
+    current: 'This prospect has been marked as not eligible and is outside the active funnel.',
+    toProgress: '',
+    nextPreview: '',
+  },
+  deferred: {
+    current: 'This prospect has been deferred and will be revisited at a later date.',
+    toProgress: '',
+    nextPreview: '',
+  },
+}
+
+const MAIN_STAGES: LeadStage[] = ['new_lead', 'in_discovery', 'pre_qual', 'in_review', 'eligible']
+
+function StageTimeline({ current }: { current: LeadStage }) {
+  const currentIdx = MAIN_STAGES.indexOf(current)
+  const isTerminal = current === 'not_eligible' || current === 'deferred'
+
+  return (
+    <div className="flex items-center gap-0">
+      {MAIN_STAGES.map((stage, i) => {
+        const done = !isTerminal && currentIdx > i
+        const active = !isTerminal && currentIdx === i
+        return (
+          <div key={stage} className="flex items-center flex-1 min-w-0">
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors',
+                done ? 'bg-brand-green border-brand-green text-white'
+                  : active ? 'bg-white border-brand-green text-brand-green'
+                    : isTerminal ? 'bg-white border-muted-foreground/20 text-muted-foreground/40'
+                      : 'bg-white border-muted-foreground/30 text-muted-foreground/40',
+              )}>
+                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+              </div>
+              <span className={cn(
+                'text-[10px] font-medium text-center leading-tight whitespace-nowrap',
+                active ? 'text-brand-green' : done ? 'text-foreground' : 'text-muted-foreground/50',
+              )}>
+                {LEAD_STAGE_LABELS[stage]}
+              </span>
+            </div>
+            {i < MAIN_STAGES.length - 1 && (
+              <div className={cn(
+                'h-0.5 flex-1 mx-1 mb-4',
+                done ? 'bg-brand-green' : 'bg-muted-foreground/15',
+              )} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString('en-IE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -287,9 +370,26 @@ export default function ProspectDetailPage() {
 
           {/* Stage management */}
           {canAdvance && (
-            <section className="rounded-xl border bg-card p-5 space-y-3">
-              <h2 className="font-semibold">Stage management</h2>
-              <div className="flex flex-wrap gap-2">
+            <section className="rounded-xl border bg-card p-5 space-y-5">
+              <h2 className="font-semibold">Stage</h2>
+
+              {/* Timeline */}
+              <StageTimeline current={client.lead_stage} />
+
+              {/* Current stage description */}
+              <div className="space-y-1 pt-1">
+                <p className="text-sm font-medium">{LEAD_STAGE_LABELS[client.lead_stage]}</p>
+                <p className="text-sm text-muted-foreground">{STAGE_META[client.lead_stage].current}</p>
+                {!inPhase1Terminal && STAGE_META[client.lead_stage].toProgress && (
+                  <p className="text-sm text-muted-foreground pt-0.5">
+                    <span className="font-medium text-foreground">To progress: </span>
+                    {STAGE_META[client.lead_stage].toProgress}
+                  </p>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2 pt-1">
                 {!inPhase1Terminal && nextStage && (
                   <Button onClick={() => setAdvanceOpen(true)} size="sm">
                     Advance to {LEAD_STAGE_LABELS[nextStage]}
@@ -300,7 +400,7 @@ export default function ProspectDetailPage() {
                     <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
                     <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
                       className="text-destructive border-destructive/40 hover:bg-destructive/5">
-                      Mark not eligible
+                      Not eligible
                     </Button>
                   </>
                 )}
@@ -308,6 +408,17 @@ export default function ProspectDetailPage() {
                   <Button variant="outline" size="sm" onClick={() => setAdvanceOpen(true)}>Override stage (admin)</Button>
                 )}
               </div>
+
+              {/* Next stage preview */}
+              {!inPhase1Terminal && nextStage && STAGE_META[client.lead_stage].nextPreview && (
+                <div className="rounded-lg bg-muted/50 px-4 py-3 space-y-0.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Next: {LEAD_STAGE_LABELS[nextStage]}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{STAGE_META[client.lead_stage].nextPreview}</p>
+                </div>
+              )}
+
               {inPhase1Terminal && staffMember?.role !== 'admin' && (
                 <p className="text-sm text-muted-foreground">This prospect is in a terminal stage.</p>
               )}
