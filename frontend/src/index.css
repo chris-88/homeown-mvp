@@ -16,8 +16,8 @@
   --color-brand-stone:          #F0EBE3;
   --color-brand-ink:            #181613;
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'DM Serif Display', 'Georgia', ui-serif, serif;
+  --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ── shadcn variable mappings ────────────────────────────────── */

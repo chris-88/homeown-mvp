@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Lock, Shield, Home, CheckCircle2, Info } from 'lucide-react'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
 import { DualComparisonWidget } from '@/components/shared/DualComparisonWidget'
@@ -10,7 +12,15 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/accordion'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 
 const RECOGNITION = [
   'I can afford the monthly cost. I cannot save the upfront amount.',
@@ -19,57 +29,106 @@ const RECOGNITION = [
   'I have been searching for years. I am further away now than when I started.',
 ]
 
-const PROTECTION_CARDS = [
-  {
-    heading: 'Your option price is fixed in writing on the day of acquisition',
-    body: "The purchase option price is set at the moment Homeown acquires the property and written into your pathway agreement before you move in. It is 10% below what Homeown paid. It does not move with the market over the 60-month term.",
-  },
-  {
-    heading: 'The property is legally ring-fenced',
-    body: "Legal title to the property is held by a Designated Activity Company (DAC) set up specifically for your property cohort. Homeown Limited does not hold legal title and cannot deal with the property outside the programme governance. The DAC's sole purpose is to hold the asset and discharge its obligations under the pathway agreements.",
-  },
-  {
-    heading: 'You hold a beneficial interest from day one',
-    body: "From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property. This is not a tenancy. There is no landlord-tenant relationship between you and Homeown. Your beneficial interest and your option to purchase are governed by a legally binding agreement.",
-  },
-  {
-    heading: 'No debt between you and Homeown',
-    body: "You owe nothing to Homeown at any point in the programme. There is no amortisation schedule and no interest charge. The monthly service fee is a service fee, not a credit repayment. If you exit, you leave with no obligation to Homeown.",
-  },
-]
+function RecognitionCarousel() {
+  const [active, setActive] = useState(0)
+  const [paused, setPaused] = useState(false)
 
-const STAGE_ALERT = 'These checks confirm you meet the programme participation criteria and that payments are operationally feasible. Homeown does not assess mortgage affordability or creditworthiness at entry. Mortgage assessment is completed only by an independent regulated lender at exit.'
+  useEffect(() => {
+    if (paused) return
+    const timer = setInterval(() => {
+      setActive(i => (i + 1) % RECOGNITION.length)
+    }, 3500)
+    return () => clearInterval(timer)
+  }, [paused])
+
+  return (
+    <div
+      className="text-center"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="min-h-[9rem] flex items-center justify-center px-4">
+        <p
+          key={active}
+          className="text-2xl font-medium leading-snug md:text-3xl animate-in fade-in duration-500"
+        >
+          {RECOGNITION[active]}
+        </p>
+      </div>
+      <div className="flex justify-center gap-2 mt-6">
+        {RECOGNITION.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setActive(i); setPaused(true) }}
+            aria-label={`Statement ${i + 1}`}
+            className={cn(
+              'rounded-full transition-all duration-300',
+              i === active
+                ? 'w-6 h-2 bg-brand-green'
+                : 'w-2 h-2 bg-border hover:bg-muted-foreground'
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const STAGE_INFO = 'These checks confirm you meet the programme participation criteria and that payments are operationally feasible. Homeown does not assess mortgage affordability or creditworthiness at entry. Mortgage assessment is completed only by an independent regulated lender at exit.'
 
 const STAGES = [
   {
     n: 1,
     heading: 'Check your fit',
     body: 'The calculator checks one thing: whether the property price you are targeting is within range for a regulated mortgage at the end of the 60-month term. It uses standard Irish mortgage lending parameters. It is not a credit assessment. It does not determine whether you can afford the monthly service fee, which is your decision.',
-    alert: null as string | null,
+    info: null as string | null,
   },
   {
     n: 2,
     heading: 'A conversation about fit',
     body: 'If the calculator shows programme fit, a 20-minute discovery call follows. This is a structured conversation to confirm the programme is right for your situation. It is not a sales call. After the call, you submit a standard set of documents to verify income and confirm payment operability. No credit check is run.',
-    alert: STAGE_ALERT,
+    info: STAGE_INFO,
   },
   {
     n: 3,
     heading: 'The property search',
-    body: "Ireland's property market is supply-constrained. Finding the right property takes time. Once accepted onto the programme, a Homeown purchasing agent works with you on the search. Most participants search for several months before identifying a suitable property. When a property passes the go/no-go review, Homeown proceeds to acquire it through a ring-fenced Designated Activity Company. You pay your Entry Stake at sale agreed stage, establishing your beneficial interest.",
-    alert: null as string | null,
+    body: "Ireland's property market is supply-constrained. Finding the right property takes time. Once accepted, a Homeown purchasing agent works with you on the search. Most participants search for several months before identifying a suitable property. When a property passes the go/no-go review, Homeown acquires it through a ring-fenced DAC. You pay your Entry Stake at sale agreed stage, establishing your beneficial interest.",
+    info: null as string | null,
   },
   {
     n: 4,
     heading: 'Move in and the 60-month pathway',
     body: 'On completion, you move in. Your monthly service fee (Domiter) begins on the first day of the following month. Your option price was fixed on the day of acquisition, set at 10% below what Homeown paid. It does not change over the 60-month term regardless of what happens to property values in the market.',
-    alert: null as string | null,
+    info: null as string | null,
   },
   {
     n: 5,
     heading: 'Your option window',
-    body: 'In the final 30 days of the term, your option window opens. You can exercise your option to purchase the property at the fixed option price by arranging a regulated mortgage through an independent lender of your choice. Or you can choose not to exercise your option and exit. If you exit: 30 days notice. No debt owed to Homeown. Your Entry Stake is equity at risk and is not returned as cash.',
-    alert: null as string | null,
+    body: 'In the final 30 days of the term, your option window opens. You can exercise your option to purchase at the fixed price by arranging a regulated mortgage through an independent lender. Or you can choose not to exercise your option and exit. 30 days notice. No debt owed to Homeown. Your Entry Stake is equity at risk.',
+    info: null as string | null,
+  },
+]
+
+const PROTECTION_CARDS = [
+  {
+    Icon: Lock,
+    heading: 'Your option price is fixed in writing on the day of acquisition',
+    body: "The purchase option price is set at the moment Homeown acquires the property and written into your pathway agreement before you move in. It is 10% below what Homeown paid. It does not move with the market over the 60-month term.",
+  },
+  {
+    Icon: Shield,
+    heading: 'The property is legally ring-fenced',
+    body: "Legal title to the property is held by a Designated Activity Company (DAC) set up specifically for your property cohort. Homeown Limited does not hold legal title and cannot deal with the property outside the programme governance. The DAC's sole purpose is to hold the asset and discharge its obligations under the pathway agreements.",
+  },
+  {
+    Icon: Home,
+    heading: 'You hold a beneficial interest from day one',
+    body: "From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property. This is not a tenancy. There is no landlord-tenant relationship between you and Homeown. Your beneficial interest and your option to purchase are governed by a legally binding agreement.",
+  },
+  {
+    Icon: CheckCircle2,
+    heading: 'No debt between you and Homeown',
+    body: "You owe nothing to Homeown at any point in the programme. There is no amortisation schedule and no interest charge. The monthly service fee is a service fee, not a credit repayment. If you exit, you leave with no obligation to Homeown.",
   },
 ]
 
@@ -87,6 +146,39 @@ const FAQ_ITEMS = [
     a: 'Legal title is held by a ring-fenced Designated Activity Company, a separate legal entity established specifically for your property cohort. Homeown Limited manages the programme as servicer but does not hold legal title and is not your landlord.',
   },
 ]
+
+function StageInfoDialog({ text }: { text: string }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="inline-flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
+          <Info className="h-3.5 w-3.5" />
+          Programme criteria
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Programme participation criteria</DialogTitle>
+          <DialogDescription className="leading-relaxed pt-2">
+            {text}
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function StageCard({ stage, small = false }: { stage: typeof STAGES[0]; small?: boolean }) {
+  return (
+    <div>
+      <h3 className={cn('font-semibold mb-2', small ? 'text-sm' : '')}>{stage.heading}</h3>
+      <p className={cn('text-muted-foreground leading-relaxed', small ? 'text-xs' : 'text-sm')}>
+        {stage.body}
+      </p>
+      {stage.info && <StageInfoDialog text={stage.info} />}
+    </div>
+  )
+}
 
 export default function HomePage() {
   return (
@@ -115,7 +207,7 @@ export default function HomePage() {
               <p className="mt-3 text-xs text-muted-foreground">Two minutes. No account required.</p>
             </div>
             <div>
-              <DualComparisonWidget />
+              <DualComparisonWidget showCta={false} />
             </div>
           </div>
           <div id="nav-sentinel" />
@@ -127,13 +219,7 @@ export default function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-10">
               The Problem
             </p>
-            <div className="space-y-8">
-              {RECOGNITION.map(statement => (
-                <p key={statement} className="text-xl font-medium leading-snug md:text-2xl">
-                  {statement}
-                </p>
-              ))}
-            </div>
+            <RecognitionCarousel />
             <p className="mt-10 text-muted-foreground">
               If any of these are true, the Homeown pathway may apply to you.
             </p>
@@ -159,9 +245,6 @@ export default function HomePage() {
             <p className="mt-4 text-xs text-muted-foreground">
               These figures are illustrative. The full programme fit assessment, including exit mortgage plausibility, is completed in the calculator.
             </p>
-            <Button asChild className="mt-6">
-              <Link to="/calc">Check your full numbers</Link>
-            </Button>
           </div>
         </section>
 
@@ -185,13 +268,7 @@ export default function HomePage() {
                     </span>
                     {i < STAGES.length - 1 && <div className="flex-1 h-px bg-border" />}
                   </div>
-                  <h3 className="font-semibold text-sm mb-2">{stage.heading}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{stage.body}</p>
-                  {stage.alert && (
-                    <Alert className="mt-3">
-                      <AlertDescription className="text-xs">{stage.alert}</AlertDescription>
-                    </Alert>
-                  )}
+                  <StageCard stage={stage} small />
                 </div>
               ))}
             </div>
@@ -204,13 +281,7 @@ export default function HomePage() {
                     {stage.n}
                   </span>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-2">{stage.heading}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{stage.body}</p>
-                    {stage.alert && (
-                      <Alert className="mt-4">
-                        <AlertDescription className="text-sm">{stage.alert}</AlertDescription>
-                      </Alert>
-                    )}
+                    <StageCard stage={stage} />
                   </div>
                 </div>
               ))}
@@ -234,11 +305,11 @@ export default function HomePage() {
               The structure is designed to protect you.
             </h2>
             <div className="grid gap-5 sm:grid-cols-2">
-              {PROTECTION_CARDS.map(card => (
-                <div key={card.heading} className="rounded-xl border bg-card p-6">
-                  <div className="w-5 h-0.5 bg-brand-green mb-4" />
-                  <h3 className="font-semibold mb-2">{card.heading}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{card.body}</p>
+              {PROTECTION_CARDS.map(({ Icon, heading, body }) => (
+                <div key={heading} className="rounded-xl border bg-card p-6">
+                  <Icon className="h-5 w-5 text-brand-green mb-4" />
+                  <h3 className="font-semibold mb-2">{heading}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
                 </div>
               ))}
             </div>

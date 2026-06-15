@@ -16,7 +16,11 @@ function yearsToSave(price: number, monthlySaving: number): string {
   return `${years} years, ${months} months`
 }
 
-export function DualComparisonWidget() {
+interface DualComparisonWidgetProps {
+  showCta?: boolean
+}
+
+export function DualComparisonWidget({ showCta = true }: DualComparisonWidgetProps) {
   const [price, setPrice] = useState(400000)
   const [monthlySaving, setMonthlySaving] = useState(350)
 
@@ -27,7 +31,7 @@ export function DualComparisonWidget() {
 
   return (
     <div>
-      {/* Slider */}
+      {/* Property price slider */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <label htmlFor="property-price" className="text-sm font-medium">
@@ -79,9 +83,6 @@ export function DualComparisonWidget() {
                 <p className="text-xs text-muted-foreground mt-0.5">fixed</p>
               </div>
             </div>
-            <p className="mt-6 text-sm font-medium text-brand-green">
-              You could move in this year.
-            </p>
           </div>
         </div>
 
@@ -106,7 +107,7 @@ export function DualComparisonWidget() {
                 id="monthly-saving"
                 type="range"
                 min={50}
-                max={1500}
+                max={2500}
                 step={50}
                 value={monthlySaving}
                 onChange={e => setMonthlySaving(Number(e.target.value))}
@@ -115,7 +116,7 @@ export function DualComparisonWidget() {
               />
               <div className="mt-1 flex justify-between text-xs text-muted-foreground">
                 <span>€50</span>
-                <span>€1,500</span>
+                <span>€2,500</span>
               </div>
             </div>
             <div>
@@ -130,9 +131,11 @@ export function DualComparisonWidget() {
       <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
         Figures are illustrative and based on Homeown's current programme parameters. The traditional deposit saving estimate uses your selected monthly saving of {fmt(monthlySaving)}. Individual circumstances will vary.
       </p>
-      <Button asChild className="mt-4 w-full sm:w-auto">
-        <Link to="/calc">Check your full numbers</Link>
-      </Button>
+      {showCta && (
+        <Button asChild className="mt-4 w-full sm:w-auto">
+          <Link to="/calc">Check your full numbers</Link>
+        </Button>
+      )}
     </div>
   )
 }
