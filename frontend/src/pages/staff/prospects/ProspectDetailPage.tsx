@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck, Plus, Upload, Download, CheckCircle2, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck, Plus, Upload, Download, CheckCircle2, Trash2, Eye, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Stage meta — what's true now and what needs to happen to progress
@@ -277,6 +277,7 @@ function StaffDocumentsSection({
   const [selected, setSelected] = useState<Set<DocType>>(new Set())
   const [requestLoading, setRequestLoading] = useState(false)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [viewingDoc, setViewingDoc] = useState<{ url: string; fileName: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const requestedTypes = new Set(docs.map(d => d.doc_type))
@@ -320,13 +321,19 @@ function StaffDocumentsSection({
     onRefresh()
   }
 
-  async function handleDownload(filePath: string, fileName: string) {
+  async function handleView(filePath: string, fileName: string) {
     const { data } = await supabase.storage.from('documents').createSignedUrl(filePath, 300)
-    if (data?.signedUrl) {
-      const a = document.createElement('a')
-      a.href = data.signedUrl; a.download = fileName; a.click()
-    }
+    if (data?.signedUrl) setViewingDoc({ url: data.signedUrl, fileName })
   }
+
+  function handleModalDownload() {
+    if (!viewingDoc) return
+    const a = document.createElement('a')
+    a.href = viewingDoc.url; a.download = viewingDoc.fileName; a.click()
+  }
+
+  function isImage(name: string) { return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name) }
+  function isPdf(name: string) { return /\.pdf$/i.test(name) }
 
   async function handleApprove(docId: string) {
     await supabase.from('document_requests').update({
@@ -395,8 +402,8 @@ function StaffDocumentsSection({
                 <Badge variant={docStatusVariant(doc.status)}>{DOC_STATUS_LABELS[doc.status]}</Badge>
                 {doc.file_path && doc.file_name && (
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                    onClick={() => handleDownload(doc.file_path!, doc.file_name!)}>
-                    <Download className="h-3 w-3 mr-1" />{doc.file_name}
+                    onClick={() => handleView(doc.file_path!, doc.file_name!)}>
+                    <Eye className="h-3 w-3 mr-1" />View
                   </Button>
                 )}
                 <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => startUpload(doc.id)}>
@@ -421,6 +428,42 @@ function StaffDocumentsSection({
       )}
 
       <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
+
+      {/* Document viewer modal */}
+      {viewingDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setViewingDoc(null)}>
+          <div className="flex flex-col w-full max-w-4xl h-[90vh] rounded-xl bg-card shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 border-b px-4 py-3 shrink-0">
+              <p className="text-sm font-medium truncate">{viewingDoc.fileName}</p>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={handleModalDownload}>
+                  <Download className="h-3.5 w-3.5 mr-1.5" />Download
+                </Button>
+                <button onClick={() => setViewingDoc(null)} className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="flex-1 overflow-auto bg-muted/40 flex items-center justify-center">
+              {isImage(viewingDoc.fileName) ? (
+                <img src={viewingDoc.url} alt={viewingDoc.fileName} className="max-w-full max-h-full object-contain p-4" />
+              ) : isPdf(viewingDoc.fileName) ? (
+                <iframe src={viewingDoc.url} title={viewingDoc.fileName} className="w-full h-full border-0" />
+              ) : (
+                <div className="text-center space-y-3 p-8">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Preview not available for this file type.</p>
+                  <Button variant="outline" size="sm" onClick={handleModalDownload}>
+                    <Download className="h-3.5 w-3.5 mr-1.5" />Download to view
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
