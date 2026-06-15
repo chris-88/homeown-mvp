@@ -521,7 +521,7 @@ function DomiterPanel({ propertyPrice, ghi }: { propertyPrice: number; ghi: numb
 
   return (
     <div className="rounded-xl border bg-card p-5 space-y-3">
-      <h2 className="font-semibold text-sm">Domiter</h2>
+      <h2 className="font-semibold text-sm">Ticket</h2>
       <div className="text-xs">
         {rows.map(({ label, value, note, separator }, i) => (
           <div key={i} className={cn('flex items-center justify-between gap-2 py-1.5', separator && 'border-b mb-1')}>
