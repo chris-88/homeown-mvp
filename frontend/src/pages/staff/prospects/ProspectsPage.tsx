@@ -5,9 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { LEAD_STAGE_LABELS, LEAD_STAGE_ORDER } from '@/types'
 import type { Client, LeadStage } from '@/types'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { UserPlus } from 'lucide-react'
 
 function stageBadgeVariant(stage: LeadStage): 'default' | 'secondary' | 'outline' | 'destructive' {
   if (stage === 'eligible') return 'default'
@@ -117,54 +117,53 @@ export default function ProspectsPage() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
-          <UserPlus className="mx-auto mb-3 h-8 w-8 opacity-40" />
-          <p className="font-medium">No prospects found</p>
-        </div>
-      ) : (
-        <div className="rounded-lg border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Stage</th>
-                <th className="px-4 py-3">Days</th>
-                <th className="px-4 py-3">Target areas</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.map(c => {
-                const days = daysAgo(c.updated_at)
-                return (
-                  <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <Link to={`/app/staff/prospects/${c.id}`} className="font-medium hover:underline underline-offset-2">
-                        {c.first_name} {c.last_name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{c.email}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={stageBadgeVariant(c.lead_stage)}>
-                        {LEAD_STAGE_LABELS[c.lead_stage]}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={days >= 3 ? 'font-medium text-destructive' : 'text-muted-foreground'}>
-                        {days}d
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{c.target_areas ?? '-'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <Card>
+        <CardContent className="pt-4 overflow-x-auto">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-4">Loading…</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">No prospects found.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-3 pr-4 font-medium">Name</th>
+                  <th className="pb-3 pr-4 font-medium">Email</th>
+                  <th className="pb-3 pr-4 font-medium">Stage</th>
+                  <th className="pb-3 pr-4 font-medium">Days</th>
+                  <th className="pb-3 font-medium">Target areas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {filtered.map(c => {
+                  const days = daysAgo(c.updated_at)
+                  return (
+                    <tr key={c.id}>
+                      <td className="py-3 pr-4">
+                        <Link to={`/app/staff/prospects/${c.id}`} className="font-medium hover:underline underline-offset-2">
+                          {c.first_name} {c.last_name}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">{c.email}</td>
+                      <td className="py-3 pr-4">
+                        <Badge variant={stageBadgeVariant(c.lead_stage)}>
+                          {LEAD_STAGE_LABELS[c.lead_stage]}
+                        </Badge>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className={days >= 3 ? 'font-medium text-destructive' : 'text-muted-foreground'}>
+                          {days}d
+                        </span>
+                      </td>
+                      <td className="py-3 text-muted-foreground">{c.target_areas ?? '-'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

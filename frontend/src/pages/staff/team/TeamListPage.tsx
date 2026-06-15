@@ -6,6 +6,7 @@ import { STAFF_ROLE_LABELS } from '@/types'
 import type { StaffMember } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Building2, UserPlus } from 'lucide-react'
 
 export default function TeamListPage() {
@@ -42,49 +43,51 @@ export default function TeamListPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : (
-        <div className="rounded-lg border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Joined</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {(members ?? []).map(m => (
-                <tr key={m.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link to={`/app/staff/team/${m.id}`} className="font-medium hover:underline underline-offset-2">
-                      {m.first_name} {m.last_name}
-                    </Link>
-                    {m.job_title && <p className="text-xs text-muted-foreground">{m.job_title}</p>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline">{STAFF_ROLE_LABELS[m.role]}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{m.email}</td>
-                  <td className="px-4 py-3">
-                    {m.user_id ? (
-                      <Badge variant="default" className="text-xs">Active</Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">Pending</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {m.user_id ? new Date(m.created_at).toLocaleDateString('en-IE') : 'Not yet joined'}
-                  </td>
+      <Card>
+        <CardContent className="pt-4 overflow-x-auto">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-4">Loading…</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-3 pr-4 font-medium">Name</th>
+                  <th className="pb-3 pr-4 font-medium">Role</th>
+                  <th className="pb-3 pr-4 font-medium">Email</th>
+                  <th className="pb-3 pr-4 font-medium">Status</th>
+                  <th className="pb-3 font-medium">Joined</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y">
+                {(members ?? []).map(m => (
+                  <tr key={m.id}>
+                    <td className="py-3 pr-4">
+                      <Link to={`/app/staff/team/${m.id}`} className="font-medium hover:underline underline-offset-2">
+                        {m.first_name} {m.last_name}
+                      </Link>
+                      {m.job_title && <p className="text-xs text-muted-foreground">{m.job_title}</p>}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Badge variant="outline">{STAFF_ROLE_LABELS[m.role]}</Badge>
+                    </td>
+                    <td className="py-3 pr-4 text-muted-foreground">{m.email}</td>
+                    <td className="py-3 pr-4">
+                      {m.user_id ? (
+                        <Badge variant="default" className="text-xs">Active</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">Pending</Badge>
+                      )}
+                    </td>
+                    <td className="py-3 text-muted-foreground text-xs">
+                      {m.user_id ? new Date(m.created_at).toLocaleDateString('en-IE') : 'Not yet joined'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

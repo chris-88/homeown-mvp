@@ -5,9 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { PROGRAMME_STAGE_LABELS } from '@/types'
 import type { Client, ProgrammeStage } from '@/types'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Users } from 'lucide-react'
 
 const PHASE2_STAGES: ProgrammeStage[] = ['dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed']
 const PHASE3_STAGES: ProgrammeStage[] = ['in_home', 'servicing', 'exit_prep', 'option_window', 'pathway_complete', 'exited']
@@ -104,47 +104,44 @@ export default function ClientsPage() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-lg border bg-card p-12 text-center text-muted-foreground">
-          <Users className="mx-auto mb-3 h-8 w-8 opacity-40" />
-          <p className="font-medium">No clients found</p>
-        </div>
-      ) : (
-        <div className="rounded-lg border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Stage</th>
-                <th className="px-4 py-3">DAC</th>
-                <th className="px-4 py-3">Email</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.map(c => (
-                <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link to={`/app/staff/clients/${c.id}`} className="font-medium hover:underline underline-offset-2">
-                      {c.first_name} {c.last_name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant={stageBadgeVariant(c.programme_stage!)}>
-                      {PROGRAMME_STAGE_LABELS[c.programme_stage!]}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {c.dacs?.name ?? '-'}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.email}</td>
+      <Card>
+        <CardContent className="pt-4 overflow-x-auto">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-4">Loading…</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">No clients found.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-3 pr-4 font-medium">Name</th>
+                  <th className="pb-3 pr-4 font-medium">Stage</th>
+                  <th className="pb-3 pr-4 font-medium">DAC</th>
+                  <th className="pb-3 font-medium">Email</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y">
+                {filtered.map(c => (
+                  <tr key={c.id}>
+                    <td className="py-3 pr-4">
+                      <Link to={`/app/staff/clients/${c.id}`} className="font-medium hover:underline underline-offset-2">
+                        {c.first_name} {c.last_name}
+                      </Link>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Badge variant={stageBadgeVariant(c.programme_stage!)}>
+                        {PROGRAMME_STAGE_LABELS[c.programme_stage!]}
+                      </Badge>
+                    </td>
+                    <td className="py-3 pr-4 text-muted-foreground">{c.dacs?.name ?? '-'}</td>
+                    <td className="py-3 text-muted-foreground">{c.email}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
