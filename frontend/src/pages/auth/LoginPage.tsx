@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -37,17 +37,21 @@ type FormValues = z.infer<typeof schema>
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, profile, loading } = useAuth()
   const form = useForm<FormValues>({ resolver: zodResolver(schema) })
   const [oauthError, setOauthError] = useState('')
 
   useEffect(() => {
     if (!loading && user && profile) {
-      if (profile.role === 'client') navigate('/app/client', { replace: true })
-      else if (profile.role === 'circle') navigate('/app/circle', { replace: true })
-      else navigate('/app/staff', { replace: true })
+      const from = (location.state as { from?: string } | null)?.from
+      const defaultPath =
+        profile.role === 'client' ? '/app/client' :
+        profile.role === 'circle' ? '/app/circle' :
+        '/app/staff'
+      navigate(from ?? defaultPath, { replace: true })
     }
-  }, [user, profile, loading, navigate])
+  }, [user, profile, loading, navigate, location.state])
 
   async function onSubmit({ email, password }: FormValues) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -114,7 +118,7 @@ export default function LoginPage() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="m@example.com" autoComplete="email" {...field} />
+                  <Input type="email" placeholder="me@example.com" autoComplete="email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

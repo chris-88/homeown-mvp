@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { STAFF_ROLES } from '@/types'
 import type { Role } from '@/types'
@@ -11,12 +11,13 @@ interface RouteGuardProps {
 
 export function RouteGuard({ requiredRole, children }: RouteGuardProps) {
   const { user, profile, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center"><p className="text-muted-foreground">Loading…</p></div>
   }
 
-  if (!user) return <Navigate to="/auth/login" replace />
+  if (!user) return <Navigate to="/auth/login" state={{ from: location.pathname }} replace />
 
   const role = profile?.role
 
