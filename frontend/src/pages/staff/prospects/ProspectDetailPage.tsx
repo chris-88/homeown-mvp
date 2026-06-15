@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck, Plus, Upload, Download } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck, Plus, Upload, Download, CheckCircle2, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Stage meta — what's true now and what needs to happen to progress
@@ -272,6 +272,7 @@ function docStatusVariant(status: DocStatus) {
 function StaffDocumentsSection({
   clientId, docs, onRefresh,
 }: { clientId: string; docs: DocumentRequest[]; onRefresh: () => void }) {
+  const { user } = useAuth()
   const [showRequest, setShowRequest] = useState(false)
   const [selected, setSelected] = useState<Set<DocType>>(new Set())
   const [requestLoading, setRequestLoading] = useState(false)
@@ -325,6 +326,26 @@ function StaffDocumentsSection({
       const a = document.createElement('a')
       a.href = data.signedUrl; a.download = fileName; a.click()
     }
+  }
+
+  async function handleApprove(docId: string) {
+    await supabase.from('document_requests').update({
+      status: 'approved',
+      reviewed_by: user?.id ?? null,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', docId)
+    onRefresh()
+  }
+
+  async function handleReject(docId: string) {
+    await supabase.from('document_requests').update({
+      status: 'rejected',
+      reviewed_by: user?.id ?? null,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', docId)
+    onRefresh()
   }
 
   return (
@@ -381,6 +402,18 @@ function StaffDocumentsSection({
                 <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => startUpload(doc.id)}>
                   <Upload className="h-3 w-3 mr-1" />Upload
                 </Button>
+                {doc.file_path && doc.status !== 'approved' && (
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={() => handleApprove(doc.id)} title="Approve">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </Button>
+                )}
+                {doc.file_path && doc.status !== 'rejected' && (
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleReject(doc.id)} title="Reject">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}
