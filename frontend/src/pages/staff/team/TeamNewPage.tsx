@@ -70,7 +70,7 @@ export default function TeamNewPage() {
 
         <div>
           <h1 className="text-2xl font-bold">Staff member created</h1>
-          <p className="mt-1 text-muted-foreground">Share this join link with them to activate their account.</p>
+          <p className="mt-1 text-muted-foreground">An invite email has been sent. You can also copy the link below to share directly.</p>
         </div>
 
         <Card>
@@ -83,7 +83,7 @@ export default function TeamNewPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              This link lets them set their password and activate the account. Do not share it publicly.
+              This link is personal to the invitee — do not share it publicly.
             </p>
             <div className="flex gap-3">
               <Button asChild variant="outline"><Link to="/app/staff/team">Back to team</Link></Button>
