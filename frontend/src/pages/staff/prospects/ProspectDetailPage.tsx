@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, ChevronRight, FileText, Check } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Stage meta — what's true now and what needs to happen to progress
@@ -273,6 +273,15 @@ export default function ProspectDetailPage() {
   const [deferOpen, setDeferOpen] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [noteLoading, setNoteLoading] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
+
+  function copyPortalLink() {
+    if (!client) return
+    const url = `${window.location.origin}/#/auth/signup?email=${encodeURIComponent(client.email)}`
+    navigator.clipboard.writeText(url)
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
+  }
 
   const { data: client, isLoading } = useQuery<Client>({
     queryKey: ['prospect', id],
@@ -403,6 +412,16 @@ export default function ProspectDetailPage() {
                       Not eligible
                     </Button>
                   </>
+                )}
+                {client.user_id ? (
+                  <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
+                    <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={copyPortalLink}>
+                    {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                    {linkCopied ? 'Copied!' : 'Copy portal link'}
+                  </Button>
                 )}
                 {inPhase1Terminal && staffMember?.role === 'admin' && (
                   <Button variant="outline" size="sm" onClick={() => setAdvanceOpen(true)}>Override stage (admin)</Button>

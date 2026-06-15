@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -39,8 +39,13 @@ type FormValues = z.infer<typeof schema>
 
 export default function SignUpPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const prefillEmail = searchParams.get('email') ?? ''
   const { user, profile, loading } = useAuth()
-  const form = useForm<FormValues>({ resolver: zodResolver(schema) })
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: prefillEmail },
+  })
   const [oauthError, setOauthError] = useState('')
 
   useEffect(() => {
@@ -50,17 +55,12 @@ export default function SignUpPage() {
   }, [user, profile, loading, navigate])
 
   async function onSubmit({ first_name, last_name, email, password }: FormValues) {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) {
-      form.setError('root', { message: error.message })
-      return
-    }
-    if (data.user) {
-      await supabase.from('clients').upsert(
-        { user_id: data.user.id, first_name, last_name, email, lead_stage: 'new_lead' },
-        { onConflict: 'email' },
-      )
-    }
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { first_name, last_name } },
+    })
+    if (error) { form.setError('root', { message: error.message }); return }
     navigate('/app/client', { replace: true })
   }
 
