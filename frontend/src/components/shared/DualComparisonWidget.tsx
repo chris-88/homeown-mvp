@@ -6,9 +6,9 @@ function fmt(n: number) {
   return '€' + Math.round(n).toLocaleString('en-IE')
 }
 
-function yearsToSave(price: number): string {
+function yearsToSave(price: number, monthlySaving: number): string {
   const depositRequired = price * 0.10
-  const totalMonths = Math.ceil(depositRequired / 350)
+  const totalMonths = Math.ceil(depositRequired / monthlySaving)
   const years = Math.floor(totalMonths / 12)
   const months = totalMonths % 12
   if (months === 0) return `${years} years`
@@ -18,6 +18,7 @@ function yearsToSave(price: number): string {
 
 export function DualComparisonWidget() {
   const [price, setPrice] = useState(400000)
+  const [monthlySaving, setMonthlySaving] = useState(350)
 
   const monthlyFee = (price * 0.082) / 12
   const entryStake = price * 0.01
@@ -95,22 +96,39 @@ export function DualComparisonWidget() {
               <p className="text-3xl font-semibold tabular-nums">{fmt(depositRequired)}</p>
             </div>
             <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="monthly-saving" className="text-xs text-muted-foreground">
+                  Monthly saving
+                </label>
+                <span className="text-xs font-semibold tabular-nums">{fmt(monthlySaving)}</span>
+              </div>
+              <input
+                id="monthly-saving"
+                type="range"
+                min={50}
+                max={1500}
+                step={50}
+                value={monthlySaving}
+                onChange={e => setMonthlySaving(Number(e.target.value))}
+                className="w-full accent-primary"
+                style={{ minHeight: '44px', cursor: 'pointer' }}
+              />
+              <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                <span>€50</span>
+                <span>€1,500</span>
+              </div>
+            </div>
+            <div>
               <p className="text-xs text-muted-foreground mb-1">Years to save</p>
-              <p className="text-3xl font-semibold tabular-nums">{yearsToSave(price)}</p>
+              <p className="text-3xl font-semibold tabular-nums">{yearsToSave(price, monthlySaving)}</p>
             </div>
           </div>
-          <p className="mt-6 text-sm text-muted-foreground">
-            At €350 per month net saving.
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            (Adjust for your circumstances.)
-          </p>
         </div>
       </div>
 
       {/* Below panels */}
       <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
-        Figures are illustrative and based on Homeown's current programme parameters. The traditional deposit saving estimate uses a €350 per month net saving assumption. Individual circumstances will vary.
+        Figures are illustrative and based on Homeown's current programme parameters. The traditional deposit saving estimate uses your selected monthly saving of {fmt(monthlySaving)}. Individual circumstances will vary.
       </p>
       <Button asChild className="mt-4 w-full sm:w-auto">
         <Link to="/calc">Check your full numbers</Link>
