@@ -448,8 +448,45 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
     setStatusLoading(null)
   }
 
+  const subTarget = dac.target_sub_amount ?? 0
+  const subSubscribed = (subscriptions ?? [])
+    .filter(s => ['subscribed', 'funds_requested', 'funded', 'active', 'redeeming', 'redeemed'].includes(s.status))
+    .reduce((sum, s) => sum + s.amount, 0)
+  const subRemaining = subTarget - subSubscribed
+  const subPct = subTarget > 0 ? Math.min(100, Math.round((subSubscribed / subTarget) * 100)) : 0
+  const subOver = subTarget > 0 && subRemaining < 0
+
   return (
     <div className="space-y-4">
+      {subTarget > 0 && (
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="grid gap-3 sm:grid-cols-3 mb-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Sub target</p>
+                <p className="text-lg font-bold numeric">{formatCurrency(subTarget)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Subscribed</p>
+                <p className="text-lg font-bold numeric">{formatCurrency(subSubscribed)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">{subOver ? 'Oversubscribed by' : 'Remaining'}</p>
+                <p className={cn('text-lg font-bold numeric', subOver ? 'text-destructive' : 'text-green-700')}>
+                  {formatCurrency(Math.abs(subRemaining))}
+                </p>
+              </div>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className={cn('h-1.5 rounded-full transition-all', subOver ? 'bg-destructive' : 'bg-primary')}
+                style={{ width: `${subPct}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setDialogOpen(true)}>Add subscription</Button>
       </div>
