@@ -121,7 +121,7 @@ export function DualComparisonWidget({ showCta = true }: DualComparisonWidgetPro
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Years to save</p>
-              <p className="text-3xl font-semibold tabular-nums">{yearsToSave(price, monthlySaving)}</p>
+              <p className="text-3xl font-semibold tabular-nums min-h-[4.5rem] leading-tight">{yearsToSave(price, monthlySaving)}</p>
             </div>
           </div>
         </div>
