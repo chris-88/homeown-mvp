@@ -18,62 +18,74 @@ function EligibleResults() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
           <CheckCircle2 className="h-3.5 w-3.5" />
           Programme fit confirmed
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">The programme works for your situation</h1>
+        <h1 className="text-3xl font-bold tracking-tight leading-tight">The programme works for your situation</h1>
         <p className="mt-3 text-muted-foreground leading-relaxed">
           Based on your target property and income, a regulated mortgage at the end of the 60-month term is a realistic outcome.
         </p>
       </div>
 
-      {/* 3 key numbers */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { label: 'Monthly service fee', sub: 'Domiter, per month', value: `${formatCurrency(state.monthlyDomiter)} / mo` },
-          { label: 'Entry Stake', sub: 'Paid once at the start', value: formatCurrency(state.entryStake) },
-          { label: 'Purchase option price', sub: 'Fixed from day one', value: formatCurrency(state.strikePrice) },
-        ].map(({ label, sub, value }) => (
-          <div key={label} className="rounded-xl border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-1.5 text-2xl font-bold tabular-nums">{value}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
+      {/* Key numbers */}
+      <div className="space-y-3">
+        {/* Hero metric — monthly fee */}
+        <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
+          <p className="text-xs font-medium opacity-70 uppercase tracking-widest">Monthly service fee</p>
+          <p className="mt-2 text-4xl font-bold tabular-nums">
+            {formatCurrency(state.monthlyDomiter)}
+            <span className="text-xl font-normal opacity-60"> /mo</span>
+          </p>
+          <p className="mt-1 text-xs opacity-60">Domiter, paid monthly for 60 months</p>
+        </div>
+
+        {/* Two supporting stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Entry Stake</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums">{formatCurrency(state.entryStake)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Paid once at the start</p>
           </div>
-        ))}
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Purchase option price</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums">{formatCurrency(state.strikePrice)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Fixed from day one</p>
+          </div>
+        </div>
       </div>
 
       {/* Secondary details */}
-      <div className="divide-y rounded-xl border">
+      <div className="divide-y rounded-2xl border overflow-hidden">
         {[
           { label: 'Target property', value: formatCurrency(state.propertyPrice) },
           { label: 'Term', value: '60 months (5 years)' },
           ...(location ? [{ label: 'Location', value: location }] : []),
         ].map(({ label, value }) => (
-          <div key={label} className="flex items-center justify-between px-4 py-3 text-sm">
+          <div key={label} className="flex items-center justify-between px-4 py-3.5 text-sm">
             <span className="text-muted-foreground">{label}</span>
-            <span className="font-medium">{value}</span>
+            <span className="font-semibold">{value}</span>
           </div>
         ))}
       </div>
 
-      {/* Disclaimer */}
-      <div className="text-xs text-muted-foreground leading-relaxed space-y-1.5">
-        <p>These figures are illustrative. This self-assessment is not an eligibility determination; programme participation is confirmed only after document verification.</p>
-        <p>Homeown does not provide mortgage credit. The purchase option is a right, not an obligation. Mortgage approval at exit is subject to independent lender assessment and is not guaranteed.</p>
-      </div>
-
       {/* CTAs */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild className="flex-1">
+        <Button asChild size="lg" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
           <Link to="/calc/save">
             Save my results and book a call
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
-        <Button asChild variant="outline" className="flex-1">
+        <Button asChild variant="outline" size="lg" className="flex-1">
           <Link to="/calc">Adjust my figures</Link>
         </Button>
+      </div>
+
+      {/* Disclaimer */}
+      <div className="text-xs text-muted-foreground/70 leading-relaxed space-y-1.5">
+        <p>These figures are illustrative. This self-assessment is not an eligibility determination; programme participation is confirmed only after document verification.</p>
+        <p>Homeown does not provide mortgage credit. The purchase option is a right, not an obligation. Mortgage approval at exit is subject to independent lender assessment and is not guaranteed.</p>
       </div>
     </div>
   )
