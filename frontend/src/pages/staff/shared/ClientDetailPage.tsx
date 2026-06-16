@@ -22,6 +22,7 @@ import { EventTimelineTab } from '@/components/shared/EventTimelineTab'
 import { AssignedToCard } from '@/components/shared/AssignedToCard'
 import { StageManagementCard } from '@/components/shared/StageManagementCard'
 import { TicketPanel } from '@/components/shared/TicketPanel'
+import { ClientDetailsSection } from '@/components/shared/ClientDetailsSection'
 
 const PHASE2: ProgrammeStage[] = ['dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed']
 const PHASE3: ProgrammeStage[] = ['in_home', 'servicing', 'exit_prep', 'option_window', 'pathway_complete', 'exited']
@@ -236,6 +237,8 @@ export default function StaffClientDetailPage() {
 
             {/* Overview */}
             <TabsContent value="overview" className="mt-4 space-y-6">
+              <ClientDetailsSection client={client} />
+
               <section className="rounded-xl border bg-card p-5 space-y-5">
                 <h2 className="font-semibold">Stage</h2>
                 <StageTimeline
@@ -314,23 +317,24 @@ export default function StaffClientDetailPage() {
 
         {/* Right — sidebar */}
         <aside className="space-y-6">
-          {/* Details */}
-          <div className="rounded-xl border bg-card p-5 space-y-3">
-            <h2 className="font-semibold text-sm">Details</h2>
-            <dl className="space-y-2 text-sm">
-              {[
-                ['Phone', client.phone ?? '-'],
-                ['Target price', client.target_price ? `€${client.target_price.toLocaleString()}` : '-'],
-                ['Target areas', client.target_areas ?? '-'],
-                ['Joined', new Date(client.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })],
-              ].map(([k, v]) => (
-                <div key={String(k)} className="flex justify-between gap-2">
-                  <dt className="text-muted-foreground shrink-0">{k}</dt>
-                  <dd className="text-right font-medium">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          {/* Stage management */}
+          <StageManagementCard
+            current={stage}
+            labels={PROGRAMME_STAGE_LABELS}
+            options={stageOptions}
+            canChange={canAdvance || isAdmin}
+            loading={stageLoading}
+            onConfirm={handleStageChange}
+          />
+
+          {/* Assigned to */}
+          <AssignedToCard
+            assignedTo={client.assigned_to}
+            staffMembers={staffMembers ?? []}
+            canAssign={isAdmin}
+            eligibleRoles={isPhase2 ? ['purchasing_agent'] : ['client_success']}
+            onAssign={handleAssignTo}
+          />
 
           {/* Ticket */}
           {client.target_price && calcSnapshot?.ghi ? (
@@ -354,25 +358,6 @@ export default function StaffClientDetailPage() {
               <p className="text-sm text-muted-foreground">No DAC assigned.</p>
             )}
           </div>
-
-          {/* Assigned to */}
-          <AssignedToCard
-            assignedTo={client.assigned_to}
-            staffMembers={staffMembers ?? []}
-            canAssign={isAdmin}
-            eligibleRoles={isPhase2 ? ['purchasing_agent'] : ['client_success']}
-            onAssign={handleAssignTo}
-          />
-
-          {/* Stage management */}
-          <StageManagementCard
-            current={stage}
-            labels={PROGRAMME_STAGE_LABELS}
-            options={stageOptions}
-            canChange={canAdvance || isAdmin}
-            loading={stageLoading}
-            onConfirm={handleStageChange}
-          />
         </aside>
       </div>
 

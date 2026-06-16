@@ -23,10 +23,7 @@ import { EventTimelineTab } from '@/components/shared/EventTimelineTab'
 import { AssignedToCard } from '@/components/shared/AssignedToCard'
 import { StageManagementCard } from '@/components/shared/StageManagementCard'
 import { TicketPanel } from '@/components/shared/TicketPanel'
-
-function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
-}
+import { ClientDetailsSection } from '@/components/shared/ClientDetailsSection'
 
 function stageBadgeVariant(stage: LeadStage) {
   if (stage === 'eligible') return 'default' as const
@@ -312,6 +309,8 @@ export default function ProspectDetailPage() {
 
             {/* Overview */}
             <TabsContent value="overview" className="mt-4 space-y-6">
+              <ClientDetailsSection client={client} />
+
               <section className="rounded-xl border bg-card p-5 space-y-5">
                 <h2 className="font-semibold">Stage</h2>
                 <StageTimeline
@@ -380,25 +379,33 @@ export default function ProspectDetailPage() {
 
         {/* Right — sidebar */}
         <aside className="space-y-6">
-          {/* Client details */}
-          <div className="rounded-xl border bg-card p-5 space-y-3">
-            <h2 className="font-semibold text-sm">Details</h2>
-            <dl className="space-y-2 text-sm">
-              {[
-                ['Phone', client.phone ?? '-'],
-                ['Target price', client.target_price ? `€${client.target_price.toLocaleString()}` : '-'],
-                ['Target areas', client.target_areas ?? '-'],
-                ['Household size', client.household_size ?? '-'],
-                ['Deferred until', client.deferred_until ? fmtDate(client.deferred_until) : '-'],
-                ['Joined', fmtDate(client.created_at)],
-              ].map(([k, v]) => (
-                <div key={String(k)} className="flex justify-between gap-2">
-                  <dt className="text-muted-foreground shrink-0">{k}</dt>
-                  <dd className="text-right font-medium">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          {/* Stage management */}
+          <StageManagementCard
+            current={client.lead_stage}
+            labels={LEAD_STAGE_LABELS}
+            options={stageOptions}
+            canChange={canAdvance}
+            loading={stageLoading}
+            onConfirm={handleStageChange}
+            extraActions={!inPhase1Terminal && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
+                <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
+                  className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                  Not eligible
+                </Button>
+              </div>
+            )}
+          />
+
+          {/* Assigned to */}
+          <AssignedToCard
+            assignedTo={client.assigned_to}
+            staffMembers={staffMembers ?? []}
+            canAssign={isAdmin || staffMember?.role === 'onboarding'}
+            eligibleRoles={['onboarding']}
+            onAssign={handleAssignTo}
+          />
 
           {/* Ticket */}
           {client.target_price && calcSnapshot?.ghi ? (
@@ -427,34 +434,6 @@ export default function ProspectDetailPage() {
               <p className="text-xs text-muted-foreground">Assigning a DAC moves this prospect to Phase 2.</p>
             </div>
           )}
-
-          {/* Assigned to */}
-          <AssignedToCard
-            assignedTo={client.assigned_to}
-            staffMembers={staffMembers ?? []}
-            canAssign={isAdmin || staffMember?.role === 'onboarding'}
-            eligibleRoles={['onboarding']}
-            onAssign={handleAssignTo}
-          />
-
-          {/* Stage management */}
-          <StageManagementCard
-            current={client.lead_stage}
-            labels={LEAD_STAGE_LABELS}
-            options={stageOptions}
-            canChange={canAdvance}
-            loading={stageLoading}
-            onConfirm={handleStageChange}
-            extraActions={!inPhase1Terminal && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
-                <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
-                  className="text-destructive border-destructive/40 hover:bg-destructive/5">
-                  Not eligible
-                </Button>
-              </div>
-            )}
-          />
         </aside>
       </div>
 
