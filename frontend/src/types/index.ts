@@ -137,6 +137,29 @@ export interface DocumentRequest {
   reviewed_at: string | null
 }
 
+export interface DocumentDelivery {
+  id: string
+  created_at: string
+  client_id: string
+  document_type: string
+  document_version: string
+  delivery_channel: 'email_pdf' | 'in_app' | 'both'
+  variables: Record<string, unknown> | null
+  visible_in_portal: boolean
+  read_at: string | null
+  requires_ack: boolean
+  acknowledged_at: string | null
+  acknowledged_by: string | null
+  email_log_id: string | null
+  recipient_email: string | null
+  storage_path: string | null
+  storage_bucket: string | null
+  programme_stage: string | null
+  delivered_by: string | null
+  notes: string | null
+  idempotency_key: string | null
+}
+
 export interface PropertyCase {
   id: string
   created_at: string

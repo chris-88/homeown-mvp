@@ -6,14 +6,14 @@ import { useAuth } from '@/lib/auth'
 import { canAdvancePhase2, canAdvancePhase3 } from '@/lib/rbac'
 import { PROGRAMME_STAGE_LABELS } from '@/types'
 import { nextProgrammeStage } from '@/types'
-import type { Client, DocumentRequest, PropertyCase, Event, StaffMember, ProgrammeStage } from '@/types'
+import type { Client, DocumentRequest, PropertyCase, Event, StaffMember, ProgrammeStage, DocumentDelivery } from '@/types'
 import { PROGRAMME_STAGE_META } from '@/lib/stageMeta'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Home } from 'lucide-react'
+import { Home, Download, Send } from 'lucide-react'
 import { DetailHeader } from '@/components/shared/DetailHeader'
 import { StageTimeline } from '@/components/shared/StageTimeline'
 import { StaffDocumentsSection } from '@/components/shared/StaffDocumentsSection'
@@ -23,6 +23,8 @@ import { AssignedToCard } from '@/components/shared/AssignedToCard'
 import { StageManagementCard } from '@/components/shared/StageManagementCard'
 import { TicketPanel } from '@/components/shared/TicketPanel'
 import { ClientDetailsSection } from '@/components/shared/ClientDetailsSection'
+import { SendDocumentDrawer } from '@/components/shared/SendDocumentDrawer'
+import { getDisplayName } from '@/lib/documents/registry'
 
 const PHASE2: ProgrammeStage[] = ['dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed']
 const PHASE3: ProgrammeStage[] = ['in_home', 'servicing', 'exit_prep', 'option_window', 'pathway_complete', 'exited']
@@ -87,6 +89,7 @@ export default function StaffClientDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [disableLoading, setDisableLoading] = useState(false)
   const [stageLoading, setStageLoading] = useState(false)
+  const [sendDocOpen, setSendDocOpen] = useState(false)
 
   const { data: client, isLoading } = useQuery<Client & { dacs?: { name: string; cohort_label: string | null } | null }>({
     queryKey: ['staff-client', id],
@@ -133,6 +136,15 @@ export default function StaffClientDetailPage() {
       const { data } = await supabase.from('staff_members').select('*').eq('active', true).order('first_name')
       return (data ?? []) as StaffMember[]
     },
+  })
+
+  const { data: deliveries } = useQuery<DocumentDelivery[]>({
+    queryKey: ['staff-client-deliveries', id],
+    queryFn: async () => {
+      const { data } = await supabase.from('document_deliveries').select('*').eq('client_id', id!).order('created_at', { ascending: false })
+      return (data ?? []) as DocumentDelivery[]
+    },
+    enabled: !!id,
   })
 
   const { data: calcSnapshot } = useQuery<{ ghi: number | null } | null>({
@@ -264,12 +276,41 @@ export default function StaffClientDetailPage() {
             </TabsContent>
 
             {/* Documents */}
-            <TabsContent value="documents" className="mt-4">
-              <StaffDocumentsSection
-                clientId={client.id}
-                docs={docs ?? []}
-                onRefresh={() => qc.invalidateQueries({ queryKey: ['staff-client-docs', id] })}
-              />
+            <TabsContent value="documents" className="mt-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">Documents</h2>
+                <Button size="sm" variant="outline" onClick={() => setSendDocOpen(true)}>
+                  <Send className="h-3.5 w-3.5 mr-1.5" /> Send document
+                </Button>
+              </div>
+
+              <Tabs defaultValue="client-files">
+                <TabsList className="mb-3">
+                  <TabsTrigger value="client-files">Client files</TabsTrigger>
+                  <TabsTrigger value="sent-docs">
+                    Sent documents
+                    {(deliveries?.length ?? 0) > 0 && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">({deliveries!.length})</span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="client-files">
+                  <StaffDocumentsSection
+                    clientId={client.id}
+                    docs={docs ?? []}
+                    onRefresh={() => qc.invalidateQueries({ queryKey: ['staff-client-docs', id] })}
+                  />
+                </TabsContent>
+
+                <TabsContent value="sent-docs">
+                  <DeliveryLog
+                    deliveries={deliveries ?? []}
+                    clientId={client.id}
+                    onSend={() => setSendDocOpen(true)}
+                  />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             {/* Notes */}
@@ -339,6 +380,15 @@ export default function StaffClientDetailPage() {
             onAssign={handleAssignTo}
           />
 
+          {/* Signing pack — shown when eligible and no KFS sent yet */}
+          <SigningPackCard
+            clientId={client.id}
+            leadStage={client.lead_stage}
+            deliveries={deliveries ?? []}
+            staffUserId={user?.id ?? ''}
+            onSent={() => qc.invalidateQueries({ queryKey: ['staff-client-deliveries', id] })}
+          />
+
           {/* Ticket */}
           {client.target_price && calcSnapshot?.ghi ? (
             <TicketPanel propertyPrice={client.target_price} ghi={calcSnapshot.ghi} />
@@ -366,6 +416,155 @@ export default function StaffClientDetailPage() {
 
       <DeleteClientModal open={deleteOpen} onClose={() => setDeleteOpen(false)} client={client}
         onDeleted={() => navigate(sectionPath, { replace: true })} />
+
+      {sendDocOpen && client && (
+        <SendDocumentDrawer
+          client={client}
+          onClose={() => setSendDocOpen(false)}
+          onSent={() => {
+            setSendDocOpen(false)
+            qc.invalidateQueries({ queryKey: ['staff-client-deliveries', id] })
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Signing pack card ─────────────────────────────────────────────────────────
+
+const SIGNING_PACK_TYPES = ['kfs', 'privacy-notice', 'complaints-policy', 'hpa-guidance']
+const ELIGIBLE_STAGES = new Set(['eligible', 'sale_agreed', 'in_review', 'contracts_signed', 'in_home', 'exit_prep', 'option_window', 'pathway_complete', 'exited'])
+
+function SigningPackCard({ clientId, leadStage, deliveries, staffUserId, onSent }: {
+  clientId: string
+  leadStage: string | null
+  deliveries: DocumentDelivery[]
+  staffUserId: string
+  onSent: () => void
+}) {
+  const [sending, setSending] = useState(false)
+  const [err, setErr] = useState('')
+
+  if (!leadStage || !ELIGIBLE_STAGES.has(leadStage)) return null
+  const kfsSent = deliveries.some(d => d.document_type === 'kfs')
+  if (kfsSent) return null
+
+  async function issueSigningPack() {
+    setSending(true); setErr('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+      const issuedDate = new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })
+
+      const { data: clientRow } = await supabase.from('clients').select('first_name, last_name').eq('id', clientId).single()
+      const clientName = clientRow ? `${clientRow.first_name} ${clientRow.last_name}` : 'Client'
+
+      for (const docType of SIGNING_PACK_TYPES) {
+        await fetch(`${supabaseUrl}/functions/v1/deliver-document`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+          body: JSON.stringify({
+            client_id: clientId,
+            document_type: docType,
+            variables: { clientName, issuedDate, version: docType === 'kfs' ? '0.2.2' : '0.1.0' },
+            channels: 'both',
+            delivered_by: staffUserId,
+            idempotency_key: `signing-pack-${docType}-${clientId}-${staffUserId}`,
+          }),
+        })
+      }
+      onSent()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-brand-green/30 bg-[#ECF2EE] p-4 space-y-2">
+      <p className="text-sm font-semibold text-brand-green">Signing pack</p>
+      <p className="text-xs text-muted-foreground">No signing pack delivered yet. Issue KFS, Privacy Notice, Complaints Policy, and HPA Guidance.</p>
+      {err && <p className="text-xs text-destructive">{err}</p>}
+      <Button size="sm" onClick={issueSigningPack} disabled={sending} className="w-full bg-brand-green text-brand-cream hover:bg-brand-green-light">
+        {sending ? 'Sending…' : 'Issue signing pack'}
+      </Button>
+    </div>
+  )
+}
+
+// ── Delivery log ──────────────────────────────────────────────────────────────
+
+function DeliveryLog({ deliveries, clientId, onSend }: { deliveries: DocumentDelivery[]; clientId: string; onSend: () => void }) {
+  async function downloadPdf(storagePath: string) {
+    const { data } = await supabase.storage.from('documents').createSignedUrl(storagePath, 3600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+
+  if (deliveries.length === 0) {
+    return (
+      <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+        <p className="text-sm">No documents sent to this client yet.</p>
+        <Button size="sm" variant="outline" className="mt-3" onClick={onSend}>
+          <Send className="h-3.5 w-3.5 mr-1.5" /> Send first document
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-muted/40">
+            <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Document</th>
+            <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Sent</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">Email</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">PDF</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">Read</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">Ack</th>
+            <th className="px-3 py-2.5" />
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {deliveries.map(d => (
+            <tr key={d.id} className="hover:bg-muted/20">
+              <td className="px-4 py-3">
+                <p className="font-medium">{getDisplayName(d.document_type)}</p>
+                <p className="text-xs text-muted-foreground">v{d.document_version}</p>
+              </td>
+              <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                {new Date(d.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </td>
+              <td className="px-3 py-3 text-center">
+                {d.email_log_id ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}
+              </td>
+              <td className="px-3 py-3 text-center">
+                {d.storage_path ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}
+              </td>
+              <td className="px-3 py-3 text-center">
+                {d.read_at ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}
+              </td>
+              <td className="px-3 py-3 text-center">
+                {!d.requires_ack
+                  ? <span className="text-muted-foreground/40">n/a</span>
+                  : d.acknowledged_at
+                  ? <span className="text-green-600">✓</span>
+                  : <span className="text-amber-500">!</span>
+                }
+              </td>
+              <td className="px-3 py-3">
+                {d.storage_path && (
+                  <Button size="sm" variant="ghost" onClick={() => downloadPdf(d.storage_path!)} className="h-7 px-2">
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
