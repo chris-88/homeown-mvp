@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +29,8 @@ function totalInvested(subs: Array<{ amount: number; status: string }>) {
 }
 
 export default function CircleListPage() {
-  const [kycFilter, setKycFilter] = useState<string>('all')
+  const [searchParams] = useSearchParams()
+  const [kycFilter, setKycFilter] = useState<string>(searchParams.get('kyc') ?? 'all')
 
   const { data: members, isLoading } = useQuery({
     queryKey: ['staff-circle-members'],

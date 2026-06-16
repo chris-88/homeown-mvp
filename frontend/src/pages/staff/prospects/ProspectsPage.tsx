@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { LEAD_STAGE_LABELS, LEAD_STAGE_ORDER } from '@/types'
 import type { Client, LeadStage } from '@/types'
@@ -22,8 +22,9 @@ function daysAgo(dateStr: string) {
 }
 
 export default function ProspectsPage() {
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState<string>('all')
+  const [stageFilter, setStageFilter] = useState<string>(searchParams.get('stage') ?? 'all')
 
   const { data: prospects, isLoading } = useQuery<Client[]>({
     queryKey: ['prospects'],

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { PROGRAMME_STAGE_LABELS } from '@/types'
 import type { Client, ProgrammeStage } from '@/types'
@@ -15,8 +15,9 @@ const PHASE2_STAGES: ProgrammeStage[] = ['dac_assigned', 'searching', 'sale_agre
 type ClientWithDac = Client & { dacs?: { name: string } | null }
 
 export default function PropertyPage() {
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState<string>('all')
+  const [stageFilter, setStageFilter] = useState<string>(searchParams.get('stage') ?? 'all')
 
   const { data: clients, isLoading } = useQuery<ClientWithDac[]>({
     queryKey: ['property-list'],

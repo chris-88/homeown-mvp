@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import {
   LEAD_STAGE_LABELS, PROGRAMME_STAGE_LABELS,
@@ -26,47 +27,58 @@ type DacWithRelations = Dac & {
   clients: { id: string; programme_stage: string | null }[]
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="rounded-lg border bg-card p-5">
+function StatCard({ label, value, sub, to }: { label: string; value: string | number; sub?: string; to?: string }) {
+  const content = (
+    <>
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-1 text-3xl font-bold">{value}</p>
       {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
-    </div>
+    </>
   )
+  if (to) {
+    return (
+      <Link to={to} className="block rounded-lg border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-accent">
+        {content}
+      </Link>
+    )
+  }
+  return <div className="rounded-lg border bg-card p-5">{content}</div>
 }
 
 const PHASE1_COLOR = 'border-border bg-muted/40'
 const PHASE2_COLOR = 'border-primary/30 bg-primary/5'
 const PHASE3_COLOR = 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/20'
 
-function StageBox({ stage, count, color }: { stage: string; count: number; color: string }) {
+function StageBox({ stage, count, color, to }: { stage: string; count: number; color: string; to: string }) {
+  const label = LEAD_STAGE_LABELS[stage as keyof typeof LEAD_STAGE_LABELS] ??
+    PROGRAMME_STAGE_LABELS[stage as keyof typeof PROGRAMME_STAGE_LABELS] ??
+    stage
   return (
-    <div className={`flex-1 min-w-0 rounded-lg border p-3 text-center ${color}`}>
+    <Link
+      to={to}
+      className={`flex-1 min-w-0 rounded-lg border p-3 text-center transition-colors hover:brightness-95 ${color}`}
+    >
       <p className={`text-2xl font-bold tabular-nums ${count === 0 ? 'text-muted-foreground/30' : ''}`}>
         {count === 0 ? '-' : count}
       </p>
-      <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
-        {LEAD_STAGE_LABELS[stage as keyof typeof LEAD_STAGE_LABELS] ??
-         PROGRAMME_STAGE_LABELS[stage as keyof typeof PROGRAMME_STAGE_LABELS] ??
-         stage}
-      </p>
-    </div>
+      <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{label}</p>
+    </Link>
   )
 }
 
-function PhaseGroup({ label, stages, counts, color }: {
+function PhaseGroup({ label, stages, counts, color, basePath }: {
   label: string
   stages: string[]
   counts: Record<string, number>
   color: string
+  basePath: string
 }) {
   return (
     <div className="space-y-2">
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
       <div className="flex gap-1.5">
         {stages.map(s => (
-          <StageBox key={s} stage={s} count={counts[s] ?? 0} color={color} />
+          <StageBox key={s} stage={s} count={counts[s] ?? 0} color={color} to={`${basePath}?stage=${s}`} />
         ))}
       </div>
     </div>
@@ -135,21 +147,25 @@ export default function OverviewPage() {
             label="On pathway"
             value={metrics?.on_pathway_count ?? '-'}
             sub="Families in their home"
+            to="/app/staff/pathway"
           />
           <StatCard
             label="Pathway complete"
             value={metrics?.pathway_complete_count ?? '-'}
             sub="Completed the programme"
+            to="/app/staff/pathway?stage=pathway_complete"
           />
           <StatCard
             label="Active prospects"
             value={metrics?.total_prospects ?? '-'}
             sub={metrics ? `${metrics.eligible_unassigned} eligible, awaiting DAC` : undefined}
+            to="/app/staff/prospects"
           />
           <StatCard
             label="Circle members"
             value={metrics?.circle_member_count ?? '-'}
             sub={metrics ? `${metrics.circle_kyc_complete} KYC complete` : undefined}
+            to="/app/staff/circle"
           />
         </div>
       </section>
@@ -163,29 +179,32 @@ export default function OverviewPage() {
             stages={LEAD_STAGE_ORDER}
             counts={stageCounts}
             color={PHASE1_COLOR}
+            basePath="/app/staff/prospects"
           />
           <PhaseGroup
             label="Phase 2: Property"
             stages={['dac_assigned','searching','sale_agreed','conveyancing','contracts_signed']}
             counts={stageCounts}
             color={PHASE2_COLOR}
+            basePath="/app/staff/property"
           />
           <PhaseGroup
             label="Phase 3: Pathway"
             stages={['in_home','servicing','exit_prep','option_window','pathway_complete']}
             counts={stageCounts}
             color={PHASE3_COLOR}
+            basePath="/app/staff/pathway"
           />
           <div className="flex gap-4 border-t pt-3">
-            <div className="text-sm text-muted-foreground">
+            <Link to="/app/staff/prospects?stage=not_eligible" className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2">
               <span className="font-medium text-foreground">{stageCounts['not_eligible'] ?? 0}</span> not eligible
-            </div>
-            <div className="text-sm text-muted-foreground">
+            </Link>
+            <Link to="/app/staff/prospects?stage=deferred" className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2">
               <span className="font-medium text-foreground">{stageCounts['deferred'] ?? 0}</span> deferred
-            </div>
-            <div className="text-sm text-muted-foreground">
+            </Link>
+            <Link to="/app/staff/pathway?stage=exited" className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2">
               <span className="font-medium text-foreground">{stageCounts['exited'] ?? 0}</span> exited
-            </div>
+            </Link>
           </div>
         </div>
       </section>
@@ -195,20 +214,20 @@ export default function OverviewPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">DAC lifecycle</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Planning */}
-          <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="rounded-xl border bg-card p-4 space-y-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Planning</p>
             {planningDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None</p>
             ) : planningDacs.map(d => (
-              <div key={d.id} className="text-sm">
+              <Link key={d.id} to={`/app/staff/dacs/${d.id}`} className="block rounded-md -mx-2 px-2 py-1 text-sm transition-colors hover:bg-accent">
                 <p className="font-medium">{d.name}</p>
                 <p className="text-muted-foreground">{DAC_STATUS_LABELS[d.status]}</p>
-              </div>
+              </Link>
             ))}
           </div>
 
           {/* Fundraising */}
-          <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="rounded-xl border bg-card p-4 space-y-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fundraising</p>
             {fundraisingDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None open</p>
@@ -217,7 +236,7 @@ export default function OverviewPage() {
               const target = d.target_sub_amount ?? 0
               const pct = target > 0 ? Math.min(100, Math.round((raised / target) * 100)) : 0
               return (
-                <div key={d.id} className="space-y-1.5">
+                <Link key={d.id} to={`/app/staff/dacs/${d.id}`} className="block space-y-1.5 rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-accent">
                   <p className="text-sm font-medium">{d.name}</p>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                     <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
@@ -225,39 +244,39 @@ export default function OverviewPage() {
                   <p className="text-xs text-muted-foreground">
                     {formatCurrency(raised)} / {target ? formatCurrency(target) : '-'} ({pct}%)
                   </p>
-                </div>
+                </Link>
               )
             })}
           </div>
 
           {/* Live */}
-          <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="rounded-xl border bg-card p-4 space-y-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Live</p>
             {liveDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None</p>
             ) : liveDacs.map(d => {
               const inhome = d.clients.filter(c => c.programme_stage === 'in_home').length
               return (
-                <div key={d.id} className="text-sm">
+                <Link key={d.id} to={`/app/staff/dacs/${d.id}`} className="block rounded-md -mx-2 px-2 py-1 text-sm transition-colors hover:bg-accent">
                   <p className="font-medium">{d.name}</p>
                   <p className="text-muted-foreground">{inhome} client{inhome !== 1 ? 's' : ''} in home</p>
-                </div>
+                </Link>
               )
             })}
           </div>
 
           {/* Matured */}
-          <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="rounded-xl border bg-card p-4 space-y-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Matured</p>
             {maturedDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None yet</p>
             ) : maturedDacs.map(d => (
-              <div key={d.id} className="text-sm">
+              <Link key={d.id} to={`/app/staff/dacs/${d.id}`} className="block rounded-md -mx-2 px-2 py-1 text-sm transition-colors hover:bg-accent">
                 <p className="font-medium">{d.name}</p>
                 <p className="text-muted-foreground">
                   {d.subscriptions.filter(s => s.status === 'redeemed').length} subscriptions redeemed
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -271,16 +290,19 @@ export default function OverviewPage() {
             label="Total committed"
             value={metrics ? formatCurrency(metrics.total_committed) : '-'}
             sub="Subscribed + funded"
+            to="/app/staff/circle"
           />
           <StatCard
             label="Total funded"
             value={metrics ? formatCurrency(metrics.total_funded) : '-'}
             sub="Funds received"
+            to="/app/staff/circle"
           />
           <StatCard
             label="Open DACs"
             value={metrics?.open_dac_count ?? '-'}
             sub="Currently fundraising"
+            to="/app/staff/dacs"
           />
         </div>
       </section>
