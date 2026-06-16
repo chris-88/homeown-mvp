@@ -143,6 +143,7 @@ export default function ProspectsPage() {
                         <Link to={`/app/staff/prospects/${c.id}`} className="font-medium hover:underline underline-offset-2">
                           {c.first_name} {c.last_name}
                         </Link>
+                        {!c.active && <span className="ml-2 text-xs text-muted-foreground">(disabled)</span>}
                       </td>
                       <td className="py-3 pr-4 text-muted-foreground">{c.email}</td>
                       <td className="py-3 pr-4">

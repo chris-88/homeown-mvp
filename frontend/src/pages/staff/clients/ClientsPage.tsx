@@ -127,6 +127,7 @@ export default function ClientsPage() {
                       <Link to={`/app/staff/clients/${c.id}`} className="font-medium hover:underline underline-offset-2">
                         {c.first_name} {c.last_name}
                       </Link>
+                      {!c.active && <span className="ml-2 text-xs text-muted-foreground">(disabled)</span>}
                     </td>
                     <td className="py-3 pr-4">
                       <Badge variant={stageBadgeVariant(c.programme_stage!)}>

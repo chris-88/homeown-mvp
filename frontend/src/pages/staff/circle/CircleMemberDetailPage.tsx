@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { ArrowLeft, Copy, Check, Download } from 'lucide-react'
+import { ArrowLeft, Copy, Check, Download, Ban, RotateCcw, Trash2 } from 'lucide-react'
 import type { CircleMember, Dac, Subscription, CircleMemberDocument, CircleMemberNote, SubscriptionStatus } from '@/types'
 import { KYC_STATUS_LABELS, SUBSCRIPTION_STATUS_LABELS, CIRCLE_MEMBER_DOC_TYPE_LABELS } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -427,10 +428,56 @@ function DocumentsTab({ member }: { member: CircleMember }) {
   )
 }
 
+// ── Delete member modal ───────────────────────────────────────
+function DeleteMemberModal({
+  open, onClose, member, onDeleted,
+}: { open: boolean; onClose: () => void; member: CircleMember; onDeleted: () => void }) {
+  const [confirmText, setConfirmText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const expected = `${member.first_name} ${member.last_name}`
+
+  async function handleDelete() {
+    setLoading(true); setError('')
+    const { error: deleteErr } = await supabase.from('circle_members').delete().eq('id', member.id)
+    if (deleteErr) { setError(deleteErr.message); setLoading(false); return }
+    onDeleted()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Delete Circle member</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            This permanently deletes <span className="font-medium text-foreground">{expected}</span> and all
+            associated subscriptions, documents, and notes. This cannot be undone.
+          </p>
+          <div>
+            <label className="text-sm font-medium">Type <span className="font-mono">{expected}</span> to confirm</label>
+            <Input className="mt-1" value={confirmText} onChange={e => setConfirmText(e.target.value)} />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={loading || confirmText !== expected}>
+            {loading ? 'Deleting…' : 'Delete permanently'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ── Page root ──────────────────────────────────────────────────
 export default function CircleMemberDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { staffMember } = useAuth()
   const qc = useQueryClient()
+  const navigate = useNavigate()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [disableLoading, setDisableLoading] = useState(false)
 
   const { data: member, isLoading } = useQuery({
     queryKey: ['staff-circle-member', id],
@@ -446,14 +493,41 @@ export default function CircleMemberDetailPage() {
 
   function refresh() { qc.invalidateQueries({ queryKey: ['staff-circle-member', id] }) }
 
+  async function handleToggleActive() {
+    setDisableLoading(true)
+    await supabase.from('circle_members').update({ active: !member!.active }).eq('id', member!.id)
+    setDisableLoading(false)
+    refresh()
+  }
+
+  const isAdmin = staffMember?.role === 'admin'
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-8">
       <Link to="/app/staff/circle" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />Circle CRM
       </Link>
-      <div>
-        <h1 className="text-2xl font-bold">{member.first_name} {member.last_name}</h1>
-        <p className="mt-1 text-muted-foreground">{member.email}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{member.first_name} {member.last_name}</h1>
+          <p className="mt-1 text-muted-foreground">{member.email}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {!member.active && <Badge variant="outline" className="text-sm px-3 py-1 text-muted-foreground">Disabled</Badge>}
+          {isAdmin && (
+            <>
+              <Button variant="outline" size="sm" onClick={handleToggleActive} disabled={disableLoading}>
+                {member.active
+                  ? <><Ban className="h-3.5 w-3.5 mr-1.5" />Disable</>
+                  : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Enable</>}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}
+                className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="overview">
@@ -468,6 +542,9 @@ export default function CircleMemberDetailPage() {
           <TabsContent value="documents"><DocumentsTab member={member} /></TabsContent>
         </div>
       </Tabs>
+
+      <DeleteMemberModal open={deleteOpen} onClose={() => setDeleteOpen(false)} member={member}
+        onDeleted={() => navigate('/app/staff/circle', { replace: true })} />
     </div>
   )
 }

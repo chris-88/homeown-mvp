@@ -1,34 +1,36 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import type { Client, Profile, StaffMember } from '@/types'
+import type { Client, CircleMember, Profile, StaffMember } from '@/types'
 
 interface AuthState {
   user: User | null
   profile: Profile | null
   client: Client | null
   staffMember: StaffMember | null
+  circleMember: CircleMember | null
   loading: boolean
 }
 
 const AuthContext = createContext<AuthState>({
-  user: null, profile: null, client: null, staffMember: null, loading: true,
+  user: null, profile: null, client: null, staffMember: null, circleMember: null, loading: true,
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
-    user: null, profile: null, client: null, staffMember: null, loading: true,
+    user: null, profile: null, client: null, staffMember: null, circleMember: null, loading: true,
   })
 
   async function loadUser(user: User | null) {
     if (!user) {
-      setState({ user: null, profile: null, client: null, staffMember: null, loading: false })
+      setState({ user: null, profile: null, client: null, staffMember: null, circleMember: null, loading: false })
       return
     }
-    const [{ data: profile }, { data: clientData }, { data: staffMember }] = await Promise.all([
+    const [{ data: profile }, { data: clientData }, { data: staffMember }, { data: circleMember }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('clients').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('staff_members').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('circle_members').select('*').eq('user_id', user.id).maybeSingle(),
     ])
 
     let client = clientData as Client | null
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile: profile ?? null,
       client,
       staffMember: (staffMember as StaffMember) ?? null,
+      circleMember: (circleMember as CircleMember) ?? null,
       loading: false,
     })
   }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
@@ -10,15 +10,60 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Copy, Check } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ArrowLeft, Copy, Check, Trash2 } from 'lucide-react'
+
+// ─── Delete team member modal ───────────────────────────────────────────────
+function DeleteMemberModal({
+  open, onClose, member, onDeleted,
+}: { open: boolean; onClose: () => void; member: StaffMember; onDeleted: () => void }) {
+  const [confirmText, setConfirmText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const expected = `${member.first_name} ${member.last_name}`
+
+  async function handleDelete() {
+    setLoading(true); setError('')
+    const { error: deleteErr } = await supabase.from('staff_members').delete().eq('id', member.id)
+    if (deleteErr) { setError(deleteErr.message); setLoading(false); return }
+    onDeleted()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Delete team member</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            This permanently removes <span className="font-medium text-foreground">{expected}</span> from the team.
+            Clients and Circle members they were assigned to will become unassigned. This cannot be undone.
+          </p>
+          <div>
+            <label className="text-sm font-medium">Type <span className="font-mono">{expected}</span> to confirm</label>
+            <Input className="mt-1" value={confirmText} onChange={e => setConfirmText(e.target.value)} />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={loading || confirmText !== expected}>
+            {loading ? 'Deleting…' : 'Delete permanently'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function TeamDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { staffMember: me } = useAuth()
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const { data: member } = useQuery<StaffMember>({
     queryKey: ['staff-member', id],
@@ -83,11 +128,19 @@ export default function TeamDetailPage() {
           <h1 className="text-2xl font-bold">{member.first_name} {member.last_name}</h1>
           <p className="mt-0.5 text-muted-foreground">{member.email}</p>
         </div>
-        {member.user_id ? (
-          <Badge variant="default">Active</Badge>
-        ) : (
-          <Badge variant="secondary">Pending activation</Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {member.user_id ? (
+            <Badge variant="default">Active</Badge>
+          ) : (
+            <Badge variant="secondary">Pending activation</Badge>
+          )}
+          {isAdmin && member.id !== me?.id && (
+            <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}
+              className="text-destructive border-destructive/40 hover:bg-destructive/5">
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Join URL (if not yet activated) */}
@@ -160,6 +213,9 @@ export default function TeamDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <DeleteMemberModal open={deleteOpen} onClose={() => setDeleteOpen(false)} member={member}
+        onDeleted={() => navigate('/app/staff/team', { replace: true })} />
     </div>
   )
 }

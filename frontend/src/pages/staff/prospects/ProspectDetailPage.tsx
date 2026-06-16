@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck, Plus, Upload, Download, CheckCircle2, Trash2, Eye, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck, Plus, Upload, Download, CheckCircle2, Trash2, Eye, X, Ban, RotateCcw } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 
 // Stage meta — what's true now and what needs to happen to progress
@@ -250,6 +250,48 @@ function DeferModal({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleConfirm} disabled={loading}>{loading ? 'Saving…' : 'Defer'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Delete client modal ────────────────────────────────────────────────────────
+function DeleteClientModal({
+  open, onClose, client, onDeleted,
+}: { open: boolean; onClose: () => void; client: Client; onDeleted: () => void }) {
+  const [confirmText, setConfirmText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const expected = `${client.first_name} ${client.last_name}`
+
+  async function handleDelete() {
+    setLoading(true); setError('')
+    const { error: deleteErr } = await supabase.from('clients').delete().eq('id', client.id)
+    if (deleteErr) { setError(deleteErr.message); setLoading(false); return }
+    onDeleted()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Delete prospect</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            This permanently deletes <span className="font-medium text-foreground">{expected}</span> and all
+            associated documents, events, and calculator data. This cannot be undone.
+          </p>
+          <div>
+            <label className="text-sm font-medium">Type <span className="font-mono">{expected}</span> to confirm</label>
+            <Input className="mt-1" value={confirmText} onChange={e => setConfirmText(e.target.value)} />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={loading || confirmText !== expected}>
+            {loading ? 'Deleting…' : 'Delete permanently'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -542,9 +584,12 @@ export default function ProspectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user, staffMember } = useAuth()
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [advanceOpen, setAdvanceOpen] = useState(false)
   const [notEligOpen, setNotEligOpen] = useState(false)
   const [deferOpen, setDeferOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [disableLoading, setDisableLoading] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [noteLoading, setNoteLoading] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -638,8 +683,21 @@ export default function ProspectDetailPage() {
     refresh()
   }
 
+  async function handleToggleActive() {
+    if (!client) return
+    setDisableLoading(true)
+    await supabase.from('clients').update({ active: !client.active }).eq('id', client.id)
+    await supabase.from('events').insert({
+      client_id: client.id, event_type: 'staff_note', actor_id: user?.id ?? null,
+      payload: { text: client.active ? 'Account disabled' : 'Account re-enabled' }, visibility: 'internal',
+    })
+    setDisableLoading(false)
+    refresh()
+  }
+
   const canAdvance = canAdvancePhase1(staffMember?.role)
   const canAssign = canAssignDAC(staffMember?.role)
+  const isAdmin = staffMember?.role === 'admin'
   const inPhase1Terminal = client?.lead_stage === 'not_eligible' || client?.lead_stage === 'deferred'
   const nextStage = client ? nextLeadStage(client.lead_stage) : null
 
@@ -657,9 +715,25 @@ export default function ProspectDetailPage() {
           <h1 className="text-2xl font-bold">{client.first_name} {client.last_name}</h1>
           <p className="mt-1 text-muted-foreground">{client.email}</p>
         </div>
-        <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-sm px-3 py-1">
-          {LEAD_STAGE_LABELS[client.lead_stage]}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {!client.active && <Badge variant="outline" className="text-sm px-3 py-1 text-muted-foreground">Disabled</Badge>}
+          <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-sm px-3 py-1">
+            {LEAD_STAGE_LABELS[client.lead_stage]}
+          </Badge>
+          {isAdmin && (
+            <>
+              <Button variant="outline" size="sm" onClick={handleToggleActive} disabled={disableLoading}>
+                {client.active
+                  ? <><Ban className="h-3.5 w-3.5 mr-1.5" />Disable</>
+                  : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Enable</>}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}
+                className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -858,6 +932,8 @@ export default function ProspectDetailPage() {
           <AdvanceModal open={advanceOpen} onClose={() => setAdvanceOpen(false)} client={client} onAdvanced={refresh} />
           <NotEligibleModal open={notEligOpen} onClose={() => setNotEligOpen(false)} client={client} onDone={refresh} />
           <DeferModal open={deferOpen} onClose={() => setDeferOpen(false)} client={client} onDone={refresh} />
+          <DeleteClientModal open={deleteOpen} onClose={() => setDeleteOpen(false)} client={client}
+            onDeleted={() => navigate('/app/staff/prospects', { replace: true })} />
         </>
       )}
     </div>

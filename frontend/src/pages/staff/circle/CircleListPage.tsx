@@ -98,6 +98,7 @@ export default function CircleListPage() {
                       <Link to={`/app/staff/circle/${m.id}`} className="font-medium hover:underline">
                         {m.first_name} {m.last_name}
                       </Link>
+                      {!m.active && <span className="ml-2 text-xs text-muted-foreground">(disabled)</span>}
                     </td>
                     <td className="py-3 pr-4 text-muted-foreground">{m.email}</td>
                     <td className="py-3 pr-4">{kycBadge(m.kyc_status as KycStatus)}</td>

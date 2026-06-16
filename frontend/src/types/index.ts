@@ -103,6 +103,7 @@ export interface Client {
   pathway_start_date: string | null
   assigned_to: string | null
   deferred_until: string | null
+  active: boolean
 }
 
 export interface StaffMember {
@@ -177,6 +178,7 @@ export interface CircleMember {
   kyc_status: KycStatus
   source: string | null
   assigned_to: string | null
+  active: boolean
 }
 
 export interface Dac {

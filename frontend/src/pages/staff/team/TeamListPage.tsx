@@ -71,8 +71,10 @@ export default function TeamListPage() {
                       <Badge variant="outline">{STAFF_ROLE_LABELS[m.role]}</Badge>
                     </td>
                     <td className="py-3 pr-4 text-muted-foreground">{m.email}</td>
-                    <td className="py-3 pr-4">
-                      {m.user_id ? (
+                    <td className="py-3 pr-4 space-x-1">
+                      {!m.active ? (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">Disabled</Badge>
+                      ) : m.user_id ? (
                         <Badge variant="default" className="text-xs">Active</Badge>
                       ) : (
                         <Badge variant="secondary" className="text-xs">Pending</Badge>
