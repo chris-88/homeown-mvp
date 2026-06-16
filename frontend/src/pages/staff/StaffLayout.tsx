@@ -5,12 +5,15 @@ import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import {
   BarChart3, ListTodo, UserSearch, Home, Route, Users2, Landmark,
-  Building2, UserCircle, LogOut, Menu, X,
+  Building2, UserCircle, LogOut, Menu, X, MoreVertical,
 } from 'lucide-react'
 import { canViewProspects, canViewProperty, canViewPathway, canViewCircle, canViewDACs, canManageTeam } from '@/lib/rbac'
-import type { StaffRole } from '@/types'
+import type { StaffMember, StaffRole } from '@/types'
 import { Logo } from '@/components/shared/Logo'
 import { NotificationBell } from '@/components/shared/NotificationBell'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 type NavItem = {
   to: string
@@ -32,18 +35,33 @@ const NAV: NavItem[] = [
   { to: '/app/staff/profile',   label: 'My Profile',  icon: <UserCircle className="h-4 w-4" /> },
 ]
 
+function initials(staffMember: StaffMember | null) {
+  if (!staffMember) return '?'
+  const name = staffMember.display_name || `${staffMember.first_name} ${staffMember.last_name}`
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(p => p[0]!.toUpperCase())
+    .join('')
+}
+
 function SidebarContent({
   pathname,
   role,
+  staffMember,
   onNavClick,
 }: {
   pathname: string
   role: StaffRole | undefined
+  staffMember: StaffMember | null
   onNavClick?: () => void
 }) {
+  const name = staffMember?.display_name || (staffMember ? `${staffMember.first_name} ${staffMember.last_name}` : 'Loading…')
+
   return (
     <>
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
         {NAV.filter(item => !item.show || item.show(role)).map(({ to, label, icon, exact }) => {
           const active = exact ? pathname === to : pathname.startsWith(to)
           return (
@@ -63,13 +81,29 @@ function SidebarContent({
           )
         })}
       </nav>
-      <div className="border-t border-white/10 p-3">
-        <Link
-          to="/auth/logout"
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-brand-cream/70 transition-colors hover:bg-white/10 hover:text-brand-cream"
-        >
-          <LogOut className="h-4 w-4" />Sign out
-        </Link>
+      <div className="shrink-0 border-t border-white/10 p-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-2.5 rounded-md p-1.5 text-left transition-colors hover:bg-white/10">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-medium text-brand-cream">
+                {initials(staffMember)}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-brand-cream">{name}</span>
+                <span className="block truncate text-xs text-brand-cream/60">{staffMember?.email}</span>
+              </span>
+              <MoreVertical className="h-4 w-4 shrink-0 text-brand-cream/60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-48">
+            <DropdownMenuItem asChild onClick={onNavClick}>
+              <Link to="/app/staff/profile"><UserCircle className="h-4 w-4" />My Profile</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild onClick={onNavClick}>
+              <Link to="/auth/logout"><LogOut className="h-4 w-4" />Sign out</Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </>
   )
@@ -83,22 +117,22 @@ export default function StaffLayout() {
 
   return (
     <RouteGuard requiredRole="staff">
-      <div className="portal-context flex min-h-screen bg-background">
+      <div className="portal-context flex h-screen overflow-hidden bg-background">
 
         {/* ── Desktop sidebar ───────────────────────────────────── */}
-        <aside className="hidden w-60 shrink-0 md:flex md:flex-col bg-brand-green text-brand-cream">
-          <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
+        <aside className="hidden h-screen w-60 shrink-0 md:flex md:flex-col bg-brand-green text-brand-cream">
+          <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 px-4">
             <Link to="/" className="flex flex-col gap-0.5">
               <Logo className="h-5 w-auto text-brand-cream" />
               <span className="text-[10px] font-medium tracking-widest text-brand-cream/60 uppercase">Staff</span>
             </Link>
             <NotificationBell iconClassName="text-brand-cream/80" />
           </div>
-          <SidebarContent pathname={pathname} role={role} />
+          <SidebarContent pathname={pathname} role={role} staffMember={staffMember} />
         </aside>
 
         {/* ── Mobile: header + main ─────────────────────────────── */}
-        <div className="flex flex-1 flex-col min-w-0 md:contents">
+        <div className="flex flex-1 flex-col min-w-0 overflow-hidden md:contents">
           {/* Mobile header */}
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-brand-green px-4 md:hidden">
             <Link to="/" className="flex flex-col gap-0.5">
@@ -117,7 +151,7 @@ export default function StaffLayout() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto"><Outlet /></main>
+          <main className="flex-1 overflow-y-auto md:h-screen"><Outlet /></main>
         </div>
 
         {/* ── Mobile drawer backdrop ────────────────────────────── */}
@@ -148,7 +182,7 @@ export default function StaffLayout() {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <SidebarContent pathname={pathname} role={role} onNavClick={() => setDrawerOpen(false)} />
+          <SidebarContent pathname={pathname} role={role} staffMember={staffMember} onNavClick={() => setDrawerOpen(false)} />
         </aside>
 
       </div>
