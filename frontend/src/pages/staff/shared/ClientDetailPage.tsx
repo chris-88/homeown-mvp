@@ -496,7 +496,7 @@ function SigningPackCard({ clientId, leadStage, deliveries, staffUserId, onSent 
 
 // ── Delivery log ──────────────────────────────────────────────────────────────
 
-function DeliveryLog({ deliveries, clientId, onSend }: { deliveries: DocumentDelivery[]; clientId: string; onSend: () => void }) {
+function DeliveryLog({ deliveries, onSend }: { deliveries: DocumentDelivery[]; clientId: string; onSend: () => void }) {
   async function downloadPdf(storagePath: string) {
     const { data } = await supabase.storage.from('documents').createSignedUrl(storagePath, 3600)
     if (data?.signedUrl) window.open(data.signedUrl, '_blank')
