@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { StageFilterChips } from '@/components/shared/StageFilterChips'
 
 function stageBadgeVariant(stage: LeadStage): 'default' | 'secondary' | 'outline' | 'destructive' {
   if (stage === 'eligible') return 'default'
@@ -59,41 +60,17 @@ export default function ProspectsPage() {
       </div>
 
       {/* Stage summary chips */}
-      <div className="flex flex-wrap gap-2">
-        {LEAD_STAGE_ORDER.map(s => (
-          <button
-            key={s}
-            onClick={() => setStageFilter(stageFilter === s ? 'all' : s)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-              stageFilter === s
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-card hover:bg-accent'
-            }`}
-          >
-            {LEAD_STAGE_LABELS[s]} <span className="ml-1 opacity-70">{counts[s] ?? 0}</span>
-          </button>
-        ))}
-        <button
-          onClick={() => setStageFilter(stageFilter === 'not_eligible' ? 'all' : 'not_eligible')}
-          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-            stageFilter === 'not_eligible'
-              ? 'border-destructive bg-destructive text-destructive-foreground'
-              : 'border-border bg-card hover:bg-accent'
-          }`}
-        >
-          Not Eligible <span className="ml-1 opacity-70">{counts['not_eligible'] ?? 0}</span>
-        </button>
-        <button
-          onClick={() => setStageFilter(stageFilter === 'deferred' ? 'all' : 'deferred')}
-          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-            stageFilter === 'deferred'
-              ? 'border-primary bg-primary text-primary-foreground'
-              : 'border-border bg-card hover:bg-accent'
-          }`}
-        >
-          Deferred <span className="ml-1 opacity-70">{counts['deferred'] ?? 0}</span>
-        </button>
-      </div>
+      <StageFilterChips
+        stages={LEAD_STAGE_ORDER}
+        labels={LEAD_STAGE_LABELS}
+        counts={counts}
+        active={stageFilter}
+        onToggle={s => setStageFilter(stageFilter === s ? 'all' : s)}
+        extra={[
+          { value: 'not_eligible', label: 'Not Eligible', variant: 'destructive' },
+          { value: 'deferred', label: 'Deferred', variant: 'default' },
+        ]}
+      />
 
       {/* Search + filter bar */}
       <div className="flex gap-3">

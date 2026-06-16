@@ -1,110 +1,29 @@
-import { useState, useRef } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { canAdvancePhase1, canAssignDAC } from '@/lib/rbac'
-import {
-  LEAD_STAGE_LABELS, DOC_TYPE_LABELS, DOC_STATUS_LABELS,
-  EVENT_TYPE_LABELS, LEAD_STAGE_ORDER as STAGE_ORDER,
-} from '@/types'
-import { nextLeadStage } from '@/types'
-import type { Client, DocumentRequest, Event, LeadStage, StaffMember, Dac, DocType, DocStatus } from '@/types'
+import { LEAD_STAGE_LABELS, LEAD_STAGE_ORDER } from '@/types'
+import type { Client, DocumentRequest, Event, LeadStage, StaffMember, Dac } from '@/types'
+import { LEAD_STAGE_META } from '@/lib/stageMeta'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, ChevronRight, FileText, Check, Copy, UserCheck, Plus, Upload, Download, CheckCircle2, Trash2, Eye, X, Ban, RotateCcw } from 'lucide-react'
-import { cn, formatCurrency } from '@/lib/utils'
+import { Home, Check, Copy, UserCheck } from 'lucide-react'
+import { DetailHeader } from '@/components/shared/DetailHeader'
+import { StageTimeline } from '@/components/shared/StageTimeline'
+import { StaffDocumentsSection } from '@/components/shared/StaffDocumentsSection'
+import { NotesTab } from '@/components/shared/NotesTab'
+import { EventTimelineTab } from '@/components/shared/EventTimelineTab'
+import { AssignedToCard } from '@/components/shared/AssignedToCard'
+import { StageManagementCard } from '@/components/shared/StageManagementCard'
+import { TicketPanel } from '@/components/shared/TicketPanel'
 
-// Stage meta — what's true now and what needs to happen to progress
-const STAGE_META: Record<LeadStage, { current: string; toProgress: string; nextPreview: string }> = {
-  new_lead: {
-    current: 'This prospect has submitted the calculator. No discovery call has been scheduled yet.',
-    toProgress: 'Contact the prospect and schedule a discovery call.',
-    nextPreview: 'The prospect moves into active discovery. A confirmation is sent and the call is logged.',
-  },
-  in_discovery: {
-    current: 'A discovery call has been booked or is in progress with this prospect.',
-    toProgress: 'Hold the discovery call and confirm the prospect wants to proceed to pre-qualification.',
-    nextPreview: 'Documents are requested from the prospect and their application enters pre-qualification.',
-  },
-  pre_qual: {
-    current: 'Document collection is underway. The prospect has been asked to upload their required files.',
-    toProgress: 'Receive all required documents from the prospect.',
-    nextPreview: 'The full application enters internal review by the team.',
-  },
-  in_review: {
-    current: 'All documents have been received and the application is under internal review.',
-    toProgress: 'Complete the internal review and confirm the prospect meets all eligibility criteria.',
-    nextPreview: 'The prospect is confirmed as eligible. They can then be matched with a DAC to begin Phase 2.',
-  },
-  eligible: {
-    current: 'This prospect has been confirmed as eligible for the Homeown pathway.',
-    toProgress: 'Assign the prospect to an available DAC to move them into Phase 2.',
-    nextPreview: 'The prospect enters Phase 2 and begins their property search.',
-  },
-  not_eligible: {
-    current: 'This prospect has been marked as not eligible and is outside the active funnel.',
-    toProgress: '',
-    nextPreview: '',
-  },
-  deferred: {
-    current: 'This prospect has been deferred and will be revisited at a later date.',
-    toProgress: '',
-    nextPreview: '',
-  },
-}
-
-const MAIN_STAGES: LeadStage[] = ['new_lead', 'in_discovery', 'pre_qual', 'in_review', 'eligible']
-
-function StageTimeline({ current }: { current: LeadStage }) {
-  const currentIdx = MAIN_STAGES.indexOf(current)
-  const isTerminal = current === 'not_eligible' || current === 'deferred'
-
-  return (
-    <div className="flex items-center gap-0">
-      {MAIN_STAGES.map((stage, i) => {
-        const done = !isTerminal && currentIdx > i
-        const active = !isTerminal && currentIdx === i
-        return (
-          <div key={stage} className="flex items-center flex-1 min-w-0">
-            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-              <div className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors',
-                done ? 'bg-brand-green border-brand-green text-white'
-                  : active ? 'bg-white border-brand-green text-brand-green'
-                    : isTerminal ? 'bg-white border-muted-foreground/20 text-muted-foreground/40'
-                      : 'bg-white border-muted-foreground/30 text-muted-foreground/40',
-              )}>
-                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
-              </div>
-              <span className={cn(
-                'text-[10px] font-medium text-center leading-tight whitespace-nowrap',
-                active ? 'text-brand-green' : done ? 'text-foreground' : 'text-muted-foreground/50',
-              )}>
-                {LEAD_STAGE_LABELS[stage]}
-              </span>
-            </div>
-            {i < MAIN_STAGES.length - 1 && (
-              <div className={cn(
-                'h-0.5 flex-1 mx-1 mb-4',
-                done ? 'bg-brand-green' : 'bg-muted-foreground/15',
-              )} />
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function fmtDateTime(s: string) {
-  return new Date(s).toLocaleString('en-IE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
 }
@@ -114,70 +33,6 @@ function stageBadgeVariant(stage: LeadStage) {
   if (stage === 'not_eligible') return 'destructive' as const
   if (stage === 'deferred') return 'outline' as const
   return 'secondary' as const
-}
-
-// ─── Stage advance modal ───────────────────────────────────────────────────────
-function AdvanceModal({
-  open, onClose, client, onAdvanced,
-}: { open: boolean; onClose: () => void; client: Client; onAdvanced: () => void }) {
-  const { user } = useAuth()
-  const [note, setNote] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const next = nextLeadStage(client.lead_stage)
-  const otherStages = STAGE_ORDER.filter(s => s !== client.lead_stage)
-  const [targetStage, setTargetStage] = useState<LeadStage>(next ?? otherStages[0] ?? client.lead_stage)
-
-  async function handleAdvance() {
-    setLoading(true); setError('')
-    const { error: updateErr } = await supabase
-      .from('clients').update({ lead_stage: targetStage }).eq('id', client.id)
-    if (updateErr) { setError(updateErr.message); setLoading(false); return }
-    await supabase.from('events').insert({
-      client_id: client.id,
-      event_type: 'stage_changed',
-      actor_id: user?.id ?? null,
-      payload: { from: client.lead_stage, to: targetStage, note: note || null },
-      visibility: 'internal',
-    })
-    onAdvanced(); onClose()
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Change stage</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{LEAD_STAGE_LABELS[client.lead_stage]}</span>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <Select value={targetStage} onValueChange={v => setTargetStage(v as LeadStage)}>
-              <SelectTrigger className="h-8 w-48 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {otherStages.map(s => (
-                  <SelectItem key={s} value={s}>{LEAD_STAGE_LABELS[s]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Textarea
-            placeholder="Optional note (recorded internally)…"
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            rows={3}
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleAdvance} disabled={loading}>
-            {loading ? 'Saving…' : 'Confirm'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
 }
 
 // ─── Not eligible modal ────────────────────────────────────────────────────────
@@ -298,300 +153,17 @@ function DeleteClientModal({
   )
 }
 
-// ─── Staff documents section ───────────────────────────────────────────────────
-const ALL_DOC_TYPES: DocType[] = [
-  'photo_id', 'proof_of_address', 'payslip', 'bank_statement',
-  'employer_letter', 'tax_document', 'self_employed_accounts',
-  'accountant_letter', 'maintenance_order', 'other',
-]
-
-function docStatusVariant(status: DocStatus) {
-  if (status === 'approved') return 'default' as const
-  if (status === 'rejected') return 'destructive' as const
-  return 'secondary' as const
-}
-
-function StaffDocumentsSection({
-  clientId, docs, onRefresh,
-}: { clientId: string; docs: DocumentRequest[]; onRefresh: () => void }) {
-  const { user } = useAuth()
-  const [showRequest, setShowRequest] = useState(false)
-  const [selected, setSelected] = useState<Set<DocType>>(new Set())
-  const [requestLoading, setRequestLoading] = useState(false)
-  const [uploadingId, setUploadingId] = useState<string | null>(null)
-  const [viewingDoc, setViewingDoc] = useState<{ url: string; fileName: string } | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const requestedTypes = new Set(docs.map(d => d.doc_type))
-  const availableTypes = ALL_DOC_TYPES.filter(t => !requestedTypes.has(t))
-
-  function toggleType(t: DocType) {
-    setSelected(prev => {
-      const next = new Set(prev)
-      if (next.has(t)) next.delete(t); else next.add(t)
-      return next
-    })
-  }
-
-  async function handleRequest() {
-    if (!selected.size) return
-    setRequestLoading(true)
-    await supabase.from('document_requests').insert(
-      [...selected].map(doc_type => ({ client_id: clientId, doc_type, status: 'requested' }))
-    )
-    setSelected(new Set())
-    setShowRequest(false)
-    setRequestLoading(false)
-    onRefresh()
-  }
-
-  function startUpload(docId: string) {
-    setUploadingId(docId)
-    setTimeout(() => fileRef.current?.click(), 0)
-  }
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !uploadingId) return
-    const path = `${clientId}/${uploadingId}/${file.name}`
-    await supabase.storage.from('documents').upload(path, file, { upsert: true })
-    await supabase.from('document_requests').update({
-      file_path: path, file_name: file.name, status: 'needs_review', updated_at: new Date().toISOString(),
-    }).eq('id', uploadingId)
-    e.target.value = ''
-    setUploadingId(null)
-    onRefresh()
-  }
-
-  async function handleView(filePath: string, fileName: string) {
-    const { data } = await supabase.storage.from('documents').createSignedUrl(filePath, 300)
-    if (data?.signedUrl) setViewingDoc({ url: data.signedUrl, fileName })
-  }
-
-  function handleModalDownload() {
-    if (!viewingDoc) return
-    const a = document.createElement('a')
-    a.href = viewingDoc.url; a.download = viewingDoc.fileName; a.click()
-  }
-
-  function isImage(name: string) { return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name) }
-  function isPdf(name: string) { return /\.pdf$/i.test(name) }
-
-  async function handleApprove(docId: string) {
-    await supabase.from('document_requests').update({
-      status: 'approved',
-      reviewed_by: user?.id ?? null,
-      reviewed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('id', docId)
-    onRefresh()
-  }
-
-  async function handleReject(docId: string) {
-    await supabase.from('document_requests').update({
-      status: 'rejected',
-      reviewed_by: user?.id ?? null,
-      reviewed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('id', docId)
-    onRefresh()
-  }
-
-  return (
-    <section className="rounded-xl border bg-card p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Documents</h2>
-        {availableTypes.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => setShowRequest(!showRequest)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />Request docs
-          </Button>
-        )}
-      </div>
-
-      {showRequest && (
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-          <p className="text-sm font-medium">Select documents to request</p>
-          <div className="grid grid-cols-2 gap-2">
-            {availableTypes.map(t => (
-              <label key={t} className="flex items-center gap-2 cursor-pointer text-sm">
-                <Checkbox checked={selected.has(t)} onCheckedChange={() => toggleType(t)} />
-                {DOC_TYPE_LABELS[t]}
-              </label>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleRequest} disabled={requestLoading || !selected.size}>
-              {requestLoading ? 'Sending…' : `Send request${selected.size ? ` (${selected.size})` : ''}`}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => { setShowRequest(false); setSelected(new Set()) }}>Cancel</Button>
-          </div>
-        </div>
-      )}
-
-      {docs.length === 0 && !showRequest && (
-        <p className="text-sm text-muted-foreground">No documents requested yet.</p>
-      )}
-
-      {docs.length > 0 && (
-        <div className="divide-y">
-          {docs.map(doc => (
-            <div key={doc.id} className="flex items-center justify-between gap-3 py-3">
-              <span className="flex items-center gap-2 min-w-0 text-sm">
-                <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{DOC_TYPE_LABELS[doc.doc_type]}</span>
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge variant={docStatusVariant(doc.status)}>{DOC_STATUS_LABELS[doc.status]}</Badge>
-                {doc.file_path && doc.file_name && (
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                    onClick={() => handleView(doc.file_path!, doc.file_name!)}>
-                    <Eye className="h-3 w-3 mr-1" />View
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => startUpload(doc.id)}>
-                  <Upload className="h-3 w-3 mr-1" />Upload
-                </Button>
-                {doc.file_path && doc.status !== 'approved' && (
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                    onClick={() => handleApprove(doc.id)} title="Approve">
-                    <CheckCircle2 className="h-4 w-4" />
-                  </Button>
-                )}
-                {doc.file_path && doc.status !== 'rejected' && (
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => handleReject(doc.id)} title="Reject">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
-
-      {/* Document viewer modal */}
-      {viewingDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setViewingDoc(null)}>
-          <div className="flex flex-col w-full max-w-4xl h-[90vh] rounded-xl bg-card shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between gap-3 border-b px-4 py-3 shrink-0">
-              <p className="text-sm font-medium truncate">{viewingDoc.fileName}</p>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={handleModalDownload}>
-                  <Download className="h-3.5 w-3.5 mr-1.5" />Download
-                </Button>
-                <button onClick={() => setViewingDoc(null)} className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            {/* Content */}
-            <div className="flex-1 overflow-auto bg-muted/40 flex items-center justify-center">
-              {isImage(viewingDoc.fileName) ? (
-                <img src={viewingDoc.url} alt={viewingDoc.fileName} className="max-w-full max-h-full object-contain p-4" />
-              ) : isPdf(viewingDoc.fileName) ? (
-                <iframe src={viewingDoc.url} title={viewingDoc.fileName} className="w-full h-full border-0" />
-              ) : (
-                <div className="text-center space-y-3 p-8">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Preview not available for this file type.</p>
-                  <Button variant="outline" size="sm" onClick={handleModalDownload}>
-                    <Download className="h-3.5 w-3.5 mr-1.5" />Download to view
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-// ─── Domiter summary panel ────────────────────────────────────────────────────
-const STRIKE_DISCOUNT    = 0.10
-const DOMITER_RATE       = 0.082
-const APPRECIATION_RATE  = 0.05
-const TERM_YEARS         = 5
-const R_STRESS           = 0.055   // CBI base 3.5% + 2% stress add-on
-const R_BASE             = 0.035   // CBI base rate
-const MORTGAGE_YEARS     = 30
-
-function pmtCalc(monthlyRate: number, nMonths: number, principal: number): number {
-  if (monthlyRate === 0) return principal / nMonths
-  const factor = Math.pow(1 + monthlyRate, nMonths)
-  return (principal * monthlyRate * factor) / (factor - 1)
-}
-
-function DomiterPanel({ propertyPrice, ghi }: { propertyPrice: number; ghi: number }) {
-  const strikePrice       = propertyPrice * (1 - STRIKE_DISCOUNT)
-  const entryContrib      = propertyPrice * 0.01
-  const strikeReduction   = propertyPrice - strikePrice
-  const monthlyFee        = (propertyPrice * DOMITER_RATE) / 12
-  const gmiMonthly        = ghi / 12
-  const feePct            = Math.round((monthlyFee / gmiMonthly) * 100)
-  const projectedValue    = propertyPrice * Math.pow(1 + APPRECIATION_RATE, TERM_YEARS)
-  const appreciationEur   = projectedValue - strikePrice
-  const appreciationPct   = (appreciationEur / propertyPrice) * 100
-  const ltv               = (strikePrice / projectedValue) * 100
-  const nMonths           = MORTGAGE_YEARS * 12
-  const stressMortgage    = pmtCalc(R_STRESS / 12, nMonths, strikePrice)
-  const baseMortgage      = pmtCalc(R_BASE / 12, nMonths, strikePrice)
-  const stressPct         = Math.round((stressMortgage / gmiMonthly) * 100)
-  const basePct           = Math.round((baseMortgage / gmiMonthly) * 100)
-  const stressDiff        = monthlyFee - stressMortgage
-  const baseDiff          = monthlyFee - baseMortgage
-
-  const rows: Array<{ label: string; value: string; note?: string; separator?: boolean }> = [
-    { label: 'Gross Household Income', value: formatCurrency(ghi) },
-    { label: 'Entry Contribution',     value: formatCurrency(entryContrib) },
-    { label: 'Purchase Price',         value: formatCurrency(propertyPrice) },
-    { label: 'Strike Price',           value: formatCurrency(strikePrice) },
-    { label: 'Strike Reduction',       value: formatCurrency(strikeReduction), separator: true },
-    { label: 'Service Fee (month)',     value: formatCurrency(monthlyFee), note: `${feePct}%` },
-    { label: 'Appreciation Rate',      value: `${(APPRECIATION_RATE * 100).toFixed(2)}%`, separator: true },
-    { label: 'Appreciation (€)',       value: formatCurrency(appreciationEur) },
-    { label: 'Appreciation (%)',       value: `${appreciationPct.toFixed(2)}%` },
-    { label: 'LTV',                    value: `${ltv.toFixed(2)}%`, separator: true },
-    { label: 'Stress Mortgage (€/mo)', value: formatCurrency(stressMortgage), note: `${stressPct}%` },
-    { label: 'Base Mortgage (€/mo)',   value: formatCurrency(baseMortgage), note: `${basePct}%`, separator: true },
-    { label: 'Stress Mortgage (diff)', value: formatCurrency(stressDiff) },
-    { label: 'Base Mortgage (diff)',   value: formatCurrency(baseDiff) },
-  ]
-
-  return (
-    <div className="rounded-xl border bg-card p-5 space-y-3">
-      <h2 className="font-semibold text-sm">Ticket</h2>
-      <div className="text-xs">
-        {rows.map(({ label, value, note, separator }, i) => (
-          <div key={i} className={cn('flex items-center justify-between gap-2 py-1.5', separator && 'border-b mb-1')}>
-            <span className="text-muted-foreground leading-tight">{label}</span>
-            <div className="flex items-center gap-2 shrink-0 tabular-nums">
-              <span className="font-medium">{value}</span>
-              {note && <span className="text-muted-foreground w-6 text-right">{note}</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function ProspectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user, staffMember } = useAuth()
   const qc = useQueryClient()
   const navigate = useNavigate()
-  const [advanceOpen, setAdvanceOpen] = useState(false)
   const [notEligOpen, setNotEligOpen] = useState(false)
   const [deferOpen, setDeferOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [disableLoading, setDisableLoading] = useState(false)
-  const [noteText, setNoteText] = useState('')
-  const [noteLoading, setNoteLoading] = useState(false)
+  const [stageLoading, setStageLoading] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
 
   function copyPortalLink() {
@@ -666,18 +238,6 @@ export default function ProspectDetailPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ['prospect', id] })
     .then(() => qc.invalidateQueries({ queryKey: ['prospect-events', id] }))
 
-  async function handleAddNote() {
-    if (!noteText.trim()) return
-    setNoteLoading(true)
-    await supabase.from('events').insert({
-      client_id: id, event_type: 'staff_note', actor_id: user?.id ?? null,
-      payload: { text: noteText.trim() }, visibility: 'internal',
-    })
-    setNoteText('')
-    setNoteLoading(false)
-    qc.invalidateQueries({ queryKey: ['prospect-events', id] })
-  }
-
   async function handleAssignTo(staffId: string) {
     await supabase.from('clients').update({ assigned_to: staffId || null }).eq('id', id!)
     refresh()
@@ -695,163 +255,127 @@ export default function ProspectDetailPage() {
     refresh()
   }
 
+  async function handleStageChange(target: LeadStage, note: string) {
+    if (!client) return
+    setStageLoading(true)
+    await supabase.from('clients').update({ lead_stage: target }).eq('id', client.id)
+    await supabase.from('events').insert({
+      client_id: client.id, event_type: 'stage_changed', actor_id: user?.id ?? null,
+      payload: { from: client.lead_stage, to: target, note: note || null }, visibility: 'internal',
+    })
+    setStageLoading(false)
+    refresh()
+  }
+
   const canAdvance = canAdvancePhase1(staffMember?.role)
   const canAssign = canAssignDAC(staffMember?.role)
   const isAdmin = staffMember?.role === 'admin'
   const inPhase1Terminal = client?.lead_stage === 'not_eligible' || client?.lead_stage === 'deferred'
-  const nextStage = client ? nextLeadStage(client.lead_stage) : null
 
   if (isLoading) return <div className="p-8 text-muted-foreground">Loading…</div>
   if (!client) return <div className="p-8 text-muted-foreground">Prospect not found.</div>
 
+  const stageOptions = isAdmin
+    ? [...LEAD_STAGE_ORDER, 'not_eligible' as LeadStage, 'deferred' as LeadStage]
+    : LEAD_STAGE_ORDER
+
   return (
     <div className="mx-auto max-w-6xl p-8 space-y-6">
-      <Link to="/app/staff/prospects" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" />Prospects
-      </Link>
-
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{client.first_name} {client.last_name}</h1>
-          <p className="mt-1 text-muted-foreground">{client.email}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {!client.active && <Badge variant="outline" className="text-sm px-3 py-1 text-muted-foreground">Disabled</Badge>}
+      <DetailHeader
+        backTo="/app/staff/prospects"
+        backLabel="Prospects"
+        name={`${client.first_name} ${client.last_name}`}
+        subtitle={client.email}
+        active={client.active}
+        isAdmin={isAdmin}
+        disableLoading={disableLoading}
+        onToggleActive={handleToggleActive}
+        onDelete={() => setDeleteOpen(true)}
+        statusBadge={
           <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-sm px-3 py-1">
             {LEAD_STAGE_LABELS[client.lead_stage]}
           </Badge>
-          {isAdmin && (
-            <>
-              <Button variant="outline" size="sm" onClick={handleToggleActive} disabled={disableLoading}>
-                {client.active
-                  ? <><Ban className="h-3.5 w-3.5 mr-1.5" />Disable</>
-                  : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Enable</>}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}
-                className="text-destructive border-destructive/40 hover:bg-destructive/5">
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Left — main content */}
-        <div className="lg:col-span-2 space-y-8">
+        {/* Left — tabbed content */}
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="overview">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+              <TabsTrigger value="property">Property</TabsTrigger>
+            </TabsList>
 
-          {/* Stage management */}
-          {canAdvance && (
-            <section className="rounded-xl border bg-card p-5 space-y-5">
-              <h2 className="font-semibold">Stage</h2>
-
-              {/* Timeline */}
-              <StageTimeline current={client.lead_stage} />
-
-              {/* Current stage description */}
-              <div className="space-y-1 pt-1">
-                <p className="text-sm font-medium">{LEAD_STAGE_LABELS[client.lead_stage]}</p>
-                <p className="text-sm text-muted-foreground">{STAGE_META[client.lead_stage].current}</p>
-                {!inPhase1Terminal && STAGE_META[client.lead_stage].toProgress && (
-                  <p className="text-sm text-muted-foreground pt-0.5">
-                    <span className="font-medium text-foreground">To progress: </span>
-                    {STAGE_META[client.lead_stage].toProgress}
-                  </p>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {!inPhase1Terminal && nextStage && (
-                  <Button onClick={() => setAdvanceOpen(true)} size="sm">
-                    Advance to {LEAD_STAGE_LABELS[nextStage]}
-                  </Button>
-                )}
-                {!inPhase1Terminal && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
-                    <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
-                      className="text-destructive border-destructive/40 hover:bg-destructive/5">
-                      Not eligible
-                    </Button>
-                  </>
-                )}
-                {client.user_id ? (
-                  <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
-                    <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={copyPortalLink}>
-                    {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-                    {linkCopied ? 'Copied!' : 'Copy portal link'}
-                  </Button>
-                )}
-                {inPhase1Terminal && (
-                  <Button variant="outline" size="sm" onClick={() => setAdvanceOpen(true)}>Change stage</Button>
-                )}
-              </div>
-
-              {/* Next stage preview */}
-              {!inPhase1Terminal && nextStage && STAGE_META[client.lead_stage].nextPreview && (
-                <div className="rounded-lg bg-muted/50 px-4 py-3 space-y-0.5">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Next: {LEAD_STAGE_LABELS[nextStage]}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{STAGE_META[client.lead_stage].nextPreview}</p>
-                </div>
-              )}
-
-              {inPhase1Terminal && staffMember?.role !== 'admin' && (
-                <p className="text-sm text-muted-foreground">This prospect is in a terminal stage.</p>
-              )}
-            </section>
-          )}
-
-          {/* Documents */}
-          <StaffDocumentsSection
-            clientId={client.id}
-            docs={docs ?? []}
-            onRefresh={() => qc.invalidateQueries({ queryKey: ['prospect-docs', id] })}
-          />
-
-          {/* Notes */}
-          <section className="rounded-xl border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Notes</h2>
-            <div className="space-y-2">
-              <Textarea
-                placeholder="Add an internal note…"
-                value={noteText}
-                onChange={e => setNoteText(e.target.value)}
-                rows={3}
-              />
-              <Button size="sm" onClick={handleAddNote} disabled={noteLoading || !noteText.trim()}>
-                {noteLoading ? 'Saving…' : 'Add note'}
-              </Button>
-            </div>
-          </section>
-
-          {/* Timeline */}
-          <section className="rounded-xl border bg-card p-5 space-y-3">
-            <h2 className="font-semibold">Timeline</h2>
-            {events?.length === 0 && <p className="text-sm text-muted-foreground">No events yet.</p>}
-            <div className="space-y-3">
-              {events?.map(ev => (
-                <div key={ev.id} className="flex gap-3 text-sm">
-                  <span className="mt-0.5 flex h-2 w-2 shrink-0 rounded-full bg-muted-foreground/40 mt-1.5" />
-                  <div>
-                    <p className="font-medium">
-                      {ev.event_type === 'staff_note'
-                        ? (ev.payload as { text: string })?.text
-                        : ev.event_type === 'stage_changed'
-                          ? `Stage: ${LEAD_STAGE_LABELS[(ev.payload as { from: LeadStage })?.from] ?? '?'} → ${LEAD_STAGE_LABELS[(ev.payload as { to: LeadStage })?.to] ?? '?'}`
-                          : EVENT_TYPE_LABELS[ev.event_type] ?? ev.event_type}
+            {/* Overview */}
+            <TabsContent value="overview" className="mt-4 space-y-6">
+              <section className="rounded-xl border bg-card p-5 space-y-5">
+                <h2 className="font-semibold">Stage</h2>
+                <StageTimeline
+                  stages={LEAD_STAGE_ORDER}
+                  labels={LEAD_STAGE_LABELS}
+                  current={client.lead_stage}
+                  terminal={inPhase1Terminal}
+                />
+                <div className="space-y-1 pt-1">
+                  <p className="text-sm font-medium">{LEAD_STAGE_LABELS[client.lead_stage]}</p>
+                  <p className="text-sm text-muted-foreground">{LEAD_STAGE_META[client.lead_stage].current}</p>
+                  {!inPhase1Terminal && LEAD_STAGE_META[client.lead_stage].toProgress && (
+                    <p className="text-sm text-muted-foreground pt-0.5">
+                      <span className="font-medium text-foreground">To progress: </span>
+                      {LEAD_STAGE_META[client.lead_stage].toProgress}
                     </p>
-                    <p className="text-xs text-muted-foreground">{fmtDateTime(ev.created_at)}</p>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </section>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {client.user_id ? (
+                    <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
+                      <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={copyPortalLink}>
+                      {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                      {linkCopied ? 'Copied!' : 'Copy portal link'}
+                    </Button>
+                  )}
+                </div>
+              </section>
+            </TabsContent>
+
+            {/* Documents */}
+            <TabsContent value="documents" className="mt-4">
+              <StaffDocumentsSection
+                clientId={client.id}
+                docs={docs ?? []}
+                onRefresh={() => qc.invalidateQueries({ queryKey: ['prospect-docs', id] })}
+              />
+            </TabsContent>
+
+            {/* Notes */}
+            <TabsContent value="notes" className="mt-4">
+              <NotesTab
+                clientId={client.id}
+                events={events ?? []}
+                onAdded={() => qc.invalidateQueries({ queryKey: ['prospect-events', id] })}
+              />
+            </TabsContent>
+
+            {/* Timeline */}
+            <TabsContent value="timeline" className="mt-4">
+              <EventTimelineTab events={events ?? []} />
+            </TabsContent>
+
+            {/* Property */}
+            <TabsContent value="property" className="mt-4">
+              <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+                <Home className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                <p>No property cases yet.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Right — sidebar */}
@@ -876,30 +400,10 @@ export default function ProspectDetailPage() {
             </dl>
           </div>
 
-          {/* Domiter */}
+          {/* Ticket */}
           {client.target_price && calcSnapshot?.ghi ? (
-            <DomiterPanel propertyPrice={client.target_price} ghi={calcSnapshot.ghi} />
+            <TicketPanel propertyPrice={client.target_price} ghi={calcSnapshot.ghi} />
           ) : null}
-
-          {/* Assigned to */}
-          <div className="rounded-xl border bg-card p-5 space-y-3">
-            <h2 className="font-semibold text-sm">Assigned to</h2>
-            {staffMember?.role === 'admin' || staffMember?.role === 'onboarding' ? (
-              <Select value={client.assigned_to ?? 'none'} onValueChange={v => handleAssignTo(v === 'none' ? '' : v)}>
-                <SelectTrigger className="text-sm"><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {staffMembers?.filter(s => s.role === 'onboarding' || s.role === 'admin').map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {staffMembers?.find(s => s.id === client.assigned_to)?.first_name ?? 'Unassigned'}
-              </p>
-            )}
-          </div>
 
           {/* Assign to DAC (finance + admin when eligible) */}
           {canAssign && client.lead_stage === 'eligible' && (
@@ -923,13 +427,40 @@ export default function ProspectDetailPage() {
               <p className="text-xs text-muted-foreground">Assigning a DAC moves this prospect to Phase 2.</p>
             </div>
           )}
+
+          {/* Assigned to */}
+          <AssignedToCard
+            assignedTo={client.assigned_to}
+            staffMembers={staffMembers ?? []}
+            canAssign={isAdmin || staffMember?.role === 'onboarding'}
+            eligibleRoles={['onboarding']}
+            onAssign={handleAssignTo}
+          />
+
+          {/* Stage management */}
+          <StageManagementCard
+            current={client.lead_stage}
+            labels={LEAD_STAGE_LABELS}
+            options={stageOptions}
+            canChange={canAdvance}
+            loading={stageLoading}
+            onConfirm={handleStageChange}
+            extraActions={!inPhase1Terminal && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
+                <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
+                  className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                  Not eligible
+                </Button>
+              </div>
+            )}
+          />
         </aside>
       </div>
 
       {/* Modals */}
       {client && (
         <>
-          <AdvanceModal open={advanceOpen} onClose={() => setAdvanceOpen(false)} client={client} onAdvanced={refresh} />
           <NotEligibleModal open={notEligOpen} onClose={() => setNotEligOpen(false)} client={client} onDone={refresh} />
           <DeferModal open={deferOpen} onClose={() => setDeferOpen(false)} client={client} onDone={refresh} />
           <DeleteClientModal open={deleteOpen} onClose={() => setDeleteOpen(false)} client={client}

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { StageFilterChips } from '@/components/shared/StageFilterChips'
 
 const PHASE2_STAGES: ProgrammeStage[] = ['dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed']
 
@@ -38,12 +39,26 @@ export default function PropertyPage() {
     return matchesSearch && matchesStage
   })
 
+  const counts: Record<string, number> = {}
+  for (const c of clients ?? []) {
+    counts[c.programme_stage!] = (counts[c.programme_stage!] ?? 0) + 1
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
         <h1 className="text-2xl font-bold">Property</h1>
         <p className="mt-1 text-muted-foreground">Clients in active property search and purchase.</p>
       </div>
+
+      {/* Stage summary chips */}
+      <StageFilterChips
+        stages={PHASE2_STAGES}
+        labels={PROGRAMME_STAGE_LABELS}
+        counts={counts}
+        active={stageFilter}
+        onToggle={s => setStageFilter(stageFilter === s ? 'all' : s)}
+      />
 
       {/* Filters */}
       <div className="flex gap-3">
