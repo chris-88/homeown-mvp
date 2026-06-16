@@ -7,7 +7,12 @@ import {
   DAC_STATUS_LABELS,
 } from '@/types'
 import type { Dac, Subscription } from '@/types'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, cn } from '@/lib/utils'
+import {
+  Route, CheckCircle2, UserSearch, Users2, Landmark, TrendingUp,
+  ChevronRight, ArrowRight,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 type PipelineRow = { stage: string; count: number }
 type Metrics = {
@@ -27,37 +32,72 @@ type DacWithRelations = Dac & {
   clients: { id: string; programme_stage: string | null }[]
 }
 
-function StatCard({ label, value, sub, to }: { label: string; value: string | number; sub?: string; to?: string }) {
+const ACCENTS = {
+  green:    { badge: 'bg-brand-green text-brand-cream', ring: 'group-hover:border-brand-green/40' },
+  burgundy: { badge: 'bg-brand-burgundy text-brand-cream', ring: 'group-hover:border-brand-burgundy/40' },
+  cream:    { badge: 'bg-brand-cream-light text-brand-ink', ring: 'group-hover:border-brand-cream/60' },
+} as const
+
+function StatCard({ label, value, sub, to, icon: Icon, accent = 'green' }: {
+  label: string
+  value: string | number
+  sub?: string
+  to?: string
+  icon: LucideIcon
+  accent?: keyof typeof ACCENTS
+}) {
+  const a = ACCENTS[accent]
   const content = (
-    <>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-bold">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
-    </>
+    <div className="flex items-start gap-4">
+      <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', a.badge)}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="mt-0.5 text-2xl font-bold">{value}</p>
+        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+      </div>
+      {to && <ChevronRight className="h-4 w-4 shrink-0 self-center text-muted-foreground/40 transition-colors group-hover:text-foreground" />}
+    </div>
   )
   if (to) {
     return (
-      <Link to={to} className="block rounded-lg border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-accent">
+      <Link
+        to={to}
+        className={cn(
+          'group block rounded-xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+          a.ring,
+        )}
+      >
         {content}
       </Link>
     )
   }
-  return <div className="rounded-lg border bg-card p-5">{content}</div>
+  return <div className="rounded-xl border bg-card p-5 shadow-sm">{content}</div>
 }
 
-const PHASE1_COLOR = 'border-border bg-muted/40'
-const PHASE2_COLOR = 'border-primary/30 bg-primary/5'
-const PHASE3_COLOR = 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/20'
+const PHASE1_COLOR = { border: 'border-border', bar: 'bg-muted-foreground/30' }
+const PHASE2_COLOR = { border: 'border-brand-burgundy/20', bar: 'bg-brand-burgundy' }
+const PHASE3_COLOR = { border: 'border-brand-green/25', bar: 'bg-brand-green' }
 
-function StageBox({ stage, count, color, to }: { stage: string; count: number; color: string; to: string }) {
+function StageBox({ stage, count, color, to }: {
+  stage: string
+  count: number
+  color: { border: string; bar: string }
+  to: string
+}) {
   const label = LEAD_STAGE_LABELS[stage as keyof typeof LEAD_STAGE_LABELS] ??
     PROGRAMME_STAGE_LABELS[stage as keyof typeof PROGRAMME_STAGE_LABELS] ??
     stage
   return (
     <Link
       to={to}
-      className={`flex-1 min-w-0 rounded-lg border p-3 text-center transition-colors hover:brightness-95 ${color}`}
+      className={cn(
+        'group relative flex-1 min-w-0 overflow-hidden rounded-lg border bg-card p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-sm',
+        color.border,
+      )}
     >
+      <span className={cn('absolute inset-x-0 top-0 h-0.5', color.bar)} />
       <p className={`text-2xl font-bold tabular-nums ${count === 0 ? 'text-muted-foreground/30' : ''}`}>
         {count === 0 ? '-' : count}
       </p>
@@ -70,12 +110,17 @@ function PhaseGroup({ label, stages, counts, color, basePath }: {
   label: string
   stages: string[]
   counts: Record<string, number>
-  color: string
+  color: { border: string; bar: string }
   basePath: string
 }) {
+  const total = stages.reduce((sum, s) => sum + (counts[s] ?? 0), 0)
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-2">
+        <span className={cn('h-1.5 w-1.5 rounded-full', color.bar)} />
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+        <span className="text-xs text-muted-foreground/60">· {total}</span>
+      </div>
       <div className="flex gap-1.5">
         {stages.map(s => (
           <StageBox key={s} stage={s} count={counts[s] ?? 0} color={color} to={`${basePath}?stage=${s}`} />
@@ -148,32 +193,45 @@ export default function OverviewPage() {
             value={metrics?.on_pathway_count ?? '-'}
             sub="Families in their home"
             to="/app/staff/pathway"
+            icon={Route}
+            accent="green"
           />
           <StatCard
             label="Pathway complete"
             value={metrics?.pathway_complete_count ?? '-'}
             sub="Completed the programme"
             to="/app/staff/pathway?stage=pathway_complete"
+            icon={CheckCircle2}
+            accent="green"
           />
           <StatCard
             label="Active prospects"
             value={metrics?.total_prospects ?? '-'}
             sub={metrics ? `${metrics.eligible_unassigned} eligible, awaiting DAC` : undefined}
             to="/app/staff/prospects"
+            icon={UserSearch}
+            accent="burgundy"
           />
           <StatCard
             label="Circle members"
             value={metrics?.circle_member_count ?? '-'}
             sub={metrics ? `${metrics.circle_kyc_complete} KYC complete` : undefined}
             to="/app/staff/circle"
+            icon={Users2}
+            accent="cream"
           />
         </div>
       </section>
 
       {/* Pipeline funnel */}
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Pipeline funnel</h2>
-        <div className="space-y-4 rounded-xl border bg-card p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Pipeline funnel</h2>
+          <Link to="/app/staff/prospects" className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            View all clients <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
           <PhaseGroup
             label="Phase 1: Discovery"
             stages={LEAD_STAGE_ORDER}
@@ -195,14 +253,14 @@ export default function OverviewPage() {
             color={PHASE3_COLOR}
             basePath="/app/staff/pathway"
           />
-          <div className="flex gap-4 border-t pt-3">
-            <Link to="/app/staff/prospects?stage=not_eligible" className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2">
+          <div className="flex flex-wrap gap-2 border-t pt-3">
+            <Link to="/app/staff/prospects?stage=not_eligible" className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground">
               <span className="font-medium text-foreground">{stageCounts['not_eligible'] ?? 0}</span> not eligible
             </Link>
-            <Link to="/app/staff/prospects?stage=deferred" className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2">
+            <Link to="/app/staff/prospects?stage=deferred" className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground">
               <span className="font-medium text-foreground">{stageCounts['deferred'] ?? 0}</span> deferred
             </Link>
-            <Link to="/app/staff/pathway?stage=exited" className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2">
+            <Link to="/app/staff/pathway?stage=exited" className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground">
               <span className="font-medium text-foreground">{stageCounts['exited'] ?? 0}</span> exited
             </Link>
           </div>
@@ -211,11 +269,19 @@ export default function OverviewPage() {
 
       {/* DAC Lifecycle */}
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">DAC lifecycle</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">DAC lifecycle</h2>
+          <Link to="/app/staff/dacs" className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            View all DACs <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Planning */}
-          <div className="rounded-xl border bg-card p-4 space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Planning</p>
+          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+            <div className="flex items-center gap-2 pb-1">
+              <Landmark className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Planning</p>
+            </div>
             {planningDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None</p>
             ) : planningDacs.map(d => (
@@ -227,8 +293,11 @@ export default function OverviewPage() {
           </div>
 
           {/* Fundraising */}
-          <div className="rounded-xl border bg-card p-4 space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fundraising</p>
+          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+            <div className="flex items-center gap-2 pb-1">
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fundraising</p>
+            </div>
             {fundraisingDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None open</p>
             ) : fundraisingDacs.map(d => {
@@ -250,8 +319,11 @@ export default function OverviewPage() {
           </div>
 
           {/* Live */}
-          <div className="rounded-xl border bg-card p-4 space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Live</p>
+          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+            <div className="flex items-center gap-2 pb-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-green" />
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Live</p>
+            </div>
             {liveDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None</p>
             ) : liveDacs.map(d => {
@@ -266,8 +338,11 @@ export default function OverviewPage() {
           </div>
 
           {/* Matured */}
-          <div className="rounded-xl border bg-card p-4 space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Matured</p>
+          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+            <div className="flex items-center gap-2 pb-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Matured</p>
+            </div>
             {maturedDacs.length === 0 ? (
               <p className="text-sm text-muted-foreground">None yet</p>
             ) : maturedDacs.map(d => (
@@ -291,18 +366,24 @@ export default function OverviewPage() {
             value={metrics ? formatCurrency(metrics.total_committed) : '-'}
             sub="Subscribed + funded"
             to="/app/staff/circle"
+            icon={TrendingUp}
+            accent="burgundy"
           />
           <StatCard
             label="Total funded"
             value={metrics ? formatCurrency(metrics.total_funded) : '-'}
             sub="Funds received"
             to="/app/staff/circle"
+            icon={Landmark}
+            accent="burgundy"
           />
           <StatCard
             label="Open DACs"
             value={metrics?.open_dac_count ?? '-'}
             sub="Currently fundraising"
             to="/app/staff/dacs"
+            icon={Landmark}
+            accent="green"
           />
         </div>
       </section>
