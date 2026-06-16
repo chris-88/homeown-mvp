@@ -77,8 +77,9 @@ function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const path = `${clientId}/${doc.id}/${file.name}`
-    await supabase.storage.from('documents').upload(path, file, { upsert: true })
+    const path = `clients/${clientId}/${doc.id}/${file.name}`
+    const { error: uploadError } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
+    if (uploadError) return
     await supabase.from('document_requests').update({ file_path: path, file_name: file.name, status: 'needs_review', updated_at: new Date().toISOString() }).eq('id', doc.id)
     await supabase.from('events').insert({ event_type: 'document_uploaded', client_id: clientId, visibility: 'internal' })
     qc.invalidateQueries({ queryKey: ['documents', clientId] })

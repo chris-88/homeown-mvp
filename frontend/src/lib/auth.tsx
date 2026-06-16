@@ -78,17 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loadUser(session?.user ?? null)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       await loadUser(session?.user ?? null)
-
-      // After OAuth sign-in, navigate to any stored destination (e.g. /calc/save)
-      if (event === 'SIGNED_IN') {
-        const next = localStorage.getItem('homeown_oauth_next')
-        if (next) {
-          localStorage.removeItem('homeown_oauth_next')
-          window.location.hash = next
-        }
-      }
     })
 
     return () => subscription.unsubscribe()

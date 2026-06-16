@@ -37,7 +37,13 @@ export default function ProfilePage() {
 
   async function onSubmit(values: FormValues) {
     if (!client) return
-    await supabase.from('clients').update({ ...values, updated_at: new Date().toISOString() }).eq('id', client.id)
+    const payload = {
+      ...values,
+      household_size: values.household_size === '' ? null : values.household_size,
+      updated_at: new Date().toISOString(),
+    }
+    const { error } = await supabase.from('clients').update(payload).eq('id', client.id)
+    if (error) return
     qc.invalidateQueries({ queryKey: ['auth'] })
     form.reset(values)
   }

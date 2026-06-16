@@ -26,6 +26,7 @@ const STATUS_STEPS: Array<{ key: SubscriptionStatus; label: string; tsField: key
   { key: 'funds_requested',  label: 'Funds Requested',  tsField: 'funds_requested_at' },
   { key: 'funded',           label: 'Funded',           tsField: 'funded_at' },
   { key: 'active',           label: 'Active',           tsField: null },
+  { key: 'redeeming',        label: 'Redeeming',        tsField: null },
   { key: 'redeemed',         label: 'Redeemed',         tsField: null },
 ]
 

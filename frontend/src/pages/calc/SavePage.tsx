@@ -195,6 +195,21 @@ export default function SavePage() {
           </div>
         )}
 
+        {/* What to expect */}
+        {variant === 'eligible' && (
+          <div className="rounded-xl border bg-muted/30 p-5">
+            <p className="text-sm font-medium mb-3">What happens next</p>
+            <ul className="space-y-2">
+              {NEXT_STEPS.eligible.map((s) => (
+                <li key={s} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="mt-0.5 shrink-0 text-primary">•</span>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Manual form */}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">

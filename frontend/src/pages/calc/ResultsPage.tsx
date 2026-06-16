@@ -6,6 +6,16 @@ import { useCalcWizard } from '@/lib/calcWizard'
 import { formatCurrency } from '@/lib/utils'
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react'
 
+function yearsToSave(price: number, monthlyRate = 350): string {
+  const deposit = price * 0.10
+  const months = Math.ceil(deposit / monthlyRate)
+  const y = Math.floor(months / 12)
+  const m = months % 12
+  if (m === 0) return `${y} years`
+  if (y === 0) return `${m} months`
+  return `${y}y ${m}m`
+}
+
 // ── Variant A — Eligible ──────────────────────────────────────
 function EligibleResults() {
   const { state } = useCalcWizard()
@@ -51,6 +61,23 @@ function EligibleResults() {
             <p className="text-xs text-muted-foreground">Purchase option price</p>
             <p className="mt-2 text-2xl font-bold tabular-nums">{formatCurrency(state.strikePrice)}</p>
             <p className="mt-1 text-xs text-muted-foreground">Fixed from day one</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Traditional route comparison */}
+      <div className="rounded-2xl border bg-muted/40 p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Without Homeown</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Deposit required</p>
+            <p className="text-2xl font-bold tabular-nums">{formatCurrency(state.propertyPrice * 0.10)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">upfront</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Time to save it</p>
+            <p className="text-2xl font-bold tabular-nums">{yearsToSave(state.propertyPrice)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">at €350/month</p>
           </div>
         </div>
       </div>
@@ -193,10 +220,10 @@ export default function ResultsPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!state.county) navigate('/calc', { replace: true })
-  }, [state.county, navigate])
+    if (!state.county || !state.variant) navigate('/calc', { replace: true })
+  }, [state.county, state.variant, navigate])
 
-  if (!state.county) return null
+  if (!state.county || !state.variant) return null
 
   return (
     <div className="min-h-screen bg-background">

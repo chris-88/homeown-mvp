@@ -51,7 +51,8 @@ export default function PropertyPage() {
 
   async function onSubmit(values: FormValues) {
     if (!client) return
-    await supabase.from('property_cases').insert({ ...values, client_id: client.id, status: 'submitted' })
+    const { error } = await supabase.from('property_cases').insert({ ...values, client_id: client.id, status: 'submitted' })
+    if (error) return
     await supabase.from('clients').update({ programme_stage: 'sale_agreed', updated_at: new Date().toISOString() }).eq('id', client.id)
     await supabase.from('events').insert({ event_type: 'sale_agreed_submitted', client_id: client.id, visibility: 'internal' })
     setSubmitted(true)

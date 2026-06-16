@@ -146,8 +146,8 @@ function Step1({ onNext }: { onNext: () => void }) {
   )
 }
 
-// ── Step 2 — Location ─────────────────────────────────────────
-function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+// ── Step 2 — Location + Household (merged) ────────────────────
+function Step2({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => void; onMover: () => void }) {
   const { state, update } = useCalcWizard()
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -155,63 +155,10 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     const errs: Record<string, string> = {}
     if (!state.county) errs.county = 'Please select a county'
     if (state.county === 'Dublin' && !state.dublinPostcode) errs.dublinPostcode = 'Please select a postcode'
+    if (state.householdType === null) errs.householdType = 'Please select who will be on the pathway'
+    if (state.isFtb === null) errs.isFtb = 'Please answer this question'
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
-    onNext()
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Where are you looking to buy?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Select your target county. Location data helps us understand programme demand.</p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">County</label>
-          <Select value={state.county || undefined} onValueChange={(v) => update({ county: v, dublinPostcode: v !== 'Dublin' ? null : state.dublinPostcode })}>
-            <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
-            <SelectContent>
-              {ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
-        </div>
-
-        {state.county === 'Dublin' && (
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Dublin postcode</label>
-            <Select value={state.dublinPostcode || undefined} onValueChange={(v) => update({ dublinPostcode: v })}>
-              <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
-              <SelectContent>
-                {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
-          </div>
-        )}
-      </div>
-
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack} className="flex-1">Back</Button>
-        <Button onClick={handleNext} className="flex-1">Next</Button>
-      </div>
-    </div>
-  )
-}
-
-// ── Step 3 — Household ────────────────────────────────────────
-function Step3({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => void; onMover: () => void }) {
-  const { state, update } = useCalcWizard()
-  const [errors, setErrors] = useState('')
-
-  function handleNext() {
-    if (state.householdType === null || state.isFtb === null) {
-      setErrors('Please answer both questions to continue.')
-      return
-    }
-    setErrors('')
     if (state.isFtb === false) {
       onMover()
     } else {
@@ -220,40 +167,77 @@ function Step3({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => 
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Tell us about your household</h2>
-      </div>
-
+    <div className="space-y-8">
+      {/* Location */}
       <div className="space-y-4">
-        <p className="text-sm font-medium">Who will be on the pathway?</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <RadioCard selected={state.householdType === 'solo'} onClick={() => update({ householdType: 'solo' })}>
-            <p className="font-medium">Just me</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Single applicant</p>
-          </RadioCard>
-          <RadioCard selected={state.householdType === 'couple'} onClick={() => update({ householdType: 'couple' })}>
-            <p className="font-medium">Me and my partner</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Two applicants</p>
-          </RadioCard>
+        <div>
+          <h2 className="text-xl font-semibold">Where are you looking to buy?</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Location data helps us understand programme demand.</p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">County</label>
+            <Select value={state.county || undefined} onValueChange={(v) => update({ county: v, dublinPostcode: v !== 'Dublin' ? null : state.dublinPostcode })}>
+              <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+              <SelectContent>
+                {ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
+          </div>
+
+          {state.county === 'Dublin' && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Dublin postcode</label>
+              <Select value={state.dublinPostcode || undefined} onValueChange={(v) => update({ dublinPostcode: v })}>
+                <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
+                <SelectContent>
+                  {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="space-y-4">
-        <p className="text-sm font-medium">Have you ever owned a home?</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <RadioCard selected={state.isFtb === true} onClick={() => update({ isFtb: true })}>
-            <p className="font-medium">No, never</p>
-            <p className="text-sm text-muted-foreground mt-0.5">I am a first-time buyer</p>
-          </RadioCard>
-          <RadioCard selected={state.isFtb === false} onClick={() => update({ isFtb: false })}>
-            <p className="font-medium">Yes</p>
-            <p className="text-sm text-muted-foreground mt-0.5">I currently own or have previously owned a home</p>
-          </RadioCard>
+      <div className="border-t" />
+
+      {/* Household */}
+      <div className="space-y-5">
+        <h2 className="text-xl font-semibold">About your household</h2>
+
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Who will be on the pathway?</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <RadioCard selected={state.householdType === 'solo'} onClick={() => update({ householdType: 'solo' })}>
+              <p className="font-medium">Just me</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Single applicant</p>
+            </RadioCard>
+            <RadioCard selected={state.householdType === 'couple'} onClick={() => update({ householdType: 'couple' })}>
+              <p className="font-medium">Me and my partner</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Two applicants</p>
+            </RadioCard>
+          </div>
+          {errors.householdType && <p className="text-sm text-destructive">{errors.householdType}</p>}
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Have you ever owned a home?</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <RadioCard selected={state.isFtb === true} onClick={() => update({ isFtb: true })}>
+              <p className="font-medium">No, never</p>
+              <p className="text-sm text-muted-foreground mt-0.5">I am a first-time buyer</p>
+            </RadioCard>
+            <RadioCard selected={state.isFtb === false} onClick={() => update({ isFtb: false })}>
+              <p className="font-medium">Yes</p>
+              <p className="text-sm text-muted-foreground mt-0.5">I currently own or have previously owned a home</p>
+            </RadioCard>
+          </div>
+          {errors.isFtb && <p className="text-sm text-destructive">{errors.isFtb}</p>}
         </div>
       </div>
-
-      {errors && <p className="text-sm text-destructive">{errors}</p>}
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={onBack} className="flex-1">Back</Button>
@@ -263,8 +247,8 @@ function Step3({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => 
   )
 }
 
-// ── Step 4 — Income ───────────────────────────────────────────
-function Step4({ onBack }: { onBack: () => void }) {
+// ── Step 3 — Income ───────────────────────────────────────────
+function Step3({ onBack }: { onBack: () => void }) {
   const { state, update } = useCalcWizard()
   const navigate = useNavigate()
   const [ghiInput, setGhiInput] = useState(state.ghi > 0 ? state.ghi.toLocaleString('en-IE') : '')
@@ -273,6 +257,7 @@ function Step4({ onBack }: { onBack: () => void }) {
 
   const ghiRaw = parseInt(ghiInput.replace(/[^0-9]/g, '')) || 0
   const maxMortgageHint = ghiRaw >= 10000 ? ghiRaw * 4 : null
+  const hintCoversProperty = maxMortgageHint !== null && maxMortgageHint >= state.strikePrice
 
   async function handleNext() {
     const errs: Record<string, string> = {}
@@ -328,7 +313,7 @@ function Step4({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="space-y-4">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-sm font-medium">{incomeLabel}</label>
           <PriceInput
             value={ghiInput}
@@ -346,16 +331,31 @@ function Step4({ onBack }: { onBack: () => void }) {
               }
             }}
           />
-          {maxMortgageHint && (
-            <p className="text-xs text-muted-foreground">
-              At 4× income, a standard mortgage supports up to{' '}
-              <span className="font-medium text-foreground">{formatCurrency(maxMortgageHint)}</span>
-            </p>
-          )}
           {errors.ghi && <p className="text-sm text-destructive">{errors.ghi}</p>}
+
+          {maxMortgageHint && (
+            <div className={cn(
+              'rounded-lg border px-4 py-3 transition-colors',
+              hintCoversProperty
+                ? 'border-primary/20 bg-primary/5'
+                : 'border-amber-200 bg-amber-50'
+            )}>
+              <p className="text-sm font-medium">
+                At 4× income, your maximum mortgage is{' '}
+                <span className={cn('font-bold', hintCoversProperty ? 'text-primary' : 'text-amber-700')}>
+                  {formatCurrency(maxMortgageHint)}
+                </span>
+              </p>
+              <p className={cn('text-xs mt-0.5', hintCoversProperty ? 'text-primary/70' : 'text-amber-600')}>
+                {hintCoversProperty
+                  ? 'This covers the purchase option price on your target property.'
+                  : `The option price on your target is ${formatCurrency(state.strikePrice)} — your results will show alternatives.`}
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-sm font-medium">Employment type</label>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
@@ -420,11 +420,10 @@ export default function CalcPage() {
     <div className="min-h-screen bg-background">
       <PublicNav />
       <main className="mx-auto max-w-lg px-6 py-12">
-        <ProgressBar step={step} total={4} />
+        <ProgressBar step={step} total={3} />
         {step === 1 && <Step1 onNext={() => setStep(2)} />}
-        {step === 2 && <Step2 onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-        {step === 3 && <Step3 onNext={() => setStep(4)} onBack={() => setStep(2)} onMover={handleMover} />}
-        {step === 4 && <Step4 onBack={() => setStep(3)} />}
+        {step === 2 && <Step2 onNext={() => setStep(3)} onBack={() => setStep(1)} onMover={handleMover} />}
+        {step === 3 && <Step3 onBack={() => setStep(2)} />}
       </main>
     </div>
   )

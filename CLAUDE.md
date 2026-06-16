@@ -54,8 +54,16 @@ Run these in order in the Supabase SQL editor. All must be applied for the app t
 | `supabase/migrations/006_target_price.sql` | Consolidates target_price_min/max → single `target_price integer`. Drops and recreates `save_calc_results` RPC (SECURITY DEFINER, handles client upsert + snapshot + consents + event atomically) |
 | `supabase/migrations/007_drop_client_notes.sql` | Drops `clients.notes` (replaced by append-only events) |
 | `supabase/migrations/008_circle_portal.sql` | Circle Portal: adds `circle` role, `circle_members`, `dacs`, `subscriptions`, `dac_documents`, `circle_member_documents`, `circle_member_notes` tables. Drops `clients.dac_reference`, adds `clients.dac_id` FK. Updates `handle_new_user` trigger for circle auto-assignment. Adds `get_circle_invite` RPC. |
+| `supabase/migrations/009_dac_sub_totals.sql` | Adds `get_dac_sub_totals` SECURITY DEFINER RPC — aggregate subscription totals per DAC for the circle opportunities page |
+| `supabase/migrations/009_staff_refactor.sql` | Staff portal refactor: `staff_members` table, granular staff roles, new `lead_stage`/`programme_stage` model, assignment columns on clients, `get_assigned_staff` and related RPCs. **Run after 009_dac_sub_totals.sql.** |
+| `supabase/migrations/010_fix_save_calc_stages.sql` | Recreates `save_calc_results` RPC to normalise renamed `lead_stage` values (`registered` → `new_lead`, `mover_interest` → `deferred`) |
+| `supabase/migrations/011_senior_facility.sql` | Adds `senior_lender`, `senior_stage`, `senior_committed_amount`, `senior_facility_amount` columns to `dacs` table |
+| `supabase/migrations/012_automation.sql` | Adds `notifications`, `email_log`, `automation_events` tables; Realtime publication; notification policies |
+| `supabase/migrations/013_disable_delete.sql` | Adds `active` soft-delete flag to clients and circle_members; admin-only hard-delete policies |
+| `supabase/migrations/014_client_documents.sql` | Adds `document_templates`, `document_deliveries`, `programme_breaches`, `strikes` tables; fixes `email_log.provider_message_id` column rename |
 
 Migrations 003, 004, 005 are superseded — do not run them if starting fresh; 006 already incorporates their changes.
+**Note:** Two files share the `009_` prefix — run `009_dac_sub_totals.sql` before `009_staff_refactor.sql`.
 
 ---
 
