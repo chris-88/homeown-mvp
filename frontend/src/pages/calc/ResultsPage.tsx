@@ -70,8 +70,8 @@ function EligibleResults() {
       </div>
 
       {/* CTAs */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild size="lg" className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <Button asChild size="lg" className="flex-1">
           <Link to="/calc/save">
             Save my results and book a call
             <ArrowRight className="ml-2 h-4 w-4" />
