@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -96,7 +96,7 @@ async function submitCalcResults(
 export default function SavePage() {
   const navigate = useNavigate()
   const { state: wizardState } = useCalcWizard()
-  const { user, client, loading: authLoading } = useAuth()
+  const { user, client } = useAuth()
   const [savedName, setSavedName] = useState('')
   // Determine which calc state to use
   const activeState = wizardState
