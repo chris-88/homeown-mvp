@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { supabase } from '@/lib/supabase'
 import { useAuth, signInWithGoogle, signInWithApple } from '@/lib/auth'
-import { Logo } from '@/components/shared/Logo'
+import { AuthLayout } from '@/components/shared/AuthLayout'
 
 function GoogleIcon() {
   return (
@@ -77,115 +77,99 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      {/* Logo */}
-      <Link to="/" className="mb-8">
-        <Logo className="h-8 w-auto text-foreground" />
-      </Link>
+    <AuthLayout>
+      <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Get started with Homeown</p>
 
-      {/* Card */}
-      <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
-        <h1 className="text-center text-xl font-semibold tracking-tight">Create your account</h1>
-        <p className="mt-1 text-center text-sm text-muted-foreground">Get started with Homeown</p>
-
-        {/* OAuth buttons */}
-        <div className="mt-6 space-y-3">
-          <button
-            type="button"
-            onClick={handleApple}
-            className="flex w-full items-center justify-center gap-3 rounded-md border border-input bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <AppleIcon />
-            Continue with Apple
-          </button>
-          <button
-            type="button"
-            onClick={handleGoogle}
-            className="flex w-full items-center justify-center gap-3 rounded-md border border-input bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
-        </div>
-
-        {oauthError && <p className="mt-3 text-center text-xs text-destructive">{oauthError}</p>}
-
-        {/* Divider */}
-        <div className="my-6 flex items-center gap-3">
-          <div className="flex-1 border-t" />
-          <span className="text-xs text-muted-foreground">or sign up with email</span>
-          <div className="flex-1 border-t" />
-        </div>
-
-        {/* Email form */}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="first_name" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First name</FormLabel>
-                  <FormControl><Input placeholder="Jane" autoComplete="given-name" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="last_name" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last name</FormLabel>
-                  <FormControl><Input placeholder="Smith" autoComplete="family-name" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-
-            <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="m@example.com" autoComplete="email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="password" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="At least 8 characters" autoComplete="new-password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {form.formState.errors.root && (
-              <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full bg-foreground text-background hover:bg-foreground/90"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? 'Creating account…' : 'Create account'}
-            </Button>
-          </form>
-        </Form>
-
-        <p className="mt-5 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link to="/auth/login" className="font-medium text-foreground hover:underline underline-offset-4">
-            Sign in
-          </Link>
-        </p>
+      {/* OAuth buttons */}
+      <div className="mt-6 space-y-3">
+        <button
+          type="button"
+          onClick={handleApple}
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          <AppleIcon />
+          Continue with Apple
+        </button>
+        <button
+          type="button"
+          onClick={handleGoogle}
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          <GoogleIcon />
+          Continue with Google
+        </button>
       </div>
 
-      {/* Footer */}
-      <p className="mt-8 max-w-xs text-center text-xs text-muted-foreground">
-        By continuing, you agree to our{' '}
-        <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">Terms of Service</Link>
-        {' '}and{' '}
-        <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">Privacy Notice</Link>.
+      {oauthError && <p className="mt-3 text-sm text-destructive">{oauthError}</p>}
+
+      {/* Divider */}
+      <div className="my-6 flex items-center gap-3">
+        <div className="flex-1 border-t" />
+        <span className="text-xs text-muted-foreground">or sign up with email</span>
+        <div className="flex-1 border-t" />
+      </div>
+
+      {/* Email form */}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <FormField control={form.control} name="first_name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>First name</FormLabel>
+                <FormControl><Input placeholder="Jane" autoComplete="given-name" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="last_name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last name</FormLabel>
+                <FormControl><Input placeholder="Smith" autoComplete="family-name" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+
+          <FormField control={form.control} name="email" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="me@example.com" autoComplete="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="password" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="At least 8 characters" autoComplete="new-password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          {form.formState.errors.root && (
+            <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full bg-brand-green text-brand-cream hover:bg-brand-green-light"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? 'Creating account…' : 'Create account'}
+          </Button>
+        </form>
+      </Form>
+
+      <p className="mt-6 text-sm text-muted-foreground">
+        Already have an account?{' '}
+        <Link to="/auth/login" className="font-medium text-foreground hover:underline underline-offset-4">
+          Sign in
+        </Link>
       </p>
-    </div>
+    </AuthLayout>
   )
 }

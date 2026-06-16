@@ -5,9 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { supabase } from '@/lib/supabase'
+import { AuthLayout } from '@/components/shared/AuthLayout'
 
 const schema = z.object({ email: z.string().email('Please enter a valid email address') })
 type FormValues = z.infer<typeof schema>
@@ -22,44 +22,48 @@ export default function ForgotPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <Link to="/" className="text-xl font-semibold tracking-tight">Homeown</Link>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Reset your password</CardTitle>
-            <CardDescription>Enter your email address and we'll send a reset link.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {sent ? (
-              <div className="space-y-4 text-center text-sm text-muted-foreground">
-                <p>If an account exists for that address, a reset link has been sent.</p>
-                <Link to="/auth/login" className="text-foreground underline-offset-4 hover:underline">Back to sign in</Link>
-              </div>
-            ) : (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Sending…' : 'Send reset link'}
-                  </Button>
-                  <p className="text-center text-sm">
-                    <Link to="/auth/login" className="text-muted-foreground hover:text-foreground">Back to sign in</Link>
-                  </p>
-                </form>
-              </Form>
-            )}
-          </CardContent>
-        </Card>
+    <AuthLayout>
+      <h1 className="text-2xl font-semibold tracking-tight">Reset your password</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Enter your email and we'll send a reset link.
+      </p>
+
+      <div className="mt-8">
+        {sent ? (
+          <div className="space-y-4 text-sm text-muted-foreground">
+            <p>If an account exists for that address, a reset link has been sent. Check your inbox.</p>
+            <Link to="/auth/login" className="font-medium text-foreground hover:underline underline-offset-4">
+              Back to sign in
+            </Link>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="me@example.com" autoComplete="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <Button
+                type="submit"
+                className="w-full bg-brand-green text-brand-cream hover:bg-brand-green-light"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? 'Sending…' : 'Send reset link'}
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                <Link to="/auth/login" className="hover:text-foreground hover:underline underline-offset-4">
+                  Back to sign in
+                </Link>
+              </p>
+            </form>
+          </Form>
+        )}
       </div>
-    </div>
+    </AuthLayout>
   )
 }
