@@ -273,7 +273,7 @@ export default function ProspectDetailPage() {
       client_id: client.id, event_type: 'stage_changed', actor_id: user?.id ?? null,
       payload: { from: client.lead_stage, to: target, note: note || null }, visibility: 'internal',
     })
-    if (target === 'discovery') {
+    if (target === 'in_discovery') {
       const { data: { session } } = await supabase.auth.getSession()
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-booking-invite`, {
         method: 'POST',
