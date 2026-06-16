@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Home, Check, Copy, UserCheck } from 'lucide-react'
+import { Home, Check, Copy, UserCheck, Download, Send } from 'lucide-react'
 import { DetailHeader } from '@/components/shared/DetailHeader'
 import { StageTimeline } from '@/components/shared/StageTimeline'
 import { StaffDocumentsSection } from '@/components/shared/StaffDocumentsSection'
@@ -24,6 +24,9 @@ import { AssignedToCard } from '@/components/shared/AssignedToCard'
 import { StageManagementCard } from '@/components/shared/StageManagementCard'
 import { TicketPanel } from '@/components/shared/TicketPanel'
 import { ClientDetailsSection } from '@/components/shared/ClientDetailsSection'
+import { SendDocumentDrawer } from '@/components/shared/SendDocumentDrawer'
+import { getDisplayName } from '@/lib/documents/registry'
+import type { DocumentDelivery } from '@/types'
 
 function stageBadgeVariant(stage: LeadStage) {
   if (stage === 'eligible') return 'default' as const
@@ -162,6 +165,7 @@ export default function ProspectDetailPage() {
   const [disableLoading, setDisableLoading] = useState(false)
   const [stageLoading, setStageLoading] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [sendDocOpen, setSendDocOpen] = useState(false)
 
   function copyPortalLink() {
     if (!client) return
@@ -215,6 +219,15 @@ export default function ProspectDetailPage() {
       const { data } = await supabase.from('dacs').select('id, name, cohort_label, status').order('name')
       return (data ?? []) as Dac[]
     },
+  })
+
+  const { data: deliveries } = useQuery<DocumentDelivery[]>({
+    queryKey: ['prospect-deliveries', id],
+    queryFn: async () => {
+      const { data } = await supabase.from('document_deliveries').select('*').eq('client_id', id!).order('created_at', { ascending: false })
+      return (data ?? []) as DocumentDelivery[]
+    },
+    enabled: !!id,
   })
 
   const { data: calcSnapshot } = useQuery<{ ghi: number | null } | null>({
@@ -345,12 +358,40 @@ export default function ProspectDetailPage() {
             </TabsContent>
 
             {/* Documents */}
-            <TabsContent value="documents" className="mt-4">
-              <StaffDocumentsSection
-                clientId={client.id}
-                docs={docs ?? []}
-                onRefresh={() => qc.invalidateQueries({ queryKey: ['prospect-docs', id] })}
-              />
+            <TabsContent value="documents" className="mt-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">Documents</h2>
+                <Button size="sm" variant="outline" onClick={() => setSendDocOpen(true)}>
+                  <Send className="h-3.5 w-3.5 mr-1.5" /> Send document
+                </Button>
+              </div>
+
+              <Tabs defaultValue="client-files">
+                <TabsList className="mb-3">
+                  <TabsTrigger value="client-files">Client files</TabsTrigger>
+                  <TabsTrigger value="sent-docs">
+                    Sent documents
+                    {(deliveries?.length ?? 0) > 0 && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">({deliveries!.length})</span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="client-files">
+                  <StaffDocumentsSection
+                    clientId={client.id}
+                    docs={docs ?? []}
+                    onRefresh={() => qc.invalidateQueries({ queryKey: ['prospect-docs', id] })}
+                  />
+                </TabsContent>
+
+                <TabsContent value="sent-docs">
+                  <ProspectDeliveryLog
+                    deliveries={deliveries ?? []}
+                    onSend={() => setSendDocOpen(true)}
+                  />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             {/* Notes */}
@@ -407,6 +448,15 @@ export default function ProspectDetailPage() {
             onAssign={handleAssignTo}
           />
 
+          {/* Signing pack — shown when eligible and no KFS sent yet */}
+          {client.lead_stage === 'eligible' && !(deliveries ?? []).some(d => d.document_type === 'kfs') && (
+            <ProspectSigningPackCard
+              clientId={client.id}
+              staffUserId={user?.id ?? ''}
+              onSent={() => qc.invalidateQueries({ queryKey: ['prospect-deliveries', id] })}
+            />
+          )}
+
           {/* Ticket */}
           {client.target_price && calcSnapshot?.ghi ? (
             <TicketPanel propertyPrice={client.target_price} ghi={calcSnapshot.ghi} />
@@ -444,8 +494,135 @@ export default function ProspectDetailPage() {
           <DeferModal open={deferOpen} onClose={() => setDeferOpen(false)} client={client} onDone={refresh} />
           <DeleteClientModal open={deleteOpen} onClose={() => setDeleteOpen(false)} client={client}
             onDeleted={() => navigate('/app/staff/prospects', { replace: true })} />
+          {sendDocOpen && (
+            <SendDocumentDrawer
+              client={client}
+              onClose={() => setSendDocOpen(false)}
+              onSent={() => {
+                setSendDocOpen(false)
+                qc.invalidateQueries({ queryKey: ['prospect-deliveries', id] })
+              }}
+            />
+          )}
         </>
       )}
+    </div>
+  )
+}
+
+// ── Delivery log ──────────────────────────────────────────────────────────────
+
+function ProspectDeliveryLog({ deliveries, onSend }: { deliveries: DocumentDelivery[]; onSend: () => void }) {
+  async function downloadPdf(storagePath: string) {
+    const { data } = await supabase.storage.from('documents').createSignedUrl(storagePath, 3600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+
+  if (deliveries.length === 0) {
+    return (
+      <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+        <p className="text-sm">No documents sent to this client yet.</p>
+        <Button size="sm" variant="outline" className="mt-3" onClick={onSend}>
+          <Send className="h-3.5 w-3.5 mr-1.5" /> Send first document
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-muted/40">
+            <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Document</th>
+            <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Sent</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">Email</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">PDF</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">Read</th>
+            <th className="text-center px-3 py-2.5 font-medium text-xs text-muted-foreground">Ack</th>
+            <th className="px-3 py-2.5" />
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {deliveries.map(d => (
+            <tr key={d.id} className="hover:bg-muted/20">
+              <td className="px-4 py-3">
+                <p className="font-medium">{getDisplayName(d.document_type)}</p>
+                <p className="text-xs text-muted-foreground">v{d.document_version}</p>
+              </td>
+              <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                {new Date(d.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </td>
+              <td className="px-3 py-3 text-center">{d.email_log_id ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="px-3 py-3 text-center">{d.storage_path ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="px-3 py-3 text-center">{d.read_at ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="px-3 py-3 text-center">
+                {!d.requires_ack ? <span className="text-muted-foreground/40">n/a</span>
+                  : d.acknowledged_at ? <span className="text-green-600">✓</span>
+                  : <span className="text-amber-500">!</span>}
+              </td>
+              <td className="px-3 py-3">
+                {d.storage_path && (
+                  <Button size="sm" variant="ghost" onClick={() => downloadPdf(d.storage_path!)} className="h-7 px-2">
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── Signing pack card ─────────────────────────────────────────────────────────
+
+function ProspectSigningPackCard({ clientId, staffUserId, onSent }: { clientId: string; staffUserId: string; onSent: () => void }) {
+  const [sending, setSending] = useState(false)
+  const [err, setErr] = useState('')
+
+  const SIGNING_PACK_TYPES = ['kfs', 'privacy-notice', 'complaints-policy', 'hpa-guidance']
+
+  async function issue() {
+    setSending(true); setErr('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+      const issuedDate = new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })
+      const { data: clientRow } = await supabase.from('clients').select('first_name, last_name').eq('id', clientId).single()
+      const clientName = clientRow ? `${clientRow.first_name} ${clientRow.last_name}` : 'Client'
+
+      for (const docType of SIGNING_PACK_TYPES) {
+        await fetch(`${supabaseUrl}/functions/v1/deliver-document`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+          body: JSON.stringify({
+            client_id: clientId,
+            document_type: docType,
+            variables: { clientName, issuedDate, version: docType === 'kfs' ? '0.2.2' : '0.1.0' },
+            channels: 'both',
+            delivered_by: staffUserId,
+            idempotency_key: `signing-pack-${docType}-${clientId}-${staffUserId}`,
+          }),
+        })
+      }
+      onSent()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-brand-green/30 bg-[#ECF2EE] p-4 space-y-2">
+      <p className="text-sm font-semibold text-brand-green">Signing pack</p>
+      <p className="text-xs text-muted-foreground">No signing pack delivered yet. Issue KFS, Privacy Notice, Complaints Policy, and HPA Guidance.</p>
+      {err && <p className="text-xs text-destructive">{err}</p>}
+      <Button size="sm" onClick={issue} disabled={sending} className="w-full bg-brand-green text-brand-cream hover:bg-brand-green-light">
+        {sending ? 'Sending…' : 'Issue signing pack'}
+      </Button>
     </div>
   )
 }
