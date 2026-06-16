@@ -8,18 +8,7 @@ import { Button } from '@/components/ui/button'
 import type { Dac, CircleMember, DacStatus } from '@/types'
 import { DAC_STATUS_LABELS } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
-
-interface DacWithSubs extends Dac {
-  subscriptions: Array<{ amount: number; status: string }>
-}
-
-const SUBSCRIBED_STATUSES = new Set(['subscribed', 'funds_requested', 'funded', 'active', 'redeeming', 'redeemed'])
-
-function computeSubscribed(subs: Array<{ amount: number; status: string }>) {
-  return subs
-    .filter(s => SUBSCRIBED_STATUSES.has(s.status))
-    .reduce((sum, s) => sum + s.amount, 0)
-}
+import { cn } from '@/lib/utils'
 
 function dacStatusBadge(status: DacStatus) {
   const label = DAC_STATUS_LABELS[status]
@@ -28,10 +17,11 @@ function dacStatusBadge(status: DacStatus) {
   return <Badge variant="outline">{label}</Badge>
 }
 
-function DacCard({ dac }: { dac: DacWithSubs }) {
-  const raised = computeSubscribed(dac.subscriptions)
+function DacCard({ dac, totalSubscribed }: { dac: Dac; totalSubscribed: number }) {
   const target = dac.target_sub_amount ?? 0
-  const pct = target > 0 ? Math.min(100, Math.round((raised / target) * 100)) : 0
+  const remaining = Math.max(0, target - totalSubscribed)
+  const pct = target > 0 ? Math.min(100, Math.round((totalSubscribed / target) * 100)) : 0
+  const isFull = target > 0 && remaining === 0
 
   return (
     <Card>
@@ -60,14 +50,23 @@ function DacCard({ dac }: { dac: DacWithSubs }) {
         </div>
 
         {target > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-2">
+            <div className="h-1.5 w-full rounded-full bg-muted">
+              <div
+                className="h-1.5 rounded-full bg-primary transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Subscribed: {formatCurrency(raised)}</span>
+              <span>Subscribed: {formatCurrency(totalSubscribed)}</span>
               <span>Target: {formatCurrency(target)}</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-muted">
-              <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-            </div>
+            <p className={cn(
+              'text-sm font-medium',
+              isFull ? 'text-muted-foreground' : 'text-green-700'
+            )}>
+              {isFull ? 'Fully subscribed' : `${formatCurrency(remaining)} available`}
+            </p>
           </div>
         )}
 
@@ -96,10 +95,10 @@ export default function OpportunitiesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('dacs')
-        .select('*, subscriptions(amount, status)')
+        .select('*')
         .in('status', ['upcoming', 'open'])
         .order('open_date', { ascending: true })
-      return (data ?? []) as DacWithSubs[]
+      return (data ?? []) as Dac[]
     },
   })
 
@@ -108,12 +107,25 @@ export default function OpportunitiesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('dacs')
-        .select('*, subscriptions(amount, status)')
+        .select('*')
         .in('status', ['closed', 'matured'])
         .order('close_date', { ascending: false })
-      return (data ?? []) as DacWithSubs[]
+      return (data ?? []) as Dac[]
     },
   })
+
+  // Aggregate totals across all members via SECURITY DEFINER function
+  const { data: subTotals } = useQuery({
+    queryKey: ['dac-sub-totals'],
+    queryFn: async () => {
+      const { data } = await supabase.rpc('get_dac_sub_totals')
+      return (data ?? []) as Array<{ dac_id: string; total_subscribed: number }>
+    },
+  })
+
+  const totalsByDac: Record<string, number> = Object.fromEntries(
+    (subTotals ?? []).map(r => [r.dac_id, r.total_subscribed])
+  )
 
   if (!member) return null
 
@@ -134,7 +146,9 @@ export default function OpportunitiesPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {activeDacs.map((dac) => <DacCard key={dac.id} dac={dac} />)}
+          {activeDacs.map((dac) => (
+            <DacCard key={dac.id} dac={dac} totalSubscribed={totalsByDac[dac.id] ?? 0} />
+          ))}
         </div>
       )}
 
@@ -142,7 +156,9 @@ export default function OpportunitiesPage() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-muted-foreground">Historical</h2>
           <div className="grid gap-4">
-            {closedDacs!.map((dac) => <DacCard key={dac.id} dac={dac} />)}
+            {closedDacs!.map((dac) => (
+              <DacCard key={dac.id} dac={dac} totalSubscribed={totalsByDac[dac.id] ?? 0} />
+            ))}
           </div>
         </div>
       )}
