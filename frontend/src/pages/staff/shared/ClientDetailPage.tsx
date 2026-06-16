@@ -27,6 +27,9 @@ import { ClientDetailsSection } from '@/components/shared/ClientDetailsSection'
 const PHASE2: ProgrammeStage[] = ['dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed']
 const PHASE3: ProgrammeStage[] = ['in_home', 'servicing', 'exit_prep', 'option_window', 'pathway_complete', 'exited']
 const ALL_PROGRAMME_STAGES: ProgrammeStage[] = [...PHASE2, ...PHASE3]
+// in_home is the boundary stage: shown as the final preview step of the Property
+// timeline, and as the first (active) step once the client is actually on Pathway.
+const PHASE2_TIMELINE: ProgrammeStage[] = [...PHASE2, 'in_home']
 
 function phaseBadge(stage: ProgrammeStage) {
   if (PHASE3.includes(stage)) return 'default' as const
@@ -242,7 +245,7 @@ export default function StaffClientDetailPage() {
               <section className="rounded-xl border bg-card p-5 space-y-5">
                 <h2 className="font-semibold">Stage</h2>
                 <StageTimeline
-                  stages={ALL_PROGRAMME_STAGES}
+                  stages={isPhase2 ? PHASE2_TIMELINE : PHASE3}
                   labels={PROGRAMME_STAGE_LABELS}
                   current={stage}
                   terminal={isTerminal}
