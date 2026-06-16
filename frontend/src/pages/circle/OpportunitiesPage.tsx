@@ -13,9 +13,11 @@ interface DacWithSubs extends Dac {
   subscriptions: Array<{ amount: number; status: string }>
 }
 
-function computeRaised(subs: Array<{ amount: number; status: string }>) {
+const SUBSCRIBED_STATUSES = new Set(['subscribed', 'funds_requested', 'funded', 'active', 'redeeming', 'redeemed'])
+
+function computeSubscribed(subs: Array<{ amount: number; status: string }>) {
   return subs
-    .filter(s => !['soft_commit', 'withdrawn'].includes(s.status))
+    .filter(s => SUBSCRIBED_STATUSES.has(s.status))
     .reduce((sum, s) => sum + s.amount, 0)
 }
 
@@ -27,7 +29,7 @@ function dacStatusBadge(status: DacStatus) {
 }
 
 function DacCard({ dac }: { dac: DacWithSubs }) {
-  const raised = computeRaised(dac.subscriptions)
+  const raised = computeSubscribed(dac.subscriptions)
   const target = dac.target_sub_amount ?? 0
   const pct = target > 0 ? Math.min(100, Math.round((raised / target) * 100)) : 0
 
@@ -60,7 +62,7 @@ function DacCard({ dac }: { dac: DacWithSubs }) {
         {target > 0 && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Raised: {formatCurrency(raised)}</span>
+              <span>Subscribed: {formatCurrency(raised)}</span>
               <span>Target: {formatCurrency(target)}</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-muted">
