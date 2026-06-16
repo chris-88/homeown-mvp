@@ -60,9 +60,14 @@ import StaffProfilePage from '@/pages/staff/profile/ProfilePage'
 import ProspectsPage from '@/pages/staff/prospects/ProspectsPage'
 import ProspectDetailPage from '@/pages/staff/prospects/ProspectDetailPage'
 
-// Staff portal — clients (Phase 2+3)
-import ClientsPage from '@/pages/staff/clients/ClientsPage'
-import StaffClientDetailPage from '@/pages/staff/clients/ClientDetailPage'
+// Staff portal — property (Phase 2)
+import PropertyPage from '@/pages/staff/property/PropertyPage'
+
+// Staff portal — pathway (Phase 3)
+import PathwayPage from '@/pages/staff/pathway/PathwayPage'
+
+// Staff portal — shared client detail (Property + Pathway)
+import StaffClientDetailPage from '@/pages/staff/shared/ClientDetailPage'
 
 // Staff portal — circle CRM
 import StaffCircleList from '@/pages/staff/circle/CircleListPage'
@@ -135,8 +140,10 @@ export const router = createHashRouter([
       { path: 'queue', element: <QueuePage /> },
       { path: 'prospects', element: <ProspectsPage /> },
       { path: 'prospects/:id', element: <ProspectDetailPage /> },
-      { path: 'clients', element: <ClientsPage /> },
-      { path: 'clients/:id', element: <StaffClientDetailPage /> },
+      { path: 'property', element: <PropertyPage /> },
+      { path: 'property/:id', element: <StaffClientDetailPage /> },
+      { path: 'pathway', element: <PathwayPage /> },
+      { path: 'pathway/:id', element: <StaffClientDetailPage /> },
       { path: 'circle', element: <StaffCircleList /> },
       { path: 'circle/new', element: <StaffCircleNew /> },
       { path: 'circle/:id', element: <StaffCircleDetail /> },

@@ -21,11 +21,15 @@ export function canManageTeam(role: StaffRole | undefined): boolean {
 }
 
 export function canViewProspects(role: StaffRole | undefined): boolean {
-  return role === 'admin' || role === 'onboarding' || role === 'finance'
+  return role === 'admin' || role === 'onboarding'
 }
 
-export function canViewClients(role: StaffRole | undefined): boolean {
-  return role === 'admin' || role === 'purchasing_agent' || role === 'client_success'
+export function canViewProperty(role: StaffRole | undefined): boolean {
+  return role === 'admin' || role === 'purchasing_agent'
+}
+
+export function canViewPathway(role: StaffRole | undefined): boolean {
+  return role === 'admin' || role === 'client_success'
 }
 
 export function canViewCircle(role: StaffRole | undefined): boolean {
@@ -33,5 +37,5 @@ export function canViewCircle(role: StaffRole | undefined): boolean {
 }
 
 export function canViewDACs(role: StaffRole | undefined): boolean {
-  return role === 'admin' || role === 'finance' || role === 'purchasing_agent'
+  return role === 'admin' || role === 'finance'
 }

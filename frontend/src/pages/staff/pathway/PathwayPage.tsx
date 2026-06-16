@@ -9,30 +9,27 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-const PHASE2_STAGES: ProgrammeStage[] = ['dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed']
 const PHASE3_STAGES: ProgrammeStage[] = ['in_home', 'servicing', 'exit_prep', 'option_window', 'pathway_complete', 'exited']
 
 function stageBadgeVariant(stage: ProgrammeStage) {
   if (stage === 'pathway_complete') return 'default' as const
   if (stage === 'exited') return 'outline' as const
-  if (PHASE3_STAGES.includes(stage)) return 'default' as const
-  return 'secondary' as const
+  return 'default' as const
 }
 
 type ClientWithDac = Client & { dacs?: { name: string } | null }
 
-export default function ClientsPage() {
+export default function PathwayPage() {
   const [search, setSearch] = useState('')
-  const [phaseFilter, setPhaseFilter] = useState<string>('all')
   const [stageFilter, setStageFilter] = useState<string>('all')
 
   const { data: clients, isLoading } = useQuery<ClientWithDac[]>({
-    queryKey: ['clients-list'],
+    queryKey: ['pathway-list'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
         .select('*, dacs(name)')
-        .not('programme_stage', 'is', null)
+        .in('programme_stage', PHASE3_STAGES)
         .order('updated_at', { ascending: true })
       if (error) throw error
       return (data ?? []) as ClientWithDac[]
@@ -43,40 +40,15 @@ export default function ClientsPage() {
     const matchesSearch = search === '' ||
       `${c.first_name} ${c.last_name} ${c.email}`.toLowerCase().includes(search.toLowerCase())
     const stage = c.programme_stage!
-    const matchesPhase =
-      phaseFilter === 'all' ||
-      (phaseFilter === 'phase2' && PHASE2_STAGES.includes(stage)) ||
-      (phaseFilter === 'phase3' && PHASE3_STAGES.includes(stage))
     const matchesStage = stageFilter === 'all' || stage === stageFilter
-    return matchesSearch && matchesPhase && matchesStage
+    return matchesSearch && matchesStage
   })
-
-  const phase2Count = (clients ?? []).filter(c => PHASE2_STAGES.includes(c.programme_stage!)).length
-  const phase3Count = (clients ?? []).filter(c => PHASE3_STAGES.includes(c.programme_stage!)).length
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
-        <h1 className="text-2xl font-bold">Clients</h1>
-        <p className="mt-1 text-muted-foreground">Phase 2 (property) and Phase 3 (pathway) clients.</p>
-      </div>
-
-      {/* Phase summary */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          onClick={() => setPhaseFilter(phaseFilter === 'phase2' ? 'all' : 'phase2')}
-          className={`rounded-xl border p-4 text-left transition-colors ${phaseFilter === 'phase2' ? 'border-primary bg-primary/5' : 'bg-card hover:bg-accent'}`}
-        >
-          <p className="text-2xl font-bold">{phase2Count}</p>
-          <p className="text-sm text-muted-foreground">Phase 2: Property search</p>
-        </button>
-        <button
-          onClick={() => setPhaseFilter(phaseFilter === 'phase3' ? 'all' : 'phase3')}
-          className={`rounded-xl border p-4 text-left transition-colors ${phaseFilter === 'phase3' ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'bg-card hover:bg-accent'}`}
-        >
-          <p className="text-2xl font-bold">{phase3Count}</p>
-          <p className="text-sm text-muted-foreground">Phase 3: On pathway</p>
-        </button>
+        <h1 className="text-2xl font-bold">Pathway</h1>
+        <p className="mt-1 text-muted-foreground">Clients living in their home and progressing through the pathway.</p>
       </div>
 
       {/* Filters */}
@@ -91,11 +63,6 @@ export default function ClientsPage() {
           <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All stages</SelectItem>
-            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phase 2</div>
-            {PHASE2_STAGES.map(s => (
-              <SelectItem key={s} value={s}>{PROGRAMME_STAGE_LABELS[s]}</SelectItem>
-            ))}
-            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phase 3</div>
             {PHASE3_STAGES.map(s => (
               <SelectItem key={s} value={s}>{PROGRAMME_STAGE_LABELS[s]}</SelectItem>
             ))}
@@ -124,7 +91,7 @@ export default function ClientsPage() {
                 {filtered.map(c => (
                   <tr key={c.id}>
                     <td className="py-3 pr-4">
-                      <Link to={`/app/staff/clients/${c.id}`} className="font-medium hover:underline underline-offset-2">
+                      <Link to={`/app/staff/pathway/${c.id}`} className="font-medium hover:underline underline-offset-2">
                         {c.first_name} {c.last_name}
                       </Link>
                       {!c.active && <span className="ml-2 text-xs text-muted-foreground">(disabled)</span>}

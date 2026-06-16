@@ -4,10 +4,10 @@ import { RouteGuard } from '@/components/shared/RouteGuard'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import {
-  BarChart3, ListTodo, UserSearch, Users, Users2, Landmark,
+  BarChart3, ListTodo, UserSearch, Home, Route, Users2, Landmark,
   Building2, UserCircle, LogOut, Menu, X,
 } from 'lucide-react'
-import { canViewProspects, canViewClients, canViewCircle, canViewDACs, canManageTeam } from '@/lib/rbac'
+import { canViewProspects, canViewProperty, canViewPathway, canViewCircle, canViewDACs, canManageTeam } from '@/lib/rbac'
 import type { StaffRole } from '@/types'
 import { Logo } from '@/components/shared/Logo'
 import { NotificationBell } from '@/components/shared/NotificationBell'
@@ -24,7 +24,8 @@ const NAV: NavItem[] = [
   { to: '/app/staff',           label: 'Overview',    icon: <BarChart3 className="h-4 w-4" />,    exact: true },
   { to: '/app/staff/queue',     label: 'My Queue',    icon: <ListTodo className="h-4 w-4" /> },
   { to: '/app/staff/prospects', label: 'Prospects',   icon: <UserSearch className="h-4 w-4" />,   show: canViewProspects },
-  { to: '/app/staff/clients',   label: 'Clients',     icon: <Users className="h-4 w-4" />,        show: canViewClients },
+  { to: '/app/staff/property',  label: 'Property',    icon: <Home className="h-4 w-4" />,         show: canViewProperty },
+  { to: '/app/staff/pathway',   label: 'Pathway',     icon: <Route className="h-4 w-4" />,        show: canViewPathway },
   { to: '/app/staff/circle',    label: 'Circle CRM',  icon: <Users2 className="h-4 w-4" />,       show: canViewCircle },
   { to: '/app/staff/dacs',      label: 'DACs',        icon: <Landmark className="h-4 w-4" />,     show: canViewDACs },
   { to: '/app/staff/team',      label: 'Team',        icon: <Building2 className="h-4 w-4" />,    show: canManageTeam },

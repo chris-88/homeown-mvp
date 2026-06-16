@@ -240,11 +240,13 @@ export default function StaffClientDetailPage() {
   const isTerminal = stage === 'pathway_complete' || stage === 'exited'
   const next = nextProgrammeStage(stage)
   const isAdmin = staffMember?.role === 'admin'
+  const sectionPath = isPhase2 ? '/app/staff/property' : '/app/staff/pathway'
+  const sectionLabel = isPhase2 ? 'Property' : 'Pathway'
 
   return (
     <div className="mx-auto max-w-6xl p-8 space-y-6">
-      <Link to="/app/staff/clients" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" />Clients
+      <Link to={sectionPath} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" />{sectionLabel}
       </Link>
 
       <div className="flex items-start justify-between gap-4">
@@ -462,7 +464,7 @@ export default function StaffClientDetailPage() {
         <AdvanceModal open={advanceOpen} onClose={() => setAdvanceOpen(false)} client={client} onAdvanced={refresh} />
       )}
       <DeleteClientModal open={deleteOpen} onClose={() => setDeleteOpen(false)} client={client}
-        onDeleted={() => navigate('/app/staff/clients', { replace: true })} />
+        onDeleted={() => navigate(sectionPath, { replace: true })} />
     </div>
   )
 }

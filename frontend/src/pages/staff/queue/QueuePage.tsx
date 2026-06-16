@@ -35,14 +35,17 @@ function ProspectRow({ client }: { client: Client }) {
   )
 }
 
+const PHASE2_STAGES = ['dac_assigned', 'searching', 'sale_agreed', 'conveyancing', 'contracts_signed']
+
 function ClientRow({ client }: { client: Client }) {
   const days = daysAgo(client.updated_at)
   const stageLabel = client.programme_stage
     ? PROGRAMME_STAGE_LABELS[client.programme_stage]
     : LEAD_STAGE_LABELS[client.lead_stage]
+  const section = client.programme_stage && PHASE2_STAGES.includes(client.programme_stage) ? 'property' : 'pathway'
   return (
     <Link
-      to={`/app/staff/clients/${client.id}`}
+      to={`/app/staff/${section}/${client.id}`}
       className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 hover:bg-accent transition-colors"
     >
       <div>
@@ -118,8 +121,9 @@ function AdminQueue() {
       </div>
       <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
         As admin you can view and manage all records from{' '}
-        <Link to="/app/staff/prospects" className="underline underline-offset-2">Prospects</Link> and{' '}
-        <Link to="/app/staff/clients" className="underline underline-offset-2">Clients</Link>.
+        <Link to="/app/staff/prospects" className="underline underline-offset-2">Prospects</Link>,{' '}
+        <Link to="/app/staff/property" className="underline underline-offset-2">Property</Link> and{' '}
+        <Link to="/app/staff/pathway" className="underline underline-offset-2">Pathway</Link>.
       </div>
     </div>
   )
