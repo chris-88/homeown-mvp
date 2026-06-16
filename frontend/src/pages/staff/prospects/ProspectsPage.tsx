@@ -32,7 +32,7 @@ export default function ProspectsPage() {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .is('dac_id', null)
+        .is('programme_stage', null)
         .order('updated_at', { ascending: true })
       if (error) throw error
       return (data ?? []) as Client[]
