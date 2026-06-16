@@ -17,8 +17,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
-import { ArrowLeft, Download, Trash2 } from 'lucide-react'
-import type { Dac, DacDocument, DacStatus, CircleMember, Subscription, SubscriptionStatus, SeniorStage } from '@/types'
+import { ArrowLeft, Download, Trash2, UserMinus } from 'lucide-react'
+import type { Dac, DacDocument, DacStatus, CircleMember, Client, Subscription, SubscriptionStatus, SeniorStage } from '@/types'
 import { DAC_STATUS_LABELS, DAC_DOC_TYPE_LABELS, SUBSCRIPTION_STATUS_LABELS, SENIOR_STAGE_LABELS } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
@@ -726,6 +726,189 @@ function SeniorTab({ dac, onRefresh }: { dac: Dac; onRefresh: () => void }) {
   )
 }
 
+// ── Eligible tab ──────────────────────────────────────────────
+type EligibleClient = Pick<Client, 'id' | 'first_name' | 'last_name' | 'target_price' | 'lead_stage' | 'dac_id'>
+
+function EligibleTab({ dac }: { dac: Dac }) {
+  const qc = useQueryClient()
+  const [mutating, setMutating] = useState<string | null>(null)
+
+  const { data: prospects } = useQuery({
+    queryKey: ['staff-dac-eligible', dac.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('id, first_name, last_name, target_price, lead_stage, dac_id')
+        .or(`lead_stage.eq.eligible,dac_id.eq.${dac.id}`)
+        .order('last_name')
+      return (data ?? []) as EligibleClient[]
+    },
+  })
+
+  const inCohort = (prospects ?? []).filter(p => p.dac_id === dac.id)
+  const available = (prospects ?? []).filter(p => p.lead_stage === 'eligible' && p.dac_id === null)
+
+  const dacSize = (dac.target_sub_amount ?? 0) + (dac.target_senior_amount ?? 0)
+  const allocated = inCohort.reduce((sum, p) => sum + (p.target_price ?? 0), 0)
+  const remaining = dacSize - allocated
+  const overSubscribed = dacSize > 0 && remaining < 0
+  const pct = dacSize > 0 ? Math.min(100, (allocated / dacSize) * 100) : 0
+
+  async function addToCohort(clientId: string) {
+    setMutating(clientId)
+    await supabase.from('clients').update({ dac_id: dac.id, updated_at: new Date().toISOString() }).eq('id', clientId)
+    qc.invalidateQueries({ queryKey: ['staff-dac-eligible', dac.id] })
+    setMutating(null)
+  }
+
+  async function removeFromCohort(clientId: string) {
+    setMutating(clientId)
+    await supabase.from('clients').update({ dac_id: null, updated_at: new Date().toISOString() }).eq('id', clientId)
+    qc.invalidateQueries({ queryKey: ['staff-dac-eligible', dac.id] })
+    setMutating(null)
+  }
+
+  return (
+    <div className="space-y-6">
+
+      {/* Capacity summary */}
+      {dacSize > 0 ? (
+        <Card>
+          <CardContent className="pt-5 pb-5">
+            <div className="grid gap-4 sm:grid-cols-3 mb-5">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">DAC size</p>
+                <p className="text-xl font-bold numeric">{formatCurrency(dacSize)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Allocated</p>
+                <p className="text-xl font-bold numeric">{formatCurrency(allocated)}</p>
+                <p className="text-xs text-muted-foreground">{inCohort.length} prospect{inCohort.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {overSubscribed ? 'Oversubscribed by' : 'Remaining'}
+                </p>
+                <p className={cn('text-xl font-bold numeric', overSubscribed ? 'text-destructive' : 'text-green-700')}>
+                  {formatCurrency(Math.abs(remaining))}
+                </p>
+              </div>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className={cn('h-full rounded-full transition-all duration-300', overSubscribed ? 'bg-destructive' : 'bg-primary')}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            {overSubscribed && (
+              <p className="mt-2 text-xs text-destructive">
+                Cohort target prices exceed DAC capacity by {formatCurrency(Math.abs(remaining))}. Oversubscription is permitted.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Set target sub and senior amounts in Fundamentals to see capacity tracking.
+        </p>
+      )}
+
+      {/* In cohort */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3">In this cohort ({inCohort.length})</h3>
+        <Card>
+          <CardContent className="pt-4">
+            {!inCohort.length ? (
+              <p className="text-sm text-muted-foreground py-2">No prospects assigned to this DAC yet.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-3 pr-3 font-medium">Name</th>
+                    <th className="pb-3 pr-3 font-medium">Target price</th>
+                    <th className="pb-3 font-medium" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {inCohort.map(p => (
+                    <tr key={p.id}>
+                      <td className="py-3 pr-3">
+                        <Link to={`/app/staff/clients/${p.id}`} className="font-medium hover:underline">
+                          {p.first_name} {p.last_name}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-3 numeric">
+                        {p.target_price ? formatCurrency(p.target_price) : <span className="text-muted-foreground">-</span>}
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button
+                          size="sm" variant="ghost"
+                          className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => removeFromCohort(p.id)}
+                          disabled={mutating === p.id}
+                        >
+                          <UserMinus className="h-3.5 w-3.5 mr-1" />
+                          Remove
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Available eligible prospects */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3">Available eligible prospects ({available.length})</h3>
+        <Card>
+          <CardContent className="pt-4">
+            {!available.length ? (
+              <p className="text-sm text-muted-foreground py-2">No unassigned eligible prospects.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-3 pr-3 font-medium">Name</th>
+                    <th className="pb-3 pr-3 font-medium">Target price</th>
+                    <th className="pb-3 font-medium" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {available.map(p => (
+                    <tr key={p.id}>
+                      <td className="py-3 pr-3">
+                        <Link to={`/app/staff/clients/${p.id}`} className="font-medium hover:underline">
+                          {p.first_name} {p.last_name}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-3 numeric">
+                        {p.target_price ? formatCurrency(p.target_price) : <span className="text-muted-foreground">-</span>}
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button
+                          size="sm" variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => addToCohort(p.id)}
+                          disabled={mutating === p.id}
+                        >
+                          {mutating === p.id ? 'Adding…' : 'Add to cohort'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
 // ── Page root ──────────────────────────────────────────────────
 export default function StaffDacDetail() {
   const { id } = useParams<{ id: string }>()
@@ -781,12 +964,14 @@ export default function StaffDacDetail() {
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="senior">Senior</TabsTrigger>
+          <TabsTrigger value="eligible">Eligible</TabsTrigger>
         </TabsList>
         <div className="mt-6">
           <TabsContent value="fundamentals"><FundamentalsTab dac={dac} onRefresh={refresh} /></TabsContent>
           <TabsContent value="documents"><DocumentsTab dac={dac} /></TabsContent>
           <TabsContent value="subscriptions"><SubscriptionsTab dac={dac} /></TabsContent>
           <TabsContent value="senior"><SeniorTab dac={dac} onRefresh={refresh} /></TabsContent>
+          <TabsContent value="eligible"><EligibleTab dac={dac} /></TabsContent>
         </div>
       </Tabs>
     </div>
