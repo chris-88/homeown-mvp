@@ -179,7 +179,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const { state } = useCalcWizard()
   const { propertyPrice, currentSavings, monthlySavings, strikePrice, entryStake, ghi } = state
 
-  // Chart 1 — deposit trap (10 years)
+  // Chart data
   const depositData = Array.from({ length: 11 }, (_, i) => ({
     year: i,
     deposit: Math.round(propertyPrice * 0.10 * Math.pow(1 + APPRECIATION, i)),
@@ -187,7 +187,6 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   }))
   const crossoverYear = depositData.findIndex((d, i) => i > 0 && d.savings >= d.deposit)
 
-  // Chart 2 — Homeown path (5 years)
   const homeownData = Array.from({ length: 6 }, (_, i) => ({
     year: i,
     marketValue: Math.round(propertyPrice * Math.pow(1 + APPRECIATION, i)),
@@ -201,91 +200,129 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const yMinHomeown = Math.floor(strikePrice * 0.90 / 10000) * 10000
   const yMaxHomeown = Math.ceil(finalMarket * 1.06 / 10000) * 10000
 
-  // ── Scenario logic ──────────────────────────────────────────
+  // Derived numbers
   const alreadyHasDeposit = currentSavings >= propertyPrice * 0.10
-  const depositClose      = !alreadyHasDeposit && crossoverYear > 0 && crossoverYear <= 2
-  const depositReachable  = !alreadyHasDeposit && crossoverYear > 2 && crossoverYear <= 10
-
-  // Price they'd pay via traditional route (at crossover year, or yr 10 if never reached)
-  const tradBuyYear  = crossoverYear > 0 ? crossoverYear : 10
-  const tradBuyPrice = Math.round(propertyPrice * Math.pow(1 + APPRECIATION, tradBuyYear))
-
-  // "In the home for X of 5 years" equity gain (simplified, ignoring amortisation)
+  const tradBuyYear        = crossoverYear > 0 ? crossoverYear : 10
+  const tradBuyPrice       = Math.round(propertyPrice * Math.pow(1 + APPRECIATION, tradBuyYear))
   const tradInHomeYears    = Math.max(0, 5 - tradBuyYear)
   const tradValueAtYear5   = Math.round(tradBuyPrice * Math.pow(1 + APPRECIATION, tradInHomeYears))
-  const tradDepositPaid    = Math.round(tradBuyPrice * 0.10)
-  const tradEquityAtYear5  = tradInHomeYears > 0 ? tradValueAtYear5 - (tradBuyPrice - tradDepositPaid) : null
+  const tradEquityAtYear5  = tradInHomeYears > 0 ? tradValueAtYear5 - Math.round(tradBuyPrice * 0.90) : null
 
-  // Exit affordability check (4× GHI standard multiplier)
-  const ghiEntered = ghi > 0
-  const exitMortgageSupported = !ghiEntered || ghi * 4 >= strikePrice
+  const ghiEntered             = ghi > 0
+  const exitMortgageSupported  = !ghiEntered || ghi * 4 >= strikePrice
 
-  // ── Verdict ─────────────────────────────────────────────────
-  const verdict = alreadyHasDeposit
-    ? { tone: 'neutral', headline: 'You already have the deposit.', body: `Your ${formatCurrency(currentSavings)} in savings covers the ${formatCurrency(propertyPrice * 0.10)} deposit today. The traditional route is a real option for you. Homeown is worth considering only if locking in a price below today's market value is worth more than buying now.` }
-    : depositClose
-    ? { tone: 'neutral', headline: `You're within reach — around ${crossoverYear} year${crossoverYear === 1 ? '' : 's'} away.`, body: `That's genuinely achievable. But the property will cost ${formatCurrency(tradBuyPrice)} by then, not ${formatCurrency(propertyPrice)} today. Whether locking in the price now outweighs another ${crossoverYear} year of saving is the question to weigh.` }
-    : depositReachable
-    ? { tone: 'amber', headline: `At your savings rate, you'd reach the deposit in year ${crossoverYear}.`, body: `But by then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(Math.round(tradBuyPrice * 0.10))}. The target keeps moving.` }
-    : { tone: 'amber', headline: 'The deposit target is growing faster than your savings.', body: `Over 10 years, the required deposit reaches ${formatCurrency(depositData[10].deposit)} while your savings reach ${formatCurrency(depositData[10].savings)}. The gap widens, not closes.` }
+  // Input summary pills
+  const summaryItems = [
+    formatCurrency(propertyPrice) + ' target',
+    formatCurrency(monthlySavings) + '/mo saving',
+    ...(currentSavings > 0 ? [formatCurrency(currentSavings) + ' saved'] : []),
+    ...(ghiEntered       ? [formatCurrency(ghi) + '/yr income'] : []),
+  ]
 
-  // ── Caveats ─────────────────────────────────────────────────
-  const caveats: string[] = []
-  if (!exitMortgageSupported) {
-    caveats.push(`On a gross household income of ${formatCurrency(ghi)}, standard 4× lending supports a mortgage of up to ${formatCurrency(ghi * 4)}. The option price is ${formatCurrency(strikePrice)}. Exit affordability depends on your full financial picture — this is a key question for your discovery call.`)
-  }
+  // Realisation moment text (3 lines + optional punchline)
+  const realisation = alreadyHasDeposit
+    ? {
+        lines: [
+          `Your ${formatCurrency(currentSavings)} already covers the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit today.`,
+          'The traditional route is available to you right now.',
+          'The question is whether locking in the price today is worth more than buying at the current market.',
+        ],
+        punchline: null as string | null,
+      }
+    : crossoverYear > 0
+    ? {
+        lines: [
+          `At your savings rate, you'd reach the deposit in year ${crossoverYear}.`,
+          `By then the property costs ${formatCurrency(tradBuyPrice)} — so the deposit itself is ${formatCurrency(Math.round(tradBuyPrice * 0.10))}.`,
+        ],
+        punchline: 'The target keeps moving.',
+      }
+    : {
+        lines: [
+          `At your savings rate, your savings reach ${formatCurrency(depositData[10].savings)} over 10 years.`,
+          `The required deposit reaches ${formatCurrency(depositData[10].deposit)} in the same period.`,
+        ],
+        punchline: 'The gap widens, not closes.',
+      }
+
+  // Comparison table rows
+  const savingsShortAtYear5 = Math.max(0, depositData[5].deposit - depositData[5].savings)
+
+  const compRows = [
+    {
+      label: 'To get started',
+      trad: formatCurrency(propertyPrice * 0.10) + ' deposit',
+      tradSub: undefined as string | undefined,
+      hw: formatCurrency(entryStake) + ' Entry Stake',
+      hwSub: undefined as string | undefined,
+    },
+    {
+      label: 'Timeline',
+      trad: crossoverYear > 0 ? `~${crossoverYear} year${crossoverYear === 1 ? '' : 's'} saving` : '10+ years saving',
+      tradSub: undefined,
+      hw: 'Move in this year',
+      hwSub: undefined,
+    },
+    {
+      label: 'You buy at',
+      trad: `~${formatCurrency(tradBuyPrice)}`,
+      tradSub: `market price, year ${tradBuyYear}`,
+      hw: formatCurrency(strikePrice),
+      hwSub: 'fixed today, regardless of market',
+    },
+    {
+      label: 'At year 5',
+      trad: tradEquityAtYear5 !== null ? `~${formatCurrency(tradEquityAtYear5)} equity` : 'Still saving',
+      tradSub: tradEquityAtYear5 !== null
+        ? `${tradInHomeYears} yr${tradInHomeYears === 1 ? '' : 's'} appreciation only`
+        : savingsShortAtYear5 > 0 ? `${formatCurrency(savingsShortAtYear5)} short of deposit` : undefined,
+      hw: `~${formatCurrency(finalEquity)} equity`,
+      hwSub: `${formatCurrency(finalMarket)} market minus ${formatCurrency(strikePrice)} option price`,
+    },
+  ]
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Your numbers, honestly.</h2>
-        <p className="mt-2 text-muted-foreground">
-          {formatCurrency(propertyPrice)} target · saving {formatCurrency(monthlySavings)}/mo
-          {currentSavings > 0 ? ` · ${formatCurrency(currentSavings)} saved` : ''}
-          {ghiEntered ? ` · ${formatCurrency(ghi)}/yr income` : ''}
-        </p>
+    <div>
+      {/* Input summary bar */}
+      <p className="text-sm text-muted-foreground">
+        {summaryItems.join(' · ')}
+      </p>
+
+      {/* Realisation moment — no card, typographic only */}
+      <div className="mt-8 py-10 max-w-xl space-y-1">
+        {realisation.lines.map((line, i) => (
+          <p key={i} className="text-lg text-foreground">{line}</p>
+        ))}
+        {realisation.punchline && (
+          <p className="text-lg font-semibold text-destructive">{realisation.punchline}</p>
+        )}
       </div>
 
-      {/* Verdict */}
-      <div className={cn(
-        'rounded-xl border px-4 py-4',
-        verdict.tone === 'amber' ? 'border-amber-200 bg-amber-50' : 'border-border bg-muted/30'
-      )}>
-        <p className={cn('font-semibold text-sm', verdict.tone === 'amber' ? 'text-amber-900' : 'text-foreground')}>
-          {verdict.headline}
-        </p>
-        <p className={cn('text-sm mt-1 leading-relaxed', verdict.tone === 'amber' ? 'text-amber-800' : 'text-muted-foreground')}>
-          {verdict.body}
-        </p>
-      </div>
-
-      {/* Chart 1 */}
-      <div className="rounded-2xl border p-5 space-y-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional route</p>
-          <h3 className="mt-1 text-base font-semibold">The deposit keeps moving</h3>
+      {/* Traditional section — full-bleed, stone bg */}
+      <div className="-mx-6 mt-2 bg-stone-100 px-6 py-10">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional route</p>
+        <h3 className="mt-1 text-2xl font-semibold">The deposit keeps moving.</h3>
+        <div className="pt-6">
+          <ChartContainer config={depositChartConfig} className="h-48 w-full">
+            <LineChart data={depositData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.06)" />
+              <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
+                tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+              <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
+                tick={{ fontSize: 10 }} width={36} domain={[0, yMaxDeposit]} />
+              <ChartTooltip content={
+                <ChartTooltipContent
+                  formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
+                  labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
+                />
+              } />
+              <Line dataKey="deposit" stroke="var(--color-deposit)" strokeWidth={2.5} dot={false} />
+              <Line dataKey="savings" stroke="var(--color-savings)" strokeWidth={2}
+                dot={false} strokeDasharray="5 3" />
+            </LineChart>
+          </ChartContainer>
         </div>
-
-        <ChartContainer config={depositChartConfig} className="h-48 w-full">
-          <LineChart data={depositData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
-              tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-            <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
-              tick={{ fontSize: 10 }} width={36} domain={[0, yMaxDeposit]} />
-            <ChartTooltip content={
-              <ChartTooltipContent
-                formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
-                labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
-              />
-            } />
-            <Line dataKey="deposit" stroke="var(--color-deposit)" strokeWidth={2} dot={false} />
-            <Line dataKey="savings" stroke="var(--color-savings)" strokeWidth={2}
-              dot={false} strokeDasharray="5 3" />
-          </LineChart>
-        </ChartContainer>
-
-        <div className="flex gap-5 text-xs text-muted-foreground">
+        <div className="flex gap-5 mt-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-0.5 w-5 bg-destructive" />
             Deposit required
@@ -297,37 +334,35 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
         </div>
       </div>
 
-      {/* Chart 2 */}
-      <div className="rounded-2xl border p-5 space-y-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Homeown pathway</p>
-          <h3 className="mt-1 text-base font-semibold">Your price is fixed. The market works for you.</h3>
+      {/* Homeown section — full-bleed, green bg */}
+      <div className="-mx-6 bg-green-50 px-6 py-10">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand-green">Homeown pathway</p>
+        <h3 className="mt-1 text-2xl font-semibold">Your price is fixed.<br />The market works for you.</h3>
+        <div className="pt-6">
+          <ChartContainer config={homeownChartConfig} className="h-48 w-full">
+            <ComposedChart data={homeownData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.06)" />
+              <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
+                tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+              <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
+                tick={{ fontSize: 10 }} width={36} domain={[yMinHomeown, yMaxHomeown]} />
+              <ChartTooltip content={
+                <ChartTooltipContent
+                  formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
+                  labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
+                  hideIndicator
+                />
+              } />
+              <Area dataKey="optionPrice" stackId="1" fill="transparent"
+                stroke="var(--color-optionPrice)" strokeWidth={2.5} />
+              <Area dataKey="equity" stackId="1" fill="var(--color-equity)"
+                fillOpacity={0.15} stroke="none" />
+              <Line dataKey="marketValue" stroke="hsl(var(--muted-foreground))"
+                strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+            </ComposedChart>
+          </ChartContainer>
         </div>
-
-        <ChartContainer config={homeownChartConfig} className="h-48 w-full">
-          <ComposedChart data={homeownData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
-              tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-            <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
-              tick={{ fontSize: 10 }} width={36} domain={[yMinHomeown, yMaxHomeown]} />
-            <ChartTooltip content={
-              <ChartTooltipContent
-                formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
-                labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
-                hideIndicator
-              />
-            } />
-            <Area dataKey="optionPrice" stackId="1" fill="transparent"
-              stroke="var(--color-optionPrice)" strokeWidth={2.5} />
-            <Area dataKey="equity" stackId="1" fill="var(--color-equity)"
-              fillOpacity={0.12} stroke="none" />
-            <Line dataKey="marketValue" stroke="hsl(var(--muted-foreground))"
-              strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
-          </ComposedChart>
-        </ChartContainer>
-
-        <div className="flex gap-5 text-xs text-muted-foreground">
+        <div className="flex gap-5 mt-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-0.5 w-5 bg-primary" />
             Your option price (fixed)
@@ -340,72 +375,44 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
       </div>
 
       {/* Comparison table */}
-      <div className="rounded-2xl border overflow-hidden">
-        <div className="grid grid-cols-3 bg-muted/40 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          <span />
-          <span>Traditional</span>
-          <span className="text-primary">Homeown</span>
+      <div className="mt-10 rounded-lg border border-border overflow-hidden">
+        <div className="grid grid-cols-3 text-xs font-semibold uppercase tracking-widest">
+          <div className="px-4 py-3 bg-muted/40 text-muted-foreground" />
+          <div className="px-4 py-3 bg-muted/40 text-muted-foreground">Traditional</div>
+          <div className="px-4 py-3 bg-brand-green text-white">Homeown</div>
         </div>
-        {[
-          {
-            label: 'To get started',
-            trad: formatCurrency(propertyPrice * 0.10) + ' deposit',
-            hw: formatCurrency(entryStake) + ' Entry Stake',
-          },
-          {
-            label: 'Timeline',
-            trad: crossoverYear > 0 ? `~${crossoverYear} year${crossoverYear === 1 ? '' : 's'} saving` : '10+ years saving',
-            hw: 'Move in this year',
-          },
-          {
-            label: 'You buy at',
-            trad: `~${formatCurrency(tradBuyPrice)}`,
-            tradSub: `market price, year ${tradBuyYear}`,
-            hw: formatCurrency(strikePrice),
-            hwSub: 'fixed today, regardless of market',
-          },
-          {
-            label: 'At year 5',
-            trad: tradEquityAtYear5 !== null
-              ? `~${formatCurrency(tradEquityAtYear5)} equity`
-              : 'Still saving',
-            tradSub: tradEquityAtYear5 !== null ? `${tradInHomeYears} yr${tradInHomeYears === 1 ? '' : 's'} of appreciation` : `deposit still ${formatCurrency(depositData[Math.min(5, 10)].deposit - depositData[Math.min(5, 10)].savings)} short`,
-            hw: `~${formatCurrency(finalEquity)} equity`,
-            hwSub: `market ${formatCurrency(finalMarket)} minus ${formatCurrency(strikePrice)} option price`,
-          },
-        ].map(({ label, trad, tradSub, hw, hwSub }) => (
-          <div key={label} className="grid grid-cols-3 px-4 py-3 text-sm border-t items-start gap-2">
-            <span className="text-xs text-muted-foreground pt-0.5">{label}</span>
-            <div>
+        {compRows.map(({ label, trad, tradSub, hw, hwSub }) => (
+          <div key={label} className="grid grid-cols-3 border-t border-border text-sm">
+            <div className="px-4 py-3 text-xs text-muted-foreground leading-snug">{label}</div>
+            <div className="px-4 py-3">
               <p className="font-medium tabular-nums">{trad}</p>
               {tradSub && <p className="text-xs text-muted-foreground mt-0.5">{tradSub}</p>}
             </div>
-            <div>
-              <p className="font-semibold tabular-nums text-primary">{hw}</p>
+            <div className="px-4 py-3 bg-green-50">
+              <p className="font-semibold tabular-nums">{hw}</p>
               {hwSub && <p className="text-xs text-muted-foreground mt-0.5">{hwSub}</p>}
             </div>
           </div>
         ))}
-        <div className="px-4 py-2 border-t bg-muted/20">
-          <p className="text-xs text-muted-foreground">Assumes 5% annual property appreciation. Traditional equity figure excludes mortgage amortisation.</p>
+        <div className="px-4 py-2 border-t border-border bg-muted/20">
+          <p className="text-xs text-muted-foreground">Assumes 5% annual property appreciation. Equity figure excludes mortgage costs at completion.</p>
         </div>
       </div>
 
-      {/* Caveats — only shown when relevant */}
-      {caveats.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Worth knowing</p>
-          {caveats.map(c => (
-            <div key={c} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-sm text-amber-800 leading-relaxed">{c}</p>
-            </div>
-          ))}
+      {/* Exit mortgage caveat — only if GHI entered and gap exists */}
+      {!exitMortgageSupported && (
+        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-amber-700 mb-1">Worth knowing</p>
+          <p className="text-sm text-amber-800 leading-relaxed">
+            On a gross household income of {formatCurrency(ghi)}, standard 4× lending supports a mortgage of up to {formatCurrency(ghi * 4)}. The option price is {formatCurrency(strikePrice)}. Exit affordability is worth discussing on your discovery call.
+          </p>
         </div>
       )}
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack} className="flex-1">Back</Button>
-        <Button onClick={onNext} className="flex-1" size="lg">
+      {/* Actions */}
+      <div className="flex gap-3 mt-10">
+        <Button variant="outline" onClick={onBack} className="flex-1 h-12">Back</Button>
+        <Button onClick={onNext} className="flex-1 h-12" size="lg">
           Show me my numbers
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
