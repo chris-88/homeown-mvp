@@ -194,7 +194,7 @@ export default function HomePage() {
                 You can afford the home. The deposit is what's stopping you.
               </h1>
               <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-md">
-                Homeown is a 60-month structured pathway to homeownership. You move in, pay a monthly service fee, and hold a contractual right to purchase the property at a price fixed from the day of acquisition.
+                The monthly cost of home ownership isn't the problem. Saving the deposit is what's out of reach. Move in straight away, pay your monthly service fee, and in 5 years you have the option to buy at a price frozen from the start.
               </p>
               <div className="mt-8">
                 <Button asChild size="lg" className="w-full sm:w-auto">
