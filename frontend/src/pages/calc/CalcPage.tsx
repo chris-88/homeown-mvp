@@ -70,28 +70,6 @@ function RadioCard({ selected, onClick, children }: { selected: boolean; onClick
 // ── Step 1 — Property Target ──────────────────────────────────
 function Step1({ onNext }: { onNext: () => void }) {
   const { state, setPrice } = useCalcWizard()
-  const [inputValue, setInputValue] = useState(state.propertyPrice.toLocaleString('en-IE'))
-
-  function handleSlider(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = parseInt(e.target.value)
-    setPrice(v)
-    setInputValue(v.toLocaleString('en-IE'))
-  }
-
-  function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/[^0-9]/g, '')
-    setInputValue(e.target.value)
-    const v = parseInt(raw)
-    if (!isNaN(v)) setPrice(v)
-  }
-
-  function handleInputBlur() {
-    const v = parseInt(inputValue.replace(/[^0-9]/g, ''))
-    const clamped = isNaN(v) ? 350000 : Math.min(800000, Math.max(200000, v))
-    const snapped = Math.round(clamped / 5000) * 5000
-    setPrice(snapped)
-    setInputValue(snapped.toLocaleString('en-IE'))
-  }
 
   const valid = state.propertyPrice >= 200000 && state.propertyPrice <= 800000
 
@@ -102,21 +80,25 @@ function Step1({ onNext }: { onNext: () => void }) {
         <p className="mt-1 text-sm text-muted-foreground">Properties between €200,000 and €800,000 are eligible.</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Property price</span>
+          <span className="text-lg font-semibold tabular-nums">{formatCurrency(state.propertyPrice)}</span>
+        </div>
         <input
           type="range"
           min={200000}
           max={800000}
           step={5000}
           value={state.propertyPrice}
-          onChange={handleSlider}
+          onChange={(e) => setPrice(parseInt(e.target.value))}
           className="w-full accent-primary"
+          style={{ minHeight: '44px', cursor: 'pointer' }}
         />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>€200,000</span>
           <span>€800,000</span>
         </div>
-        <PriceInput value={inputValue} onChange={handleInput} onBlur={handleInputBlur} />
       </div>
 
       <Card className="bg-muted/30">
