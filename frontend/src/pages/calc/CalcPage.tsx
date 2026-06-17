@@ -16,6 +16,33 @@ const APPRECIATION = 0.05
 // ── Helpers ───────────────────────────────────────────────────
 function fmtK(v: number) { return `€${Math.round(v / 1000)}k` }
 
+// Card-style slider used on Step 1 (prominent, like shadcn "Savings Targets")
+function SliderCard({
+  label, value, display, min, max, step, onChange, minLabel, maxLabel,
+}: {
+  label: string; value: number; display: string
+  min: number; max: number; step: number
+  onChange: (v: number) => void
+  minLabel?: string; maxLabel?: string
+}) {
+  return (
+    <div className="rounded-xl border bg-muted/40 px-4 py-4 space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="text-3xl font-bold tabular-nums">{display}</p>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="w-full accent-primary" style={{ minHeight: 44, cursor: 'pointer' }} />
+      {(minLabel || maxLabel) && (
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{minLabel}</span>
+          <span>{maxLabel}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Compact inline slider used inside forms (Step 4)
 function Slider({
   label, value, display, min, max, step, onChange, minLabel, maxLabel,
 }: {
@@ -60,9 +87,8 @@ function RadioCard({ selected, onClick, children }: {
 function ProgressBar({ step, total }: { step: number; total: number }) {
   return (
     <div className="mb-8">
-      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>Step {step} of {total}</span>
-        <span>{Math.round((step / total) * 100)}%</span>
+      <div className="mb-2 text-xs text-muted-foreground">
+        Step {step} of {total}
       </div>
       <div className="h-1 w-full rounded-full bg-muted">
         <div className="h-1 rounded-full bg-primary transition-all duration-300"
@@ -77,54 +103,43 @@ function Step1({ onNext }: { onNext: () => void }) {
   const { state, setPrice, update } = useCalcWizard()
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Tell us about your situation</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Your situation</h2>
         <p className="mt-2 text-muted-foreground">
-          Two minutes. We'll show you exactly what your options look like.
+          Adjust the sliders — we'll show you exactly what your options look like.
         </p>
       </div>
 
-      <div className="space-y-6">
-        <Slider
-          label="Target property price"
-          value={state.propertyPrice}
-          display={formatCurrency(state.propertyPrice)}
-          min={200000} max={800000} step={5000}
-          onChange={setPrice}
-          minLabel="€200k" maxLabel="€800k"
-        />
+      <SliderCard
+        label="Property target"
+        value={state.propertyPrice}
+        display={formatCurrency(state.propertyPrice)}
+        min={200000} max={800000} step={5000}
+        onChange={setPrice}
+        minLabel="€200k" maxLabel="€800k"
+      />
 
-        <Slider
-          label="Your age"
-          value={state.age}
-          display={`${state.age}`}
-          min={22} max={55} step={1}
-          onChange={v => update({ age: v })}
-          minLabel="22" maxLabel="55"
-        />
+      <SliderCard
+        label="Current savings"
+        value={state.currentSavings}
+        display={formatCurrency(state.currentSavings)}
+        min={0} max={100000} step={500}
+        onChange={v => update({ currentSavings: v })}
+        minLabel="€0" maxLabel="€100k"
+      />
 
-        <Slider
-          label="Current savings"
-          value={state.currentSavings}
-          display={formatCurrency(state.currentSavings)}
-          min={0} max={100000} step={500}
-          onChange={v => update({ currentSavings: v })}
-          minLabel="€0" maxLabel="€100k"
-        />
-
-        <Slider
-          label="Monthly savings"
-          value={state.monthlySavings}
-          display={`${formatCurrency(state.monthlySavings)} / mo`}
-          min={100} max={2000} step={50}
-          onChange={v => update({ monthlySavings: v })}
-          minLabel="€100" maxLabel="€2,000"
-        />
-      </div>
+      <SliderCard
+        label="Monthly savings"
+        value={state.monthlySavings}
+        display={`${formatCurrency(state.monthlySavings)}/mo`}
+        min={100} max={2000} step={50}
+        onChange={v => update({ monthlySavings: v })}
+        minLabel="€100" maxLabel="€2,000"
+      />
 
       <p className="text-xs text-muted-foreground">
-        These figures are used to illustrate your financial position only. Homeown does not conduct credit assessments through this calculator.
+        These figures illustrate your financial position only. Homeown does not conduct credit assessments through this calculator.
       </p>
 
       <Button onClick={onNext} className="w-full" size="lg">
@@ -449,6 +464,18 @@ function Step4({ onBack }: { onBack: () => void }) {
           Helps us understand programme demand and prepare for your discovery call.
         </p>
       </div>
+
+      {/* Age */}
+      <Slider
+        label="Your age"
+        value={state.age}
+        display={`${state.age}`}
+        min={22} max={55} step={1}
+        onChange={v => update({ age: v })}
+        minLabel="22" maxLabel="55"
+      />
+
+      <div className="border-t" />
 
       {/* Location */}
       <div className="space-y-4">
