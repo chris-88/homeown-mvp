@@ -177,7 +177,7 @@ const homeownChartConfig = {
 
 function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const { state } = useCalcWizard()
-  const { propertyPrice, currentSavings, monthlySavings, strikePrice, entryStake, monthlyDomiter, ghi } = state
+  const { propertyPrice, currentSavings, monthlySavings, strikePrice, entryStake, ghi } = state
 
   // Chart 1 — deposit trap (10 years)
   const depositData = Array.from({ length: 11 }, (_, i) => ({
@@ -233,9 +233,6 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const caveats: string[] = []
   if (!exitMortgageSupported) {
     caveats.push(`On a gross household income of ${formatCurrency(ghi)}, standard 4× lending supports a mortgage of up to ${formatCurrency(ghi * 4)}. The option price is ${formatCurrency(strikePrice)}. Exit affordability depends on your full financial picture — this is a key question for your discovery call.`)
-  }
-  if (monthlyDomiter > monthlySavings * 2) {
-    caveats.push(`The monthly service fee of ${formatCurrency(monthlyDomiter)} is significantly higher than your current monthly savings capacity. Make sure the Domiter is affordable within your budget before proceeding.`)
   }
 
   return (
