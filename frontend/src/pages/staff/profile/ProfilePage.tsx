@@ -130,7 +130,7 @@ export default function ProfilePage() {
             <Input className="mt-1" type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
           </div>
           {pwError && <p className="text-sm text-destructive">{pwError}</p>}
-          {pwSaved && <p className="text-sm text-green-600">Password updated successfully.</p>}
+          {pwSaved && <p className="text-sm text-primary">Password updated successfully.</p>}
           <Button onClick={handleChangePassword} disabled={pwSaving || !newPw}>
             {pwSaving ? 'Updating…' : 'Update password'}
           </Button>

@@ -23,7 +23,7 @@ interface DacWithSubs extends Dac {
 
 function dacStatusBadge(status: DacStatus) {
   const label = DAC_STATUS_LABELS[status]
-  if (status === 'open') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{label}</Badge>
+  if (status === 'open') return <Badge className="bg-brand-green-muted text-brand-green hover:bg-brand-green-muted">{label}</Badge>
   if (status === 'upcoming') return <Badge variant="secondary">{label}</Badge>
   return <Badge variant="outline">{label}</Badge>
 }
@@ -191,9 +191,9 @@ export default function CircleDacDetail() {
           <CardHeader><CardTitle className="text-base">Subscribe</CardTitle></CardHeader>
           <CardContent>
             {subscribed ? (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-1">
-                <p className="font-medium text-green-800">Subscription registered</p>
-                <p className="text-sm text-green-700">
+              <div className="rounded-lg border border-brand-green/20 bg-brand-green-muted p-4 space-y-1">
+                <p className="font-medium text-brand-green">Subscription registered</p>
+                <p className="text-sm text-brand-green">
                   Your subscription of {formatCurrency(subscribedAmount)} has been registered. A member of the team will be in touch to confirm next steps.
                 </p>
               </div>

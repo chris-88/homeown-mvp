@@ -20,7 +20,7 @@ export function StageManagementCard<T extends string>({
 
   if (!canChange) {
     return (
-      <div className="rounded-xl border bg-card p-5 space-y-3">
+      <div className="rounded-md border bg-card p-5 space-y-3">
         <h2 className="font-semibold text-sm">Stage</h2>
         <Badge>{labels[current]}</Badge>
       </div>
@@ -35,7 +35,7 @@ export function StageManagementCard<T extends string>({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-3">
+    <div className="rounded-md border bg-card p-5 space-y-3">
       <h2 className="font-semibold text-sm">Stage</h2>
       <Select
         value={pending ?? current}

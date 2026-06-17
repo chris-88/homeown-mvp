@@ -21,7 +21,7 @@ export function EventTimelineTab({ events }: { events: Event[] }) {
   const filtered = events.filter(e => e.event_type !== 'staff_note')
 
   return (
-    <section className="rounded-xl border bg-card p-5 space-y-3">
+    <section className="rounded-md border bg-card p-5 space-y-3">
       {filtered.length === 0 && <p className="text-sm text-muted-foreground">No events yet.</p>}
       <div className="space-y-3">
         {filtered.map(ev => (

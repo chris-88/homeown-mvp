@@ -16,7 +16,7 @@ export function ClientDetailsSection({ client }: { client: Client }) {
   ]
 
   return (
-    <section className="rounded-xl border bg-card p-5 space-y-3">
+    <section className="rounded-md border bg-card p-5 space-y-3">
       <h2 className="font-semibold">Details</h2>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
         {rows.map(([k, v]) => (

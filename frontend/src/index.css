@@ -3,24 +3,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ── Brand tokens — available as Tailwind utilities ──────────── */
+/* ── Brand tokens — Tailwind utilities: bg-brand-green, text-brand-taupe etc. ── */
 @theme {
-  --color-brand-green:          #1E4A35;
-  --color-brand-green-light:    #2A6B4D;
-  --color-brand-green-muted:    #ECF2EE;
-  --color-brand-burgundy:       #6B2238;
-  --color-brand-burgundy-light: #8C3550;
-  --color-brand-burgundy-muted: #F5ECF0;
-  --color-brand-cream:          #DCCFB0;
-  --color-brand-cream-light:    #EDE5D2;
-  --color-brand-stone:          #F0EBE3;
-  --color-brand-ink:            #181613;
+  --color-brand-green:          #123A28;
+  --color-brand-green-light:    #1A5237;
+  --color-brand-green-muted:    #E8F2EC;
+  --color-brand-burgundy:       #48252F;
+  --color-brand-burgundy-light: #5C3040;
+  --color-brand-burgundy-muted: #F5EAEC;
+  --color-brand-taupe:          #857861;
+  --color-brand-cream:          #E7D4BB;
+  --color-brand-cream-light:    #F1E8D8;
+  --color-brand-stone:          #F5F0E8;
+  --color-brand-ink:            #101211;
 
   --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
 }
 
-/* ── shadcn variable mappings ────────────────────────────────── */
+/* ── Bridge CSS variables → Tailwind utility classes (required for Tailwind v4) ── */
 @theme inline {
   --color-background:         var(--background);
   --color-foreground:         var(--foreground);
@@ -47,43 +48,63 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ── Light mode — exact brand hex values ── */
 :root {
-  --radius: 0.375rem;
+  --radius: 0.25rem;   /* tight, professional — not the shadcn default 0.5rem */
 
-  /* Surfaces — warm stone, not pure white */
-  --background:           oklch(0.94 0.01 73);
-  --foreground:           oklch(0.14 0.006 50);
-  --card:                 oklch(0.975 0.006 73);
-  --card-foreground:      oklch(0.14 0.006 50);
-  --popover:              oklch(0.985 0.003 73);
-  --popover-foreground:   oklch(0.14 0.006 50);
+  --background:           #F5F0E8;   /* brand-stone — warm, never cold grey */
+  --foreground:           #101211;   /* brand-ink */
 
-  /* Primary — forest green #1E4A35 */
-  --primary:              oklch(0.30 0.07 152);
-  --primary-foreground:   oklch(0.87 0.035 75);
+  --card:                 #FAF6F0;   /* warm near-white, lifted above bg */
+  --card-foreground:      #101211;
 
-  /* Secondary — warm stone with green text */
-  --secondary:            oklch(0.895 0.01 75);
-  --secondary-foreground: oklch(0.30 0.07 152);
+  --popover:              #FFFFFF;
+  --popover-foreground:   #101211;
 
-  /* Muted */
-  --muted:                oklch(0.885 0.008 73);
-  --muted-foreground:     oklch(0.52 0.01 65);
+  --primary:              #123A28;   /* brand-green */
+  --primary-foreground:   #E7D4BB;   /* brand-cream on green */
 
-  /* Accent — warm cream #DCCFB0 */
-  --accent:               oklch(0.84 0.04 75);
-  --accent-foreground:    oklch(0.14 0.006 50);
+  --secondary:            #EDE4D8;   /* warm stone tint */
+  --secondary-foreground: #123A28;
 
-  /* Destructive — red only, never burgundy */
-  --destructive:          oklch(0.50 0.18 27);
-  --destructive-foreground: oklch(0.99 0 0);
+  --muted:                #E7DED4;
+  --muted-foreground:     #857861;   /* brand-taupe */
 
-  /* Borders */
-  --border:               oklch(0.86 0.015 73);
-  --input:                oklch(0.86 0.015 73);
-  --ring:                 oklch(0.30 0.07 152);
+  --accent:               #E7D4BB;   /* brand-cream */
+  --accent-foreground:    #101211;
+
+  --destructive:          #C0392B;   /* distinct red — never burgundy for errors */
+  --destructive-foreground: #FFFFFF;
+
+  --border:               #D5C8B4;   /* warm sand */
+  --input:                #D5C8B4;
+  --ring:                 #123A28;
 }
 
+/* ── Dark mode (portal use only) ── */
+.dark {
+  --background:           #0D1F15;
+  --foreground:           #EDE4D8;
+  --card:                 #112218;
+  --card-foreground:      #EDE4D8;
+  --popover:              #112218;
+  --popover-foreground:   #EDE4D8;
+  --primary:              #2A6B4D;
+  --primary-foreground:   #101211;
+  --secondary:            #1A3325;
+  --secondary-foreground: #D5C8B4;
+  --muted:                #172B1E;
+  --muted-foreground:     #9B8F7A;
+  --accent:               #1A3325;
+  --accent-foreground:    #EDE4D8;
+  --destructive:          #E74C3C;
+  --destructive-foreground: #FFFFFF;
+  --border:               #1E3D2B;
+  --input:                #1E3D2B;
+  --ring:                 #2A6B4D;
+}
+
+/* ── Base ── */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -92,16 +113,13 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Serif headings on public (marketing) pages only */
-  :not(.portal-context) h1,
-  :not(.portal-context) h2 {
-    font-family: var(--font-serif);
-    letter-spacing: -0.01em;
+  h1, h2 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   /* Tabular numbers for all financial figures */

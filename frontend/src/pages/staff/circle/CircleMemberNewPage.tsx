@@ -56,9 +56,9 @@ export default function CircleMemberNewPage() {
           <ArrowLeft className="h-3.5 w-3.5" />Circle CRM
         </Link>
 
-        <div className="rounded-lg border border-green-200 bg-green-50 p-6 space-y-3">
-          <p className="font-semibold text-green-800">Member created</p>
-          <p className="text-sm text-green-700">
+        <div className="rounded-lg border border-brand-green/20 bg-brand-green-muted p-6 space-y-3">
+          <p className="font-semibold text-brand-green">Member created</p>
+          <p className="text-sm text-brand-green">
             Share this link with {createdMember.first_name}. They'll use it to set their password and access the portal.
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function CircleMemberNewPage() {
           <div className="flex items-center gap-2">
             <Input value={joinUrl} readOnly className="bg-muted font-mono text-xs" />
             <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0">
-              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
         </div>

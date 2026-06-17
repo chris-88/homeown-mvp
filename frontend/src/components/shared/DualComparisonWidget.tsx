@@ -60,7 +60,7 @@ export function DualComparisonWidget({ showCta = true }: DualComparisonWidgetPro
       <div className="grid gap-4 sm:grid-cols-2">
 
         {/* Left: With Homeown */}
-        <div className="rounded-xl border border-t-0 bg-card overflow-hidden">
+        <div className="rounded-md border border-t-0 bg-card overflow-hidden">
           <div className="h-0.5 bg-primary w-full" />
           <div className="p-6">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-5">
@@ -87,7 +87,7 @@ export function DualComparisonWidget({ showCta = true }: DualComparisonWidgetPro
         </div>
 
         {/* Right: Traditional Route */}
-        <div className="rounded-xl bg-muted/60 p-6">
+        <div className="rounded-md bg-muted/60 p-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-5">
             Traditional Route
           </p>

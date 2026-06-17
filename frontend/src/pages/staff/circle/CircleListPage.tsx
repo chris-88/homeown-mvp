@@ -16,7 +16,7 @@ interface MemberWithSubs extends CircleMember {
 }
 
 function kycBadge(status: KycStatus) {
-  if (status === 'complete') return <Badge variant="secondary" className="bg-green-100 text-green-800">{KYC_STATUS_LABELS[status]}</Badge>
+  if (status === 'complete') return <Badge variant="secondary" className="bg-brand-green-muted text-brand-green">{KYC_STATUS_LABELS[status]}</Badge>
   if (status === 'failed') return <Badge variant="destructive">{KYC_STATUS_LABELS[status]}</Badge>
   if (status === 'in_progress') return <Badge variant="secondary" className="bg-blue-100 text-blue-800">{KYC_STATUS_LABELS[status]}</Badge>
   return <Badge variant="secondary">{KYC_STATUS_LABELS[status]}</Badge>
@@ -110,7 +110,7 @@ export default function CircleListPage() {
                     </td>
                     <td className="py-3 pr-4">{m.subscriptions.length}</td>
                     <td className="py-3 text-muted-foreground">
-                      {m.user_id ? formatDate(m.created_at) : <span className="text-amber-600">Pending</span>}
+                      {m.user_id ? formatDate(m.created_at) : <span className="text-brand-burgundy">Pending</span>}
                     </td>
                   </tr>
                 ))}

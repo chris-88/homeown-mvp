@@ -51,7 +51,7 @@ export function TicketPanel({ propertyPrice, ghi }: { propertyPrice: number; ghi
   ]
 
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-3">
+    <div className="rounded-md border bg-card p-5 space-y-3">
       <h2 className="font-semibold text-sm">Ticket</h2>
       <div className="text-xs">
         {rows.map(({ label, value, note, separator }, i) => (

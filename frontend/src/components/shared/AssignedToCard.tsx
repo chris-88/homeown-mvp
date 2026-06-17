@@ -11,7 +11,7 @@ export function AssignedToCard({
   onAssign: (staffId: string) => void
 }) {
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-3">
+    <div className="rounded-md border bg-card p-5 space-y-3">
       <h2 className="font-semibold text-sm">Assigned to</h2>
       {canAssign ? (
         <Select value={assignedTo ?? 'none'} onValueChange={v => onAssign(v === 'none' ? '' : v)}>

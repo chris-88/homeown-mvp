@@ -287,7 +287,7 @@ export default function HomePage() {
             </h2>
             <div className="grid gap-5 sm:grid-cols-2">
               {PROTECTION_CARDS.map(({ Icon, heading, body }) => (
-                <div key={heading} className="rounded-xl border bg-card p-6">
+                <div key={heading} className="rounded-md border bg-card p-6">
                   <Icon className="h-5 w-5 text-brand-green mb-4" />
                   <h3 className="font-semibold mb-2">{heading}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>

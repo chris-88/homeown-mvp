@@ -32,7 +32,7 @@ export function NotesTab({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border bg-card p-5 space-y-3">
+      <section className="rounded-md border bg-card p-5 space-y-3">
         <Textarea
           placeholder="Add an internal note…"
           value={noteText}
@@ -44,7 +44,7 @@ export function NotesTab({
         </Button>
       </section>
 
-      <section className="rounded-xl border bg-card p-5 space-y-3">
+      <section className="rounded-md border bg-card p-5 space-y-3">
         {notes.length === 0 && <p className="text-sm text-muted-foreground">No notes yet.</p>}
         <div className="space-y-3">
           {notes.map(ev => (

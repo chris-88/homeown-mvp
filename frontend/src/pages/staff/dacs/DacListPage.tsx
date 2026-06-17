@@ -15,7 +15,7 @@ interface DacWithSubs extends Dac {
 
 function dacStatusBadge(status: DacStatus) {
   const label = DAC_STATUS_LABELS[status]
-  if (status === 'open') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{label}</Badge>
+  if (status === 'open') return <Badge className="bg-brand-green-muted text-brand-green hover:bg-brand-green-muted">{label}</Badge>
   if (status === 'upcoming') return <Badge variant="secondary">{label}</Badge>
   if (status === 'draft') return <Badge variant="outline">{label}</Badge>
   return <Badge variant="secondary">{label}</Badge>

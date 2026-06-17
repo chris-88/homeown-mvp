@@ -65,7 +65,7 @@ function StatCard({ label, value, sub, to, icon: Icon, accent = 'green' }: {
       <Link
         to={to}
         className={cn(
-          'group block rounded-xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+          'group block rounded-md border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
           a.ring,
         )}
       >
@@ -73,7 +73,7 @@ function StatCard({ label, value, sub, to, icon: Icon, accent = 'green' }: {
       </Link>
     )
   }
-  return <div className="rounded-xl border bg-card p-5 shadow-sm">{content}</div>
+  return <div className="rounded-md border bg-card p-5 shadow-sm">{content}</div>
 }
 
 const PHASE1_COLOR = { border: 'border-border', bar: 'bg-muted-foreground/30' }
@@ -231,7 +231,7 @@ export default function OverviewPage() {
             View all clients <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+        <div className="space-y-4 rounded-md border bg-card p-5 shadow-sm">
           <PhaseGroup
             label="Phase 1: Discovery"
             stages={LEAD_STAGE_ORDER}
@@ -277,7 +277,7 @@ export default function OverviewPage() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Planning */}
-          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+          <div className="rounded-md border bg-card p-4 shadow-sm space-y-1">
             <div className="flex items-center gap-2 pb-1">
               <Landmark className="h-3.5 w-3.5 text-muted-foreground" />
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Planning</p>
@@ -293,7 +293,7 @@ export default function OverviewPage() {
           </div>
 
           {/* Fundraising */}
-          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+          <div className="rounded-md border bg-card p-4 shadow-sm space-y-1">
             <div className="flex items-center gap-2 pb-1">
               <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fundraising</p>
@@ -319,7 +319,7 @@ export default function OverviewPage() {
           </div>
 
           {/* Live */}
-          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+          <div className="rounded-md border bg-card p-4 shadow-sm space-y-1">
             <div className="flex items-center gap-2 pb-1">
               <span className="h-1.5 w-1.5 rounded-full bg-brand-green" />
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Live</p>
@@ -338,7 +338,7 @@ export default function OverviewPage() {
           </div>
 
           {/* Matured */}
-          <div className="rounded-xl border bg-card p-4 shadow-sm space-y-1">
+          <div className="rounded-md border bg-card p-4 shadow-sm space-y-1">
             <div className="flex items-center gap-2 pb-1">
               <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Matured</p>

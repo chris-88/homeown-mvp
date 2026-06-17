@@ -130,7 +130,7 @@ export default function KfsPage() {
         <div>
           <p>Version 0.2 | Last reviewed 12 June 2026</p>
           <p className="mt-1">This document has been prepared by Homeown Limited. It is not legal or financial advice. Seek independent advice before entering the programme.</p>
-          <p className="mt-1 font-medium text-amber-600 dark:text-amber-400">COUNSEL REVIEW REQUIRED BEFORE PUBLISHING.</p>
+          <p className="mt-1 font-medium text-brand-burgundy dark:text-brand-burgundy-light">COUNSEL REVIEW REQUIRED BEFORE PUBLISHING.</p>
         </div>
         <Button variant="outline" size="sm" asChild className="ml-4 shrink-0">
           <a href="/kfs.pdf" download>

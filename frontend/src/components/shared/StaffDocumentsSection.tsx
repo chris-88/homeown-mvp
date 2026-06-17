@@ -107,7 +107,7 @@ export function StaffDocumentsSection({
   }
 
   return (
-    <section className="rounded-xl border bg-card p-5 space-y-4">
+    <section className="rounded-md border bg-card p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Documents</h2>
         {availableTypes.length > 0 && (
@@ -161,7 +161,7 @@ export function StaffDocumentsSection({
                   <Upload className="h-3 w-3 mr-1" />Upload
                 </Button>
                 {doc.file_path && doc.status !== 'approved' && (
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-brand-green hover:text-brand-green-light hover:bg-brand-green-muted"
                     onClick={() => handleApprove(doc.id)} title="Approve">
                     <CheckCircle2 className="h-4 w-4" />
                   </Button>
@@ -183,7 +183,7 @@ export function StaffDocumentsSection({
       {/* Document viewer modal */}
       {viewingDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setViewingDoc(null)}>
-          <div className="flex flex-col w-full max-w-4xl h-[90vh] rounded-xl bg-card shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="flex flex-col w-full max-w-4xl h-[90vh] rounded-md bg-card shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b px-4 py-3 shrink-0">
               <p className="text-sm font-medium truncate">{viewingDoc.fileName}</p>

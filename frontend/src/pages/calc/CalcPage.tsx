@@ -26,7 +26,7 @@ function SliderCard({
   minLabel?: string; maxLabel?: string
 }) {
   return (
-    <div className="rounded-xl border bg-muted/40 px-4 py-3 space-y-1.5">
+    <div className="rounded-md border bg-muted/40 px-4 py-3 space-y-1.5">
       <div className="flex items-baseline justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
         <p className="text-xl font-bold tabular-nums">{display}</p>
@@ -78,7 +78,7 @@ function RadioCard({ selected, onClick, children }: {
   return (
     <button type="button" onClick={onClick}
       className={cn(
-        'w-full rounded-xl border-2 p-4 text-left transition-colors hover:bg-accent',
+        'w-full rounded-md border-2 p-4 text-left transition-colors hover:bg-accent',
         selected ? 'border-primary bg-primary/5' : 'border-border bg-background',
       )}>
       {children}
@@ -170,7 +170,7 @@ const depositChartConfig = {
 } satisfies ChartConfig
 
 const homeownChartConfig = {
-  marketValue: { label: 'Market value', color: 'hsl(var(--muted-foreground))' },
+  marketValue: { label: 'Market value', color: 'var(--color-muted-foreground)' },
   optionPrice: { label: 'Your option price', color: 'var(--primary)' },
   equity: { label: 'Equity', color: 'var(--primary)' },
 } satisfies ChartConfig
@@ -299,7 +299,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
       </div>
 
       {/* Traditional section — full-bleed, stone bg */}
-      <div className="-mx-6 mt-2 bg-stone-100 px-6 py-10">
+      <div className="-mx-6 mt-2 bg-muted px-6 py-10">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional route</p>
         <h3 className="mt-1 text-2xl font-semibold">The deposit keeps moving.</h3>
         <div className="pt-6">
@@ -335,7 +335,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
       </div>
 
       {/* Homeown section — full-bleed, green bg */}
-      <div className="-mx-6 bg-green-50 px-6 py-10">
+      <div className="-mx-6 bg-brand-green-muted px-6 py-10">
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-green">Homeown pathway</p>
         <h3 className="mt-1 text-2xl font-semibold">Your price is fixed.<br />The market works for you.</h3>
         <div className="pt-6">
@@ -357,7 +357,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
                 stroke="var(--color-optionPrice)" strokeWidth={2.5} />
               <Area dataKey="equity" stackId="1" fill="var(--color-equity)"
                 fillOpacity={0.15} stroke="none" />
-              <Line dataKey="marketValue" stroke="hsl(var(--muted-foreground))"
+              <Line dataKey="marketValue" stroke="var(--color-muted-foreground)"
                 strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
             </ComposedChart>
           </ChartContainer>
@@ -388,7 +388,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
               <p className="font-medium tabular-nums">{trad}</p>
               {tradSub && <p className="text-xs text-muted-foreground mt-0.5">{tradSub}</p>}
             </div>
-            <div className="px-4 py-3 bg-green-50">
+            <div className="px-4 py-3 bg-brand-green-muted">
               <p className="font-semibold tabular-nums">{hw}</p>
               {hwSub && <p className="text-xs text-muted-foreground mt-0.5">{hwSub}</p>}
             </div>
@@ -401,9 +401,9 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
 
       {/* Exit mortgage caveat — only if GHI entered and gap exists */}
       {!exitMortgageSupported && (
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-widest text-amber-700 mb-1">Worth knowing</p>
-          <p className="text-sm text-amber-800 leading-relaxed">
+        <div className="mt-6 rounded-lg border border-brand-burgundy/20 bg-brand-burgundy-muted px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-brand-burgundy mb-1">Worth knowing</p>
+          <p className="text-sm text-brand-burgundy leading-relaxed">
             On a gross household income of {formatCurrency(ghi)}, standard 4× lending supports a mortgage of up to {formatCurrency(ghi * 4)}. The option price is {formatCurrency(strikePrice)}. Exit affordability is worth discussing on your discovery call.
           </p>
         </div>
@@ -457,7 +457,7 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
 
       <div className="space-y-4">
         {items.map(({ label, sublabel, value, description }) => (
-          <div key={label} className="rounded-2xl border p-5 space-y-2">
+          <div key={label} className="rounded-lg border p-5 space-y-2">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold">{label}</p>
@@ -470,7 +470,7 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
         ))}
       </div>
 
-      <div className="rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
+      <div className="rounded-md border bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
         These figures are illustrative based on your target property price. The programme is subject to independent property valuation and document verification. The monthly service fee is not a mortgage repayment and does not reduce the option price.
       </div>
 

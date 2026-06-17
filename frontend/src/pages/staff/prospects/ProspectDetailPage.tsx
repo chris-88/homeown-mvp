@@ -332,7 +332,7 @@ export default function ProspectDetailPage() {
             <TabsContent value="overview" className="mt-4 space-y-6">
               <ClientDetailsSection client={client} />
 
-              <section className="rounded-xl border bg-card p-5 space-y-5">
+              <section className="rounded-md border bg-card p-5 space-y-5">
                 <h2 className="font-semibold">Stage</h2>
                 <StageTimeline
                   stages={LEAD_STAGE_ORDER}
@@ -357,7 +357,7 @@ export default function ProspectDetailPage() {
                     </Button>
                   ) : (
                     <Button variant="outline" size="sm" onClick={copyPortalLink}>
-                      {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                      {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-primary" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
                       {linkCopied ? 'Copied!' : 'Copy portal link'}
                     </Button>
                   )}
@@ -472,7 +472,7 @@ export default function ProspectDetailPage() {
 
           {/* Assign to DAC (finance + admin when eligible) */}
           {canAssign && client.lead_stage === 'eligible' && (
-            <div className="rounded-xl border bg-card p-5 space-y-3">
+            <div className="rounded-md border bg-card p-5 space-y-3">
               <h2 className="font-semibold text-sm">Assign to DAC</h2>
               <Select
                 value={client.dac_id ?? 'none'}
@@ -528,7 +528,7 @@ function ProspectDeliveryLog({ deliveries, onSend }: { deliveries: DocumentDeliv
 
   if (deliveries.length === 0) {
     return (
-      <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+      <div className="rounded-md border bg-card p-8 text-center text-muted-foreground">
         <p className="text-sm">No documents sent to this client yet.</p>
         <Button size="sm" variant="outline" className="mt-3" onClick={onSend}>
           <Send className="h-3.5 w-3.5 mr-1.5" /> Send first document
@@ -538,7 +538,7 @@ function ProspectDeliveryLog({ deliveries, onSend }: { deliveries: DocumentDeliv
   }
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
+    <div className="rounded-md border bg-card overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/40">
@@ -561,13 +561,13 @@ function ProspectDeliveryLog({ deliveries, onSend }: { deliveries: DocumentDeliv
               <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                 {new Date(d.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })}
               </td>
-              <td className="px-3 py-3 text-center">{d.email_log_id ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
-              <td className="px-3 py-3 text-center">{d.storage_path ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
-              <td className="px-3 py-3 text-center">{d.read_at ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="px-3 py-3 text-center">{d.email_log_id ? <span className="text-primary">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="px-3 py-3 text-center">{d.storage_path ? <span className="text-primary">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="px-3 py-3 text-center">{d.read_at ? <span className="text-primary">✓</span> : <span className="text-muted-foreground/40">—</span>}</td>
               <td className="px-3 py-3 text-center">
                 {!d.requires_ack ? <span className="text-muted-foreground/40">n/a</span>
-                  : d.acknowledged_at ? <span className="text-green-600">✓</span>
-                  : <span className="text-amber-500">!</span>}
+                  : d.acknowledged_at ? <span className="text-primary">✓</span>
+                  : <span className="text-brand-burgundy">!</span>}
               </td>
               <td className="px-3 py-3">
                 {d.storage_path && (
@@ -624,7 +624,7 @@ function ProspectSigningPackCard({ clientId, staffUserId, onSent }: { clientId: 
   }
 
   return (
-    <div className="rounded-xl border border-brand-green/30 bg-[#ECF2EE] p-4 space-y-2">
+    <div className="rounded-md border border-brand-green/30 bg-[#ECF2EE] p-4 space-y-2">
       <p className="text-sm font-semibold text-brand-green">Signing pack</p>
       <p className="text-xs text-muted-foreground">No signing pack delivered yet. Issue KFS, Privacy Notice, Complaints Policy, and HPA Guidance.</p>
       {err && <p className="text-xs text-destructive">{err}</p>}

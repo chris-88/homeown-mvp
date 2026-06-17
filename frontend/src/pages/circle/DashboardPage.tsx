@@ -16,10 +16,10 @@ interface SubWithDac extends Subscription {
 function subStatusBadge(status: SubscriptionStatus) {
   const label = SUBSCRIPTION_STATUS_LABELS[status] ?? status
   if (['funded', 'active'].includes(status)) {
-    return <Badge variant="secondary" className="bg-green-100 text-green-800">{label}</Badge>
+    return <Badge variant="secondary" className="bg-brand-green-muted text-brand-green">{label}</Badge>
   }
   if (status === 'funds_requested') {
-    return <Badge variant="secondary" className="bg-amber-100 text-amber-800">{label}</Badge>
+    return <Badge variant="secondary" className="bg-brand-burgundy-muted text-brand-burgundy">{label}</Badge>
   }
   if (status === 'withdrawn') return <Badge variant="destructive">{label}</Badge>
   return <Badge variant="secondary">{label}</Badge>

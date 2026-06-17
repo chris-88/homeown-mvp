@@ -87,7 +87,7 @@ function OverviewTab({ member, onRefresh }: { member: CircleMember; onRefresh: (
             <div><p className="text-muted-foreground">Source</p><p>{member.source ?? '-'}</p></div>
             <div>
               <p className="text-muted-foreground">Portal status</p>
-              <p>{member.user_id ? <span className="text-green-700 font-medium">Joined</span> : <span className="text-amber-600">Pending invite</span>}</p>
+              <p>{member.user_id ? <span className="text-primary font-medium">Joined</span> : <span className="text-brand-burgundy">Pending invite</span>}</p>
             </div>
           </div>
           {member.address && (
@@ -100,7 +100,7 @@ function OverviewTab({ member, onRefresh }: { member: CircleMember; onRefresh: (
               <div className="flex items-center gap-2">
                 <Input value={joinUrl} readOnly className="bg-muted font-mono text-xs" />
                 <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0">
-                  {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
             </div>

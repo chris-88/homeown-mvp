@@ -188,7 +188,7 @@ export default function SavePage() {
 
         {/* What to expect */}
         {variant === 'eligible' && (
-          <div className="rounded-xl border bg-muted/30 p-5">
+          <div className="rounded-md border bg-muted/30 p-5">
             <p className="text-sm font-medium mb-3">What happens next</p>
             <ul className="space-y-2">
               {NEXT_STEPS.eligible.map((s) => (

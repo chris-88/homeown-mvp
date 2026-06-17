@@ -145,13 +145,13 @@ export default function TeamDetailPage() {
 
       {/* Join URL (if not yet activated) */}
       {joinUrl && (
-        <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20">
+        <Card className="border-brand-burgundy/20 bg-brand-burgundy-muted dark:border-brand-burgundy/30 dark:bg-brand-burgundy/10">
           <CardContent className="pt-4 space-y-2">
             <p className="text-sm font-medium">Pending activation: share join link</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 rounded bg-background px-2 py-1 text-xs break-all">{joinUrl}</code>
               <Button variant="outline" size="icon" className="shrink-0" onClick={copyJoinUrl}>
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
           </CardContent>

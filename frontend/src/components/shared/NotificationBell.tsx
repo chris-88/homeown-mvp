@@ -33,16 +33,16 @@ function NotificationIcon({ type }: { type: NotificationType }) {
   const base = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold'
   const map: Partial<Record<NotificationType, string>> = {
     new_lead:       'bg-blue-100 text-blue-700',
-    doc_exception:  'bg-amber-100 text-amber-700',
+    doc_exception:  'bg-brand-burgundy-muted text-brand-burgundy',
     sla_breach:     'bg-red-100 text-red-700',
-    stage_event:    'bg-green-100 text-green-700',
-    client_milestone: 'bg-green-100 text-green-700',
+    stage_event:    'bg-brand-green-muted text-brand-green',
+    client_milestone: 'bg-brand-green-muted text-brand-green',
     dac_published:  'bg-purple-100 text-purple-700',
     subscription_update: 'bg-purple-100 text-purple-700',
     system_alert:   'bg-red-100 text-red-700',
     domiter_failed: 'bg-red-100 text-red-700',
     domiter_reminder: 'bg-blue-100 text-blue-700',
-    milestone:      'bg-green-100 text-green-700',
+    milestone:      'bg-brand-green-muted text-brand-green',
   }
   const cls = map[type] ?? 'bg-muted text-muted-foreground'
   return (

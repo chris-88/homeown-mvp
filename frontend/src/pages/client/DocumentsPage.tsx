@@ -101,7 +101,7 @@ function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
           <p className="text-sm text-destructive pt-0.5">{doc.rejection_reason}</p>
         )}
         {doc.status === 'approved' && (
-          <p className="flex items-center gap-1 text-xs text-green-700 pt-0.5">
+          <p className="flex items-center gap-1 text-xs text-primary pt-0.5">
             <CheckCircle2 className="h-3.5 w-3.5" />Approved
           </p>
         )}
@@ -134,8 +134,8 @@ function deliveryStatusLabel(d: DocumentDelivery): string {
 }
 
 function deliveryStatusClass(d: DocumentDelivery): string {
-  if (d.requires_ack && !d.acknowledged_at) return 'bg-amber-100 text-amber-800 border-amber-200'
-  if (d.acknowledged_at) return 'bg-green-100 text-green-800 border-green-200'
+  if (d.requires_ack && !d.acknowledged_at) return 'bg-brand-burgundy-muted text-brand-burgundy border-brand-burgundy/20'
+  if (d.acknowledged_at) return 'bg-brand-green-muted text-brand-green border-brand-green/20'
   if (d.read_at) return 'bg-blue-100 text-blue-800 border-blue-200'
   return 'bg-muted text-muted-foreground border-border'
 }
@@ -222,8 +222,8 @@ function DocumentViewer({ delivery, clientId, onClose }: { delivery: DocumentDel
         </div>
 
         {delivery.requires_ack && !delivery.acknowledged_at && (
-          <div className="shrink-0 border-t p-4 bg-amber-50">
-            <p className="text-sm font-medium text-amber-900 mb-3">This document requires your acknowledgement</p>
+          <div className="shrink-0 border-t p-4 bg-brand-burgundy-muted">
+            <p className="text-sm font-medium text-brand-burgundy mb-3">This document requires your acknowledgement</p>
             <Button onClick={acknowledge} disabled={acking} className="w-full bg-brand-green text-brand-cream hover:bg-brand-green-light">
               <CheckCircle2 className="h-4 w-4 mr-2" />
               {acking ? 'Saving…' : 'Acknowledge receipt'}
@@ -231,8 +231,8 @@ function DocumentViewer({ delivery, clientId, onClose }: { delivery: DocumentDel
           </div>
         )}
         {delivery.acknowledged_at && (
-          <div className="shrink-0 border-t p-4 bg-green-50">
-            <p className="flex items-center gap-2 text-sm text-green-800">
+          <div className="shrink-0 border-t p-4 bg-brand-green-muted">
+            <p className="flex items-center gap-2 text-sm text-brand-green">
               <CheckCircle2 className="h-4 w-4" />
               Acknowledged on {new Date(delivery.acknowledged_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
@@ -277,7 +277,7 @@ function DeliveryRow({ delivery, onView }: { delivery: DocumentDelivery; onView:
           </Button>
         )}
         {delivery.requires_ack && !delivery.acknowledged_at && (
-          <Button size="sm" variant="outline" onClick={() => onView(delivery)} className="border-amber-300 text-amber-700 hover:bg-amber-50">
+          <Button size="sm" variant="outline" onClick={() => onView(delivery)} className="border-brand-burgundy/30 text-brand-burgundy hover:bg-brand-burgundy-muted">
             Acknowledge
           </Button>
         )}
@@ -336,9 +336,9 @@ export default function DocumentsPage() {
       </div>
 
       {showDeliveries && pendingAck.length > 0 && (
-        <Alert className="border-amber-300 bg-amber-50">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-800">
+        <Alert className="border-brand-burgundy/30 bg-brand-burgundy-muted">
+          <AlertTriangle className="h-4 w-4 text-brand-burgundy" />
+          <AlertDescription className="text-brand-burgundy">
             {pendingAck.length === 1
               ? '1 document requires your acknowledgement.'
               : `${pendingAck.length} documents require your acknowledgement.`}
@@ -352,7 +352,7 @@ export default function DocumentsPage() {
             <TabsTrigger value="received">
               Received documents
               {pendingAck.length > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-bold">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-burgundy-muted0 text-white text-xs font-bold">
                   {pendingAck.length}
                 </span>
               )}

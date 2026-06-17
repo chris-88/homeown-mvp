@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 
 function dacStatusBadge(status: DacStatus) {
   const label = DAC_STATUS_LABELS[status]
-  if (status === 'open') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{label}</Badge>
+  if (status === 'open') return <Badge className="bg-brand-green-muted text-brand-green hover:bg-brand-green-muted">{label}</Badge>
   if (status === 'upcoming') return <Badge variant="secondary">{label}</Badge>
   return <Badge variant="outline">{label}</Badge>
 }
@@ -63,7 +63,7 @@ function DacCard({ dac, totalSubscribed }: { dac: Dac; totalSubscribed: number }
             </div>
             <p className={cn(
               'text-sm font-medium',
-              isFull ? 'text-muted-foreground' : 'text-green-700'
+              isFull ? 'text-muted-foreground' : 'text-brand-green'
             )}>
               {isFull ? 'Fully subscribed' : `${formatCurrency(remaining)} available`}
             </p>

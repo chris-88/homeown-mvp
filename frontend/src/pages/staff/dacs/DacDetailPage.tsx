@@ -39,7 +39,7 @@ function isSeniorCommitted(stage: SeniorStage | null | undefined) {
 
 function dacStatusBadge(status: DacStatus) {
   const label = DAC_STATUS_LABELS[status]
-  if (status === 'open') return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{label}</Badge>
+  if (status === 'open') return <Badge className="bg-brand-green-muted text-brand-green hover:bg-brand-green-muted">{label}</Badge>
   if (status === 'upcoming') return <Badge variant="secondary">{label}</Badge>
   if (status === 'draft') return <Badge variant="outline">{label}</Badge>
   return <Badge variant="secondary">{label}</Badge>
@@ -472,7 +472,7 @@ function SubscriptionsTab({ dac }: { dac: Dac }) {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">{subOver ? 'Oversubscribed by' : 'Remaining'}</p>
-                <p className={cn('text-lg font-bold numeric', subOver ? 'text-destructive' : 'text-green-700')}>
+                <p className={cn('text-lg font-bold numeric', subOver ? 'text-destructive' : 'text-brand-green')}>
                   {formatCurrency(Math.abs(subRemaining))}
                 </p>
               </div>
@@ -826,7 +826,7 @@ function EligibleTab({ dac }: { dac: Dac }) {
                 <p className="text-xs text-muted-foreground mb-1">
                   {overSubscribed ? 'Oversubscribed by' : 'Remaining'}
                 </p>
-                <p className={cn('text-xl font-bold numeric', overSubscribed ? 'text-destructive' : 'text-green-700')}>
+                <p className={cn('text-xl font-bold numeric', overSubscribed ? 'text-destructive' : 'text-brand-green')}>
                   {formatCurrency(Math.abs(remaining))}
                 </p>
               </div>
