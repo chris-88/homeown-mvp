@@ -124,9 +124,9 @@ function Step1({ onNext }: { onNext: () => void }) {
         label="Current savings"
         value={state.currentSavings}
         display={formatCurrency(state.currentSavings)}
-        min={0} max={100000} step={500}
+        min={0} max={80000} step={50}
         onChange={v => update({ currentSavings: v })}
-        minLabel="€0" maxLabel="€100k"
+        minLabel="€0" maxLabel="€80k"
       />
 
       <SliderCard
