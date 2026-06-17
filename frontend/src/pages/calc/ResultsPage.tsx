@@ -2,13 +2,11 @@ import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { useCalcWizard } from '@/lib/calcWizard'
 import { formatCurrency } from '@/lib/utils'
 import { CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react'
-import {
-  ComposedChart, Area, Line,
-  XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
-} from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Area, ComposedChart } from 'recharts'
 
 const APPRECIATION = 0.05
 const MONTHLY_SAVING = 350
@@ -28,16 +26,18 @@ function yearsToSave(price: number, monthlyRate = MONTHLY_SAVING): string {
 }
 
 // ── Chart 1: The Deposit Trap ─────────────────────────────────
+const depositChartConfig = {
+  deposit: { label: 'Deposit required', color: 'var(--destructive)' },
+  savings: { label: 'Your savings', color: 'var(--primary)' },
+} satisfies ChartConfig
+
 function DepositTrapChart({ price }: { price: number }) {
   const data = Array.from({ length: 11 }, (_, i) => ({
     year: i,
     deposit: Math.round(price * Math.pow(1 + APPRECIATION, i) * 0.10),
     savings: MONTHLY_SAVING * 12 * i,
   }))
-
-  const yr5Deposit = data[5].deposit
-  const yr5Savings = data[5].savings
-  const yr5Gap = yr5Deposit - yr5Savings
+  const yr5Gap = data[5].deposit - data[5].savings
 
   return (
     <div className="space-y-3">
@@ -48,52 +48,24 @@ function DepositTrapChart({ price }: { price: number }) {
         </p>
       </div>
 
-      <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.86 0.015 73)" />
-            <XAxis
-              dataKey="year"
-              tickFormatter={(v) => v === 0 ? 'Now' : `Yr ${v}`}
-              tick={{ fontSize: 10, fill: 'oklch(0.52 0.01 65)' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tickFormatter={fmtK}
-              tick={{ fontSize: 10, fill: 'oklch(0.52 0.01 65)' }}
-              axisLine={false}
-              tickLine={false}
-              width={36}
-            />
-            <Tooltip
-              formatter={(value, name) => [
-                typeof value === 'number' ? formatCurrency(value) : String(value ?? ''),
-                name === 'deposit' ? 'Deposit required' : 'Your savings',
-              ]}
-              labelFormatter={(l) => l === 0 ? 'Now' : `Year ${l}`}
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid oklch(0.86 0.015 73)' }}
-            />
-            <Line
-              type="monotone"
-              dataKey="deposit"
-              stroke="oklch(0.50 0.18 27)"
-              strokeWidth={2}
-              dot={false}
-              name="deposit"
-            />
-            <Line
-              type="monotone"
-              dataKey="savings"
-              stroke="#1E4A35"
-              strokeWidth={2}
-              dot={false}
-              strokeDasharray="5 3"
-              name="savings"
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
+      <ChartContainer config={depositChartConfig} className="h-48 w-full">
+        <LineChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
+            tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
+            tick={{ fontSize: 10 }} width={36} />
+          <ChartTooltip
+            content={<ChartTooltipContent
+              formatter={(value) => formatCurrency(typeof value === 'number' ? value : 0)}
+              labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
+            />}
+          />
+          <Line dataKey="deposit" stroke="var(--color-deposit)" strokeWidth={2} dot={false} />
+          <Line dataKey="savings" stroke="var(--color-savings)" strokeWidth={2}
+            dot={false} strokeDasharray="5 3" />
+        </LineChart>
+      </ChartContainer>
 
       <div className="flex gap-5 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
@@ -111,7 +83,7 @@ function DepositTrapChart({ price }: { price: number }) {
           <p className="text-sm font-medium text-amber-800">
             At year 5 you are still{' '}
             <span className="font-bold">{formatCurrency(yr5Gap)} short</span>
-            {' '}and the deposit has grown to {formatCurrency(yr5Deposit)}.
+            {' '}and the deposit has grown to {formatCurrency(data[5].deposit)}.
           </p>
           <p className="text-xs text-amber-700 mt-0.5">
             With Homeown you move in now. The deposit question is gone.
@@ -123,92 +95,60 @@ function DepositTrapChart({ price }: { price: number }) {
 }
 
 // ── Chart 2: Fixed Price Benefit ──────────────────────────────
+const priceChartConfig = {
+  marketValue: { label: 'Market value', color: 'hsl(var(--muted-foreground))' },
+  optionPrice: { label: 'Your option price', color: 'var(--primary)' },
+  equity:      { label: 'Equity', color: 'var(--primary)' },
+} satisfies ChartConfig
+
 function FixedPriceChart({ price, strikePrice }: { price: number; strikePrice: number }) {
   const data = Array.from({ length: 6 }, (_, i) => ({
     year: i,
     marketValue: Math.round(price * Math.pow(1 + APPRECIATION, i)),
     optionPrice: strikePrice,
+    equity: Math.round(price * Math.pow(1 + APPRECIATION, i)) - strikePrice,
   }))
 
   const finalMarketValue = data[5].marketValue
   const finalEquity = finalMarketValue - strikePrice
-
-  const yMin = Math.floor((strikePrice * 0.92) / 10000) * 10000
-  const yMax = Math.ceil((finalMarketValue * 1.04) / 10000) * 10000
+  const yMin = Math.floor(strikePrice * 0.90 / 10000) * 10000
+  const yMax = Math.ceil(finalMarketValue * 1.06 / 10000) * 10000
 
   return (
     <div className="space-y-3">
       <div>
         <h3 className="text-base font-semibold">Your fixed price. The market moves for you.</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Once you join, your option price is locked. Every year the property appreciates, that value is yours — not the seller's.
+          Once you join, your option price is locked. Every year the property appreciates, that value is yours.
         </p>
       </div>
 
-      <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.86 0.015 73)" />
-            <XAxis
-              dataKey="year"
-              tickFormatter={(v) => v === 0 ? 'Now' : `Yr ${v}`}
-              tick={{ fontSize: 10, fill: 'oklch(0.52 0.01 65)' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tickFormatter={fmtK}
-              tick={{ fontSize: 10, fill: 'oklch(0.52 0.01 65)' }}
-              axisLine={false}
-              tickLine={false}
-              width={36}
-              domain={[yMin, yMax]}
-            />
-            <Tooltip
-              formatter={(value, name) => [
-                typeof value === 'number' ? formatCurrency(value) : String(value ?? ''),
-                name === 'marketValue' ? 'Market value' : 'Your option price',
-              ]}
-              labelFormatter={(l) => l === 0 ? 'Now' : `Year ${l}`}
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid oklch(0.86 0.015 73)' }}
-            />
-            {/* Market value — dashed, rising */}
-            <Line
-              type="monotone"
-              dataKey="marketValue"
-              stroke="oklch(0.52 0.01 65)"
-              strokeWidth={1.5}
-              strokeDasharray="5 3"
-              dot={false}
-              name="marketValue"
-            />
-            {/* Option price — solid, flat green */}
-            <Line
-              type="monotone"
-              dataKey="optionPrice"
-              stroke="#1E4A35"
-              strokeWidth={2.5}
-              dot={false}
-              name="optionPrice"
-            />
-            {/* Equity fill area */}
-            <Area
-              type="monotone"
-              dataKey="marketValue"
-              fill="#1E4A35"
-              fillOpacity={0.08}
-              stroke="none"
-              name="equity"
-              legendType="none"
-              tooltipType="none"
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
+      <ChartContainer config={priceChartConfig} className="h-48 w-full">
+        <ComposedChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
+            tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
+            tick={{ fontSize: 10 }} width={36} domain={[yMin, yMax]} />
+          <ChartTooltip
+            content={<ChartTooltipContent
+              formatter={(value) => formatCurrency(typeof value === 'number' ? value : 0)}
+              labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
+              hideIndicator
+            />}
+          />
+          <Area dataKey="optionPrice" stackId="1" fill="transparent"
+            stroke="var(--color-optionPrice)" strokeWidth={2.5} />
+          <Area dataKey="equity" stackId="1" fill="var(--color-equity)"
+            fillOpacity={0.15} stroke="none" />
+          <Line dataKey="marketValue" stroke="hsl(var(--muted-foreground))"
+            strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+        </ComposedChart>
+      </ChartContainer>
 
       <div className="flex gap-5 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-5 bg-primary" style={{ height: 2 }} />
+          <span className="inline-block h-0.5 w-5 bg-primary" />
           Your option price
         </span>
         <span className="flex items-center gap-1.5">
