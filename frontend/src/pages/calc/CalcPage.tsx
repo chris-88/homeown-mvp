@@ -103,6 +103,7 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
 // ── Step 1 — Sliders ──────────────────────────────────────────
 function Step1({ onNext }: { onNext: () => void }) {
   const { state, setPrice, update } = useCalcWizard()
+  const maxSavings = Math.round(state.propertyPrice * 0.10)
 
   return (
     <div className="space-y-6">
@@ -125,11 +126,11 @@ function Step1({ onNext }: { onNext: () => void }) {
 
       <SliderCard
         label="Current savings"
-        value={state.currentSavings}
-        display={formatCurrency(state.currentSavings)}
-        min={0} max={80000} step={50}
+        value={Math.min(state.currentSavings, maxSavings)}
+        display={formatCurrency(Math.min(state.currentSavings, maxSavings))}
+        min={0} max={maxSavings} step={50}
         onChange={v => update({ currentSavings: v })}
-        minLabel="€0" maxLabel="€80k"
+        minLabel="€0" maxLabel={fmtK(maxSavings)}
       />
 
       <SliderCard

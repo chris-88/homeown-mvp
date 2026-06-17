@@ -77,7 +77,12 @@ export function CalcWizardProvider() {
   }
 
   function setPrice(price: number) {
-    setState(prev => ({ ...prev, propertyPrice: price, ...computeFromPrice(price) }))
+    setState(prev => ({
+      ...prev,
+      propertyPrice: price,
+      ...computeFromPrice(price),
+      currentSavings: Math.min(prev.currentSavings, Math.round(price * 0.10)),
+    }))
   }
 
   return (
