@@ -19,7 +19,6 @@ export interface CalcWizardState {
   householdType: 'solo' | 'couple' | null
   isFtb: boolean | null
   employmentType: 'paye' | 'self_employed' | 'mixed' | null
-  // Legacy — kept for RPC compatibility, always 0
   ghi: number
   // Derived
   eligible: boolean
@@ -47,7 +46,7 @@ const DEFAULT: CalcWizardState = {
   householdType: null,
   isFtb: null,
   employmentType: null,
-  ghi: 0,
+  ghi: 60000,
   eligible: false,
   variant: null,
 }

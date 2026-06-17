@@ -138,6 +138,15 @@ function Step1({ onNext }: { onNext: () => void }) {
         minLabel="€100" maxLabel="€3,000"
       />
 
+      <SliderCard
+        label="Gross household income"
+        value={state.ghi}
+        display={`${formatCurrency(state.ghi)}/yr`}
+        min={25000} max={200000} step={1000}
+        onChange={v => update({ ghi: v })}
+        minLabel="€25k" maxLabel="€200k"
+      />
+
       <p className="text-xs text-muted-foreground">
         These figures illustrate your financial position only. Homeown does not conduct credit assessments through this calculator.
       </p>
@@ -445,7 +454,7 @@ function Step4({ onBack }: { onBack: () => void }) {
       dublin_postcode: state.dublinPostcode ?? null,
       household_type: state.householdType,
       is_ftb: state.isFtb,
-      ghi: null,
+      ghi: state.ghi > 0 ? state.ghi : null,
       employment_type: state.employmentType,
       eligible,
       saved: false,

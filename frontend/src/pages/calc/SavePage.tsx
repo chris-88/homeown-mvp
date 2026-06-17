@@ -76,7 +76,7 @@ async function submitCalcResults(
     p_dublin_postcode:  calcState.dublinPostcode ?? null,
     p_household_type:   calcState.householdType ?? null,
     p_is_ftb:           calcState.isFtb ?? null,
-    p_ghi:              null,
+    p_ghi:              calcState.ghi > 0 ? calcState.ghi : null,
     p_employment_type:  calcState.employmentType ?? null,
     p_eligible:         variant === 'mover' ? false : calcState.eligible,
     p_anon_session_id:  sessionStorage.getItem('anon_id') ?? null,
