@@ -133,9 +133,9 @@ function Step1({ onNext }: { onNext: () => void }) {
         label="Monthly savings"
         value={state.monthlySavings}
         display={`${formatCurrency(state.monthlySavings)}/mo`}
-        min={100} max={2000} step={50}
+        min={100} max={3000} step={50}
         onChange={v => update({ monthlySavings: v })}
-        minLabel="€100" maxLabel="€2,000"
+        minLabel="€100" maxLabel="€3,000"
       />
 
       <p className="text-xs text-muted-foreground">
