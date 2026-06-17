@@ -26,12 +26,14 @@ function SliderCard({
   minLabel?: string; maxLabel?: string
 }) {
   return (
-    <div className="rounded-xl border bg-muted/40 px-4 py-4 space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className="text-3xl font-bold tabular-nums">{display}</p>
+    <div className="rounded-xl border bg-muted/40 px-4 py-3 space-y-1.5">
+      <div className="flex items-baseline justify-between">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+        <p className="text-xl font-bold tabular-nums">{display}</p>
+      </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        className="w-full accent-primary" style={{ minHeight: 44, cursor: 'pointer' }} />
+        className="w-full accent-primary" style={{ minHeight: 36, cursor: 'pointer' }} />
       {(minLabel || maxLabel) && (
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{minLabel}</span>
@@ -111,6 +113,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         </p>
       </div>
 
+      <div className="space-y-3">
       <SliderCard
         label="Property target"
         value={state.propertyPrice}
@@ -146,6 +149,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         onChange={v => update({ ghi: v })}
         minLabel="€25k" maxLabel="€200k"
       />
+      </div>
 
       <p className="text-xs text-muted-foreground">
         These figures illustrate your financial position only. Homeown does not conduct credit assessments through this calculator.
