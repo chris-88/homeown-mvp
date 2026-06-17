@@ -122,23 +122,22 @@ input[type="range"].slider-range {
 }
 input[type="range"].slider-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
   background: #ffffff;
   border: 2px solid var(--color-primary);
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 input[type="range"].slider-range::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
   background: #ffffff;
   border: 2px solid var(--color-primary);
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  border: 2px solid var(--color-primary);
 }
 input[type="range"].slider-range:focus-visible::-webkit-slider-thumb {
   outline: 2px solid var(--color-ring);

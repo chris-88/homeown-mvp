@@ -26,7 +26,7 @@ function SliderCard({
 }) {
   const pct = `${((value - min) / (max - min)) * 100}%`
   return (
-    <div className="px-5 py-4">
+    <div className="rounded-md border bg-card px-5 py-4">
       <div className="flex items-baseline justify-between gap-4 mb-3">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="text-2xl font-bold tabular-nums">{display}</p>
@@ -115,7 +115,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         </p>
       </div>
 
-      <div className="rounded-md border bg-card divide-y divide-border">
+      <div className="space-y-2">
       <SliderCard
         label="Property target"
         value={state.propertyPrice}
@@ -129,7 +129,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         label="Current savings"
         value={Math.min(state.currentSavings, maxSavings)}
         display={formatCurrency(Math.min(state.currentSavings, maxSavings))}
-        min={0} max={maxSavings} step={50}
+        min={0} max={maxSavings} step={100}
         onChange={v => update({ currentSavings: v })}
         minLabel="€0" maxLabel={fmtK(maxSavings)}
       />
@@ -137,8 +137,8 @@ function Step1({ onNext }: { onNext: () => void }) {
       <SliderCard
         label="Monthly savings"
         value={state.monthlySavings}
-        display={`${formatCurrency(state.monthlySavings)}/mo`}
-        min={100} max={3000} step={50}
+        display={formatCurrency(state.monthlySavings)}
+        min={100} max={3000} step={100}
         onChange={v => update({ monthlySavings: v })}
         minLabel="€100" maxLabel="€3,000"
       />
@@ -146,7 +146,7 @@ function Step1({ onNext }: { onNext: () => void }) {
       <SliderCard
         label="Gross household income"
         value={state.ghi}
-        display={`${formatCurrency(state.ghi)}/yr`}
+        display={formatCurrency(state.ghi)}
         min={25000} max={200000} step={1000}
         onChange={v => update({ ghi: v })}
         minLabel="€25k" maxLabel="€200k"
