@@ -104,6 +104,47 @@
   --ring:                 #2A6B4D;
 }
 
+/* ── Range slider — styled to match brand ── */
+input[type="range"].slider-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary) var(--pct),
+    var(--color-border) var(--pct)
+  );
+  cursor: pointer;
+  outline: none;
+  display: block;
+  width: 100%;
+}
+input[type="range"].slider-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: #ffffff;
+  border: 2px solid var(--color-primary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+input[type="range"].slider-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: #ffffff;
+  border: 2px solid var(--color-primary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  border: 2px solid var(--color-primary);
+}
+input[type="range"].slider-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
 /* ── Base ── */
 @layer base {
   * {

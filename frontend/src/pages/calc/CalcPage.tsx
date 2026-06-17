@@ -16,7 +16,6 @@ const APPRECIATION = 0.05
 // ── Helpers ───────────────────────────────────────────────────
 function fmtK(v: number) { return `€${Math.round(v / 1000)}k` }
 
-// Card-style slider used on Step 1 (prominent, like shadcn "Savings Targets")
 function SliderCard({
   label, value, display, min, max, step, onChange, minLabel, maxLabel,
 }: {
@@ -25,17 +24,19 @@ function SliderCard({
   onChange: (v: number) => void
   minLabel?: string; maxLabel?: string
 }) {
+  const pct = `${((value - min) / (max - min)) * 100}%`
   return (
-    <div className="rounded-md border bg-muted/40 px-4 py-3 space-y-1.5">
-      <div className="flex items-baseline justify-between">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
-        <p className="text-xl font-bold tabular-nums">{display}</p>
+    <div className="px-5 py-4">
+      <div className="flex items-baseline justify-between gap-4 mb-3">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-2xl font-bold tabular-nums">{display}</p>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        className="w-full accent-primary" style={{ minHeight: 36, cursor: 'pointer' }} />
+        className="slider-range"
+        style={{ '--pct': pct } as React.CSSProperties} />
       {(minLabel || maxLabel) && (
-        <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="flex justify-between mt-2 text-xs text-muted-foreground">
           <span>{minLabel}</span>
           <span>{maxLabel}</span>
         </div>
@@ -114,7 +115,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="rounded-md border bg-card divide-y divide-border">
       <SliderCard
         label="Property target"
         value={state.propertyPrice}
