@@ -30,11 +30,6 @@ const COPY: Record<string, { heading: string; sub: string; button: string }> = {
     sub: "Leave your details and we'll be in touch to book a 20-minute discovery call.",
     button: 'Save and request a call',
   },
-  income_gap: {
-    heading: 'Stay in touch',
-    sub: "Leave your details and we'll reach out as things change.",
-    button: 'Stay in touch',
-  },
   mover: {
     heading: 'Keep me posted',
     sub: "We'll reach out when the mover pathway opens.",
@@ -47,10 +42,6 @@ const NEXT_STEPS: Record<string, string[]> = {
     "We'll review your details within 1 business day",
     "You'll get an email to book your discovery call (20 minutes, no obligation)",
     "The call is a two-way conversation; we'll answer your questions too",
-  ],
-  income_gap: [
-    "We'll keep your details on file",
-    "We'll reach out if programme parameters change or new options open up",
   ],
   mover: [
     "We'll notify you as soon as the mover pathway opens",
@@ -85,7 +76,7 @@ async function submitCalcResults(
     p_dublin_postcode:  calcState.dublinPostcode ?? null,
     p_household_type:   calcState.householdType ?? null,
     p_is_ftb:           calcState.isFtb ?? null,
-    p_ghi:              calcState.ghi > 0 ? calcState.ghi : null,
+    p_ghi:              null,
     p_employment_type:  calcState.employmentType ?? null,
     p_eligible:         variant === 'mover' ? false : calcState.eligible,
     p_anon_session_id:  sessionStorage.getItem('anon_id') ?? null,
@@ -278,8 +269,8 @@ export default function SavePage() {
         </Form>
 
         <p className="text-center text-xs text-muted-foreground">
-          <Link to="/calc/results" className="underline underline-offset-2 hover:text-foreground">
-            Back to my results
+          <Link to="/calc" className="underline underline-offset-2 hover:text-foreground">
+            Back to calculator
           </Link>
         </p>
       </main>

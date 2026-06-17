@@ -2,195 +2,492 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { useCalcWizard, ROI_COUNTIES, DUBLIN_POSTCODES } from '@/lib/calcWizard'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Area, ComposedChart } from 'recharts'
+import { ArrowRight, TrendingUp } from 'lucide-react'
 
-// ── Progress bar ──────────────────────────────────────────────
-function ProgressBar({ step, total }: { step: number; total: number }) {
-  return (
-    <div className="mb-8">
-      <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
-        <span>Step {step} of {total}</span>
-        <span>{Math.round((step / total) * 100)}% complete</span>
-      </div>
-      <div className="h-1.5 w-full rounded-full bg-muted">
-        <div
-          className="h-1.5 rounded-full bg-primary transition-all duration-300"
-          style={{ width: `${(step / total) * 100}%` }}
-        />
-      </div>
-    </div>
-  )
-}
+const APPRECIATION = 0.05
 
-// ── Price input group ─────────────────────────────────────────
-function PriceInput({
-  value,
-  onChange,
-  onBlur,
+// ── Helpers ───────────────────────────────────────────────────
+function fmtK(v: number) { return `€${Math.round(v / 1000)}k` }
+
+function Slider({
+  label, value, display, min, max, step, onChange, minLabel, maxLabel,
 }: {
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onBlur: () => void
+  label: string; value: number; display: string
+  min: number; max: number; step: number
+  onChange: (v: number) => void
+  minLabel?: string; maxLabel?: string
 }) {
   return (
-    <div className="flex max-w-[200px] items-center rounded-md border bg-background px-3 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0">
-      <span className="shrink-0 text-sm text-muted-foreground select-none">€</span>
-      <input
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        inputMode="numeric"
-        className="w-full bg-transparent py-2 pl-1 text-sm font-medium outline-none"
-      />
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">{label}</span>
+        <span className="text-base font-semibold tabular-nums">{display}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="w-full accent-primary" style={{ minHeight: 44, cursor: 'pointer' }} />
+      {(minLabel || maxLabel) && (
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{minLabel}</span>
+          <span>{maxLabel}</span>
+        </div>
+      )}
     </div>
   )
 }
 
-// ── Radio card ────────────────────────────────────────────────
-function RadioCard({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+function RadioCard({ selected, onClick, children }: {
+  selected: boolean; onClick: () => void; children: React.ReactNode
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <button type="button" onClick={onClick}
       className={cn(
         'w-full rounded-xl border-2 p-4 text-left transition-colors hover:bg-accent',
         selected ? 'border-primary bg-primary/5' : 'border-border bg-background',
-      )}
-    >
+      )}>
       {children}
     </button>
   )
 }
 
-// ── Step 1 — Property Target ──────────────────────────────────
-function Step1({ onNext }: { onNext: () => void }) {
-  const { state, setPrice } = useCalcWizard()
-
-  const valid = state.propertyPrice >= 200000 && state.propertyPrice <= 800000
-
+function ProgressBar({ step, total }: { step: number; total: number }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">What property price are you targeting?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Properties between €200,000 and €800,000 are eligible.</p>
+    <div className="mb-8">
+      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+        <span>Step {step} of {total}</span>
+        <span>{Math.round((step / total) * 100)}%</span>
       </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Property price</span>
-          <span className="text-lg font-semibold tabular-nums">{formatCurrency(state.propertyPrice)}</span>
-        </div>
-        <input
-          type="range"
-          min={200000}
-          max={800000}
-          step={5000}
-          value={state.propertyPrice}
-          onChange={(e) => setPrice(parseInt(e.target.value))}
-          className="w-full accent-primary"
-          style={{ minHeight: '44px', cursor: 'pointer' }}
-        />
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>€200,000</span>
-          <span>€800,000</span>
-        </div>
+      <div className="h-1 w-full rounded-full bg-muted">
+        <div className="h-1 rounded-full bg-primary transition-all duration-300"
+          style={{ width: `${(step / total) * 100}%` }} />
       </div>
-
-      <Card className="bg-muted/30">
-        <CardContent className="divide-y pt-0 pb-0">
-          {[
-            { label: 'Monthly service fee', sub: 'Domiter, per month for 60 months', value: `${formatCurrency(state.monthlyDomiter)} / mo` },
-            { label: 'Entry Stake', sub: '1% of property price, paid once', value: formatCurrency(state.entryStake) },
-            { label: 'Purchase option price', sub: 'Fixed at 10% below acquisition price', value: formatCurrency(state.strikePrice) },
-          ].map(({ label, sub, value }) => (
-            <div key={label} className="flex items-center justify-between gap-4 py-3.5">
-              <div>
-                <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
-              </div>
-              <p className="text-sm font-semibold tabular-nums shrink-0">{value}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <p className="text-xs text-muted-foreground">
-        These figures are illustrative. The monthly service fee is your decision; Homeown does not assess whether it suits your budget.
-      </p>
-
-      <Button onClick={onNext} disabled={!valid} className="w-full">Next</Button>
     </div>
   )
 }
 
-// ── Step 2 — Location + Household (merged) ────────────────────
-function Step2({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => void; onMover: () => void }) {
-  const { state, update } = useCalcWizard()
-  const [errors, setErrors] = useState<Record<string, string>>({})
+// ── Step 1 — Sliders ──────────────────────────────────────────
+function Step1({ onNext }: { onNext: () => void }) {
+  const { state, setPrice, update } = useCalcWizard()
 
-  function handleNext() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Tell us about your situation</h2>
+        <p className="mt-2 text-muted-foreground">
+          Two minutes. We'll show you exactly what your options look like.
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        <Slider
+          label="Target property price"
+          value={state.propertyPrice}
+          display={formatCurrency(state.propertyPrice)}
+          min={200000} max={800000} step={5000}
+          onChange={setPrice}
+          minLabel="€200k" maxLabel="€800k"
+        />
+
+        <Slider
+          label="Your age"
+          value={state.age}
+          display={`${state.age}`}
+          min={22} max={55} step={1}
+          onChange={v => update({ age: v })}
+          minLabel="22" maxLabel="55"
+        />
+
+        <Slider
+          label="Current savings"
+          value={state.currentSavings}
+          display={formatCurrency(state.currentSavings)}
+          min={0} max={100000} step={500}
+          onChange={v => update({ currentSavings: v })}
+          minLabel="€0" maxLabel="€100k"
+        />
+
+        <Slider
+          label="Monthly savings"
+          value={state.monthlySavings}
+          display={`${formatCurrency(state.monthlySavings)} / mo`}
+          min={100} max={2000} step={50}
+          onChange={v => update({ monthlySavings: v })}
+          minLabel="€100" maxLabel="€2,000"
+        />
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        These figures are used to illustrate your financial position only. Homeown does not conduct credit assessments through this calculator.
+      </p>
+
+      <Button onClick={onNext} className="w-full" size="lg">
+        See your projection
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
+  )
+}
+
+// ── Step 2 — Charts (the wow moment) ─────────────────────────
+const depositChartConfig = {
+  deposit: { label: 'Deposit required', color: 'var(--destructive)' },
+  savings: { label: 'Your savings', color: 'var(--primary)' },
+} satisfies ChartConfig
+
+const homeownChartConfig = {
+  marketValue: { label: 'Market value', color: 'hsl(var(--muted-foreground))' },
+  optionPrice: { label: 'Your option price', color: 'var(--primary)' },
+  equity: { label: 'Equity', color: 'var(--primary)' },
+} satisfies ChartConfig
+
+function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const { state } = useCalcWizard()
+  const { propertyPrice, currentSavings, monthlySavings, strikePrice, entryStake } = state
+
+  // Chart 1 — deposit trap (10 years)
+  const depositData = Array.from({ length: 11 }, (_, i) => ({
+    year: i,
+    deposit: Math.round(propertyPrice * 0.10 * Math.pow(1 + APPRECIATION, i)),
+    savings: Math.round(currentSavings + monthlySavings * 12 * i),
+  }))
+
+  const crossoverYear = depositData.findIndex((d, i) => i > 0 && d.savings >= d.deposit)
+
+  // Chart 2 — Homeown path (5 years)
+  const homeownData = Array.from({ length: 6 }, (_, i) => ({
+    year: i,
+    marketValue: Math.round(propertyPrice * Math.pow(1 + APPRECIATION, i)),
+    optionPrice: strikePrice,
+    equity: Math.round(propertyPrice * Math.pow(1 + APPRECIATION, i)) - strikePrice,
+  }))
+
+  const finalMarket = homeownData[5].marketValue
+  const finalEquity = finalMarket - strikePrice
+
+  const yMaxDeposit = Math.ceil(Math.max(depositData[10].deposit, depositData[10].savings) * 1.1 / 10000) * 10000
+  const yMinHomeown = Math.floor(strikePrice * 0.90 / 10000) * 10000
+  const yMaxHomeown = Math.ceil(finalMarket * 1.06 / 10000) * 10000
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">The numbers most people never see</h2>
+        <p className="mt-2 text-muted-foreground">
+          Based on your {formatCurrency(propertyPrice)} target, saving {formatCurrency(monthlySavings)}/month
+          {currentSavings > 0 ? ` from ${formatCurrency(currentSavings)}` : ''}.
+        </p>
+      </div>
+
+      {/* Chart 1 */}
+      <div className="rounded-2xl border p-5 space-y-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional route</p>
+          <h3 className="mt-1 text-base font-semibold">The deposit keeps moving</h3>
+        </div>
+
+        <ChartContainer config={depositChartConfig} className="h-52 w-full">
+          <LineChart data={depositData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
+              tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+            <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
+              tick={{ fontSize: 10 }} width={36} domain={[0, yMaxDeposit]} />
+            <ChartTooltip content={
+              <ChartTooltipContent
+                formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
+                labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
+              />
+            } />
+            <Line dataKey="deposit" stroke="var(--color-deposit)" strokeWidth={2} dot={false} />
+            <Line dataKey="savings" stroke="var(--color-savings)" strokeWidth={2}
+              dot={false} strokeDasharray="5 3" />
+          </LineChart>
+        </ChartContainer>
+
+        <div className="flex gap-5 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-5 bg-destructive" />
+            Deposit required
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-5 border-t-2 border-dashed border-primary" />
+            Your savings
+          </span>
+        </div>
+
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          {crossoverYear > 0 ? (
+            <p className="text-sm font-medium text-amber-800">
+              You'd save the deposit in <span className="font-bold">year {crossoverYear}</span> — but by then it has grown to{' '}
+              <span className="font-bold">{formatCurrency(depositData[crossoverYear].deposit)}</span>.
+            </p>
+          ) : (
+            <p className="text-sm font-medium text-amber-800">
+              At {formatCurrency(monthlySavings)}/month, the deposit grows to{' '}
+              <span className="font-bold">{formatCurrency(depositData[10].deposit)}</span> before you reach it.
+            </p>
+          )}
+          <p className="text-xs text-amber-700 mt-0.5">Assumes 5% annual property appreciation.</p>
+        </div>
+      </div>
+
+      {/* Chart 2 */}
+      <div className="rounded-2xl border p-5 space-y-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Homeown pathway</p>
+          <h3 className="mt-1 text-base font-semibold">Your price is fixed. The market works for you.</h3>
+        </div>
+
+        <ChartContainer config={homeownChartConfig} className="h-52 w-full">
+          <ComposedChart data={homeownData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
+              tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+            <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
+              tick={{ fontSize: 10 }} width={36} domain={[yMinHomeown, yMaxHomeown]} />
+            <ChartTooltip content={
+              <ChartTooltipContent
+                formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
+                labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
+                hideIndicator
+              />
+            } />
+            <Area dataKey="optionPrice" stackId="1" fill="transparent"
+              stroke="var(--color-optionPrice)" strokeWidth={2.5} />
+            <Area dataKey="equity" stackId="1" fill="var(--color-equity)"
+              fillOpacity={0.12} stroke="none" />
+            <Line dataKey="marketValue" stroke="hsl(var(--muted-foreground))"
+              strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+          </ComposedChart>
+        </ChartContainer>
+
+        <div className="flex gap-5 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-5 bg-primary" />
+            Your option price (fixed)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-5 border-t border-dashed border-muted-foreground" />
+            Market value
+          </span>
+        </div>
+
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+          <p className="text-sm font-medium text-primary">
+            At exit: property worth {formatCurrency(finalMarket)}. You buy for {formatCurrency(strikePrice)}.
+          </p>
+          <p className="text-xs text-primary/70 mt-0.5">
+            {formatCurrency(finalEquity)} in appreciation captured. Assumes 5% annual growth.
+          </p>
+        </div>
+      </div>
+
+      {/* The contrast */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional</p>
+          <div>
+            <p className="text-xs text-muted-foreground">Deposit upfront</p>
+            <p className="text-xl font-bold tabular-nums">{formatCurrency(propertyPrice * 0.10)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">When you can start</p>
+            <p className="text-sm font-semibold">
+              {crossoverYear > 0 ? `~${crossoverYear} years` : '10+ years'}
+            </p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary/70">Homeown</p>
+          <div>
+            <p className="text-xs text-muted-foreground">Entry Stake</p>
+            <p className="text-xl font-bold tabular-nums text-primary">{formatCurrency(entryStake)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">When you can start</p>
+            <p className="text-sm font-semibold text-primary flex items-center gap-1">
+              <TrendingUp className="h-3.5 w-3.5" />
+              This year
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={onBack} className="flex-1">Back</Button>
+        <Button onClick={onNext} className="flex-1" size="lg">
+          Show me my numbers
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 3 — Pathway fundamentals ────────────────────────────
+function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const { state } = useCalcWizard()
+
+  const items = [
+    {
+      label: 'Monthly service fee',
+      sublabel: 'Domiter — paid every month for 60 months',
+      value: `${formatCurrency(state.monthlyDomiter)} / mo`,
+      description: 'Replaces your current housing cost for the programme duration. It is not rent — it is a structured service fee that gives you occupation rights and builds towards ownership.',
+    },
+    {
+      label: 'Entry Stake',
+      sublabel: '1% of property price, paid once at the start',
+      value: formatCurrency(state.entryStake),
+      description: 'Your initial stake in the property. This is equity at risk — it confirms your commitment and gives you a beneficial interest from day one. It is not a returnable deposit.',
+    },
+    {
+      label: 'Purchase option price',
+      sublabel: 'Fixed on the day the property is acquired',
+      value: formatCurrency(state.strikePrice),
+      description: 'The price you pay to buy the home at the end of the 60-month term. It is fixed in writing from the start — regardless of what the market does in the meantime.',
+    },
+  ]
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Your Homeown numbers</h2>
+        <p className="mt-2 text-muted-foreground">
+          For a {formatCurrency(state.propertyPrice)} property. These figures are fixed for the life of the programme.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {items.map(({ label, sublabel, value, description }) => (
+          <div key={label} className="rounded-2xl border p-5 space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{sublabel}</p>
+              </div>
+              <p className="text-xl font-bold tabular-nums shrink-0 text-primary">{value}</p>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
+        These figures are illustrative based on your target property price. The programme is subject to independent property valuation and document verification. The monthly service fee is not a mortgage repayment and does not reduce the option price.
+      </div>
+
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={onBack} className="flex-1">Back</Button>
+        <Button onClick={onNext} className="flex-1" size="lg">
+          Continue
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 4 — Details ──────────────────────────────────────────
+function Step4({ onBack }: { onBack: () => void }) {
+  const { state, update } = useCalcWizard()
+  const navigate = useNavigate()
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleNext() {
     const errs: Record<string, string> = {}
     if (!state.county) errs.county = 'Please select a county'
     if (state.county === 'Dublin' && !state.dublinPostcode) errs.dublinPostcode = 'Please select a postcode'
-    if (state.householdType === null) errs.householdType = 'Please select who will be on the pathway'
+    if (state.householdType === null) errs.householdType = 'Please select an option'
     if (state.isFtb === null) errs.isFtb = 'Please answer this question'
+    if (!state.employmentType) errs.employmentType = 'Please select an option'
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
-    if (state.isFtb === false) {
-      onMover()
-    } else {
-      onNext()
-    }
+    setSubmitting(true)
+
+    const variant = state.isFtb === false ? 'mover' : 'eligible'
+    const eligible = variant === 'eligible'
+    update({ variant, eligible })
+
+    const anonId = sessionStorage.getItem('anon_id') ?? crypto.randomUUID()
+    sessionStorage.setItem('anon_id', anonId)
+
+    const { data } = await supabase.from('calculator_snapshots').insert({
+      anon_session_id: anonId,
+      property_price: state.propertyPrice,
+      entry_stake: state.entryStake,
+      monthly_domiter: state.monthlyDomiter,
+      strike_price: state.strikePrice,
+      county: state.county,
+      dublin_postcode: state.dublinPostcode ?? null,
+      household_type: state.householdType,
+      is_ftb: state.isFtb,
+      ghi: null,
+      employment_type: state.employmentType,
+      eligible,
+      saved: false,
+    }).select('id').single()
+
+    if (data?.id) sessionStorage.setItem('snapshot_id', data.id)
+    setSubmitting(false)
+    navigate('/calc/save')
   }
 
   return (
     <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">A bit about you</h2>
+        <p className="mt-2 text-muted-foreground">
+          Helps us understand programme demand and prepare for your discovery call.
+        </p>
+      </div>
+
       {/* Location */}
       <div className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Where are you looking to buy?</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Location data helps us understand programme demand.</p>
+        <h3 className="text-base font-semibold">Where are you looking to buy?</h3>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">County</label>
+          <Select value={state.county || undefined}
+            onValueChange={v => update({ county: v, dublinPostcode: v !== 'Dublin' ? null : state.dublinPostcode })}>
+            <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+            <SelectContent>
+              {ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
         </div>
 
-        <div className="space-y-3">
+        {state.county === 'Dublin' && (
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">County</label>
-            <Select value={state.county || undefined} onValueChange={(v) => update({ county: v, dublinPostcode: v !== 'Dublin' ? null : state.dublinPostcode })}>
-              <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+            <label className="text-sm font-medium">Dublin postcode</label>
+            <Select value={state.dublinPostcode || undefined}
+              onValueChange={v => update({ dublinPostcode: v })}>
+              <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
               <SelectContent>
-                {ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
               </SelectContent>
             </Select>
-            {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
+            {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
           </div>
-
-          {state.county === 'Dublin' && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Dublin postcode</label>
-              <Select value={state.dublinPostcode || undefined} onValueChange={(v) => update({ dublinPostcode: v })}>
-                <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
-                <SelectContent>
-                  {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       <div className="border-t" />
 
       {/* Household */}
-      <div className="space-y-5">
-        <h2 className="text-xl font-semibold">About your household</h2>
+      <div className="space-y-4">
+        <h3 className="text-base font-semibold">Your household</h3>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <p className="text-sm font-medium">Who will be on the pathway?</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <RadioCard selected={state.householdType === 'solo'} onClick={() => update({ householdType: 'solo' })}>
@@ -205,7 +502,7 @@ function Step2({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => 
           {errors.householdType && <p className="text-sm text-destructive">{errors.householdType}</p>}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <p className="text-sm font-medium">Have you ever owned a home?</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <RadioCard selected={state.isFtb === true} onClick={() => update({ isFtb: true })}>
@@ -221,147 +518,33 @@ function Step2({ onNext, onBack, onMover }: { onNext: () => void; onBack: () => 
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack} className="flex-1">Back</Button>
-        <Button onClick={handleNext} className="flex-1">Next</Button>
-      </div>
-    </div>
-  )
-}
+      <div className="border-t" />
 
-// ── Step 3 — Income ───────────────────────────────────────────
-function Step3({ onBack }: { onBack: () => void }) {
-  const { state, update } = useCalcWizard()
-  const navigate = useNavigate()
-  const [ghiInput, setGhiInput] = useState(state.ghi > 0 ? state.ghi.toLocaleString('en-IE') : '')
-  const [submitting, setSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const ghiRaw = parseInt(ghiInput.replace(/[^0-9]/g, '')) || 0
-  const maxMortgageHint = ghiRaw >= 10000 ? ghiRaw * 4 : null
-  const hintCoversProperty = maxMortgageHint !== null && maxMortgageHint >= state.strikePrice
-
-  async function handleNext() {
-    const errs: Record<string, string> = {}
-    const ghi = parseInt(ghiInput.replace(/[^0-9]/g, ''))
-    if (!ghi || ghi <= 0) errs.ghi = 'Please enter your household income'
-    if (!state.employmentType) errs.employmentType = 'Please select an employment type'
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    setErrors({})
-    setSubmitting(true)
-
-    const eligible = (ghi * 4) >= state.strikePrice
-    const maxPropertyForIncome = Math.floor((ghi * 4) / 0.9 / 5000) * 5000
-    const variant = eligible ? 'eligible' : 'income_gap'
-
-    update({ ghi, eligible, maxPropertyForIncome, variant })
-
-    const anonId = sessionStorage.getItem('anon_id') ?? crypto.randomUUID()
-    sessionStorage.setItem('anon_id', anonId)
-
-    const { data } = await supabase.from('calculator_snapshots').insert({
-      anon_session_id: anonId,
-      property_price: state.propertyPrice,
-      entry_stake: state.entryStake,
-      monthly_domiter: state.monthlyDomiter,
-      strike_price: state.strikePrice,
-      county: state.county,
-      dublin_postcode: state.dublinPostcode ?? null,
-      household_type: state.householdType,
-      is_ftb: true,
-      ghi,
-      employment_type: state.employmentType,
-      eligible,
-      saved: false,
-    }).select('id').single()
-
-    if (data?.id) sessionStorage.setItem('snapshot_id', data.id)
-
-    setSubmitting(false)
-    navigate('/calc/results')
-  }
-
-  const incomeLabel = state.householdType === 'couple'
-    ? 'Combined gross annual income'
-    : 'Gross annual income'
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">What is your household's gross annual income?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          We use this to check whether your target property is within range for a regulated mortgage at the end of the term. It is not a credit check.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">{incomeLabel}</label>
-          <PriceInput
-            value={ghiInput}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^0-9]/g, '')
-              setGhiInput(e.target.value)
-              const v = parseInt(raw)
-              if (!isNaN(v)) update({ ghi: v })
-            }}
-            onBlur={() => {
-              const v = parseInt(ghiInput.replace(/[^0-9]/g, ''))
-              if (!isNaN(v)) {
-                setGhiInput(v.toLocaleString('en-IE'))
-                update({ ghi: v })
-              }
-            }}
-          />
-          {errors.ghi && <p className="text-sm text-destructive">{errors.ghi}</p>}
-
-          {maxMortgageHint && (
-            <div className={cn(
-              'rounded-lg border px-4 py-3 transition-colors',
-              hintCoversProperty
-                ? 'border-primary/20 bg-primary/5'
-                : 'border-amber-200 bg-amber-50'
-            )}>
-              <p className="text-sm font-medium">
-                At 4× income, your maximum mortgage is{' '}
-                <span className={cn('font-bold', hintCoversProperty ? 'text-primary' : 'text-amber-700')}>
-                  {formatCurrency(maxMortgageHint)}
-                </span>
-              </p>
-              <p className={cn('text-xs mt-0.5', hintCoversProperty ? 'text-primary/70' : 'text-amber-600')}>
-                {hintCoversProperty
-                  ? 'This covers the purchase option price on your target property.'
-                  : `The option price on your target is ${formatCurrency(state.strikePrice)} — your results will show alternatives.`}
-              </p>
-            </div>
-          )}
+      {/* Employment */}
+      <div className="space-y-3">
+        <h3 className="text-base font-semibold">Employment</h3>
+        <p className="text-sm font-medium">How is your income earned?</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {([
+            { value: 'paye', label: 'Employed (PAYE)' },
+            { value: 'self_employed', label: 'Self-employed' },
+            { value: 'mixed', label: 'Mix of both' },
+          ] as const).map(({ value, label }) => (
+            <RadioCard key={value}
+              selected={state.employmentType === value}
+              onClick={() => update({ employmentType: value })}>
+              <p className="text-sm font-medium">{label}</p>
+            </RadioCard>
+          ))}
         </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Employment type</label>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              { value: 'paye', label: 'Employed (PAYE)' },
-              { value: 'self_employed', label: 'Self-employed' },
-              { value: 'mixed', label: 'Mix of both' },
-            ].map(({ value, label }) => (
-              <RadioCard
-                key={value}
-                selected={state.employmentType === value}
-                onClick={() => update({ employmentType: value as 'paye' | 'self_employed' | 'mixed' })}
-              >
-                <p className="text-sm font-medium">{label}</p>
-              </RadioCard>
-            ))}
-          </div>
-          {errors.employmentType && <p className="text-sm text-destructive">{errors.employmentType}</p>}
-        </div>
+        {errors.employmentType && <p className="text-sm text-destructive">{errors.employmentType}</p>}
       </div>
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={onBack} className="flex-1" disabled={submitting}>Back</Button>
-        <Button onClick={handleNext} className="flex-1" disabled={submitting}>
-          {submitting ? 'Checking...' : 'See my results'}
+        <Button onClick={handleNext} className="flex-1" size="lg" disabled={submitting}>
+          {submitting ? 'Saving…' : 'Save and book a call'}
+          {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
     </div>
@@ -370,42 +553,17 @@ function Step3({ onBack }: { onBack: () => void }) {
 
 // ── Page root ─────────────────────────────────────────────────
 export default function CalcPage() {
-  const { state, update } = useCalcWizard()
-  const navigate = useNavigate()
   const [step, setStep] = useState(1)
-
-  async function handleMover() {
-    update({ variant: 'mover' })
-
-    const anonId = sessionStorage.getItem('anon_id') ?? crypto.randomUUID()
-    sessionStorage.setItem('anon_id', anonId)
-
-    const { data } = await supabase.from('calculator_snapshots').insert({
-      anon_session_id: anonId,
-      property_price: state.propertyPrice,
-      entry_stake: state.entryStake,
-      monthly_domiter: state.monthlyDomiter,
-      strike_price: state.strikePrice,
-      county: state.county,
-      dublin_postcode: state.dublinPostcode ?? null,
-      household_type: state.householdType,
-      is_ftb: false,
-      eligible: false,
-      saved: false,
-    }).select('id').single()
-
-    if (data?.id) sessionStorage.setItem('snapshot_id', data.id)
-    navigate('/calc/results')
-  }
 
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
       <main className="mx-auto max-w-lg px-6 py-12">
-        <ProgressBar step={step} total={3} />
+        <ProgressBar step={step} total={4} />
         {step === 1 && <Step1 onNext={() => setStep(2)} />}
-        {step === 2 && <Step2 onNext={() => setStep(3)} onBack={() => setStep(1)} onMover={handleMover} />}
-        {step === 3 && <Step3 onBack={() => setStep(2)} />}
+        {step === 2 && <Step2 onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+        {step === 3 && <Step3 onNext={() => setStep(4)} onBack={() => setStep(2)} />}
+        {step === 4 && <Step4 onBack={() => setStep(3)} />}
       </main>
     </div>
   )

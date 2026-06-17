@@ -1,26 +1,28 @@
 import { createContext, useContext, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
-export type CalcVariant = 'eligible' | 'income_gap' | 'mover' | null
+export type CalcVariant = 'eligible' | 'mover' | null
 
 export interface CalcWizardState {
-  // Step 1
+  // Step 1 — sliders
   propertyPrice: number
+  age: number
+  currentSavings: number
+  monthlySavings: number
+  // Computed from propertyPrice
   entryStake: number
   monthlyDomiter: number
   strikePrice: number
-  // Step 2
+  // Step 4 — details
   county: string
   dublinPostcode: string | null
-  // Step 3
   householdType: 'solo' | 'couple' | null
   isFtb: boolean | null
-  // Step 4
-  ghi: number
   employmentType: 'paye' | 'self_employed' | 'mixed' | null
+  // Legacy — kept for RPC compatibility, always 0
+  ghi: number
   // Derived
   eligible: boolean
-  maxPropertyForIncome: number
   variant: CalcVariant
 }
 
@@ -36,15 +38,17 @@ function computeFromPrice(price: number) {
 
 const DEFAULT: CalcWizardState = {
   propertyPrice: DEFAULT_PRICE,
+  age: 30,
+  currentSavings: 0,
+  monthlySavings: 500,
   ...computeFromPrice(DEFAULT_PRICE),
   county: '',
   dublinPostcode: null,
   householdType: null,
   isFtb: null,
-  ghi: 0,
   employmentType: null,
+  ghi: 0,
   eligible: false,
-  maxPropertyForIncome: 0,
   variant: null,
 }
 
