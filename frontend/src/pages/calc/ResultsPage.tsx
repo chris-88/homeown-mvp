@@ -67,9 +67,9 @@ function DepositTrapChart({ price }: { price: number }) {
               width={36}
             />
             <Tooltip
-              formatter={(v: number, key: string) => [
-                formatCurrency(v),
-                key === 'deposit' ? 'Deposit required' : 'Your savings',
+              formatter={(value, name) => [
+                typeof value === 'number' ? formatCurrency(value) : String(value ?? ''),
+                name === 'deposit' ? 'Deposit required' : 'Your savings',
               ]}
               labelFormatter={(l) => l === 0 ? 'Now' : `Year ${l}`}
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid oklch(0.86 0.015 73)' }}
@@ -165,9 +165,9 @@ function FixedPriceChart({ price, strikePrice }: { price: number; strikePrice: n
               domain={[yMin, yMax]}
             />
             <Tooltip
-              formatter={(v: number, key: string) => [
-                formatCurrency(v),
-                key === 'marketValue' ? 'Market value' : 'Your option price',
+              formatter={(value, name) => [
+                typeof value === 'number' ? formatCurrency(value) : String(value ?? ''),
+                name === 'marketValue' ? 'Market value' : 'Your option price',
               ]}
               labelFormatter={(l) => l === 0 ? 'Now' : `Year ${l}`}
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid oklch(0.86 0.015 73)' }}
