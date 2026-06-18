@@ -246,8 +246,6 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
       }
 
   // Comparison table rows
-  const savingsShortAtYear5 = Math.max(0, depositData[5].deposit - depositData[5].savings)
-
   const compRows = [
     {
       label: 'To get started',
