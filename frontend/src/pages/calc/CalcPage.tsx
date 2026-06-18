@@ -200,7 +200,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const finalEquity = finalMarket - strikePrice
 
   const yMaxDeposit = Math.ceil(Math.max(depositData[10].deposit, depositData[10].savings) * 1.1 / 10000) * 10000
-  const yMinHomeown = Math.floor(strikePrice * 0.90 / 10000) * 10000
+  const yMinHomeown = Math.max(0, strikePrice - 50000)
   const yMaxHomeown = Math.ceil(finalMarket * 1.06 / 10000) * 10000
 
   // Derived numbers
