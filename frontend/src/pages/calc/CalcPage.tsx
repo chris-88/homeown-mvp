@@ -175,7 +175,6 @@ const depositChartConfig = {
 const homeownChartConfig = {
   marketValue: { label: 'Market value', color: 'var(--color-muted-foreground)' },
   optionPrice: { label: 'Your option price', color: 'var(--primary)' },
-  equity: { label: 'Equity', color: 'var(--primary)' },
 } satisfies ChartConfig
 
 function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
@@ -362,12 +361,13 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
                   hideIndicator
                 />
               } />
-              <Area dataKey="optionPrice" stackId="1" fill="transparent"
-                stroke="var(--color-optionPrice)" strokeWidth={2.5} />
-              <Area dataKey="equity" stackId="1" fill="var(--color-equity)"
-                fillOpacity={0.15} stroke="none" />
+              {/* Equity fill: from fixed strike price up to rising market value */}
+              <Area dataKey="marketValue" fill="var(--color-primary)" fillOpacity={0.12}
+                stroke="none" baseValue={strikePrice} legendType="none" />
               <Line dataKey="marketValue" stroke="var(--color-muted-foreground)"
                 strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+              <Line dataKey="optionPrice" stroke="var(--color-primary)"
+                strokeWidth={2.5} dot={false} />
             </ComposedChart>
           </ChartContainer>
           <div className="flex items-start gap-2 pt-2 border-t text-sm">
