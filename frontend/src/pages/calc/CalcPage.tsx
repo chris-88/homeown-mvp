@@ -4,12 +4,13 @@ import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useCalcWizard, ROI_COUNTIES, DUBLIN_POSTCODES } from '@/lib/calcWizard'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Area, ComposedChart } from 'recharts'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, TrendingDown, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 const APPRECIATION = 0.05
 
@@ -213,13 +214,10 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const ghiEntered             = ghi > 0
   const exitMortgageSupported  = !ghiEntered || ghi * 4 >= strikePrice
 
-  // Input summary pills
-  const summaryItems = [
-    formatCurrency(propertyPrice) + ' target',
-    formatCurrency(monthlySavings) + '/mo saving',
-    ...(currentSavings > 0 ? [formatCurrency(currentSavings) + ' saved'] : []),
-    ...(ghiEntered       ? [formatCurrency(ghi) + '/yr income'] : []),
-  ]
+  // Compact stat formatter — €350k not €350,000 for the summary grid
+  function fmtStat(v: number) {
+    return v >= 10000 ? `€${Math.round(v / 1000)}k` : formatCurrency(v)
+  }
 
   // Realisation moment text (3 lines + optional punchline)
   const realisation = alreadyHasDeposit
@@ -253,59 +251,71 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const compRows = [
     {
       label: 'To get started',
-      trad: formatCurrency(propertyPrice * 0.10) + ' deposit',
-      tradSub: undefined as string | undefined,
-      hw: formatCurrency(entryStake) + ' Entry Stake',
-      hwSub: undefined as string | undefined,
+      trad: formatCurrency(Math.round(propertyPrice * 0.10)),
+      hw:   formatCurrency(entryStake),
     },
     {
       label: 'Timeline',
-      trad: crossoverYear > 0 ? `~${crossoverYear} year${crossoverYear === 1 ? '' : 's'} saving` : '10+ years saving',
-      tradSub: undefined,
-      hw: 'Move in this year',
-      hwSub: undefined,
+      trad: crossoverYear > 0 ? `~${crossoverYear} year${crossoverYear === 1 ? '' : 's'}` : '10+ years',
+      hw:   'This year',
     },
     {
       label: 'You buy at',
       trad: `~${formatCurrency(tradBuyPrice)}`,
-      tradSub: `market price, year ${tradBuyYear}`,
-      hw: formatCurrency(strikePrice),
-      hwSub: 'fixed today, regardless of market',
+      hw:   formatCurrency(strikePrice),
     },
     {
       label: 'At year 5',
-      trad: tradEquityAtYear5 !== null ? `~${formatCurrency(tradEquityAtYear5)} equity` : 'Still saving',
-      tradSub: tradEquityAtYear5 !== null
-        ? `${tradInHomeYears} yr${tradInHomeYears === 1 ? '' : 's'} appreciation only`
-        : savingsShortAtYear5 > 0 ? `${formatCurrency(savingsShortAtYear5)} short of deposit` : undefined,
-      hw: `~${formatCurrency(finalEquity)} equity`,
-      hwSub: `${formatCurrency(finalMarket)} market minus ${formatCurrency(strikePrice)} option price`,
+      trad: tradEquityAtYear5 !== null ? `~${formatCurrency(tradEquityAtYear5)}` : 'Still saving',
+      hw:   `~${formatCurrency(finalEquity)}`,
     },
   ]
 
-  return (
-    <div>
-      {/* Input summary bar */}
-      <p className="text-sm text-muted-foreground">
-        {summaryItems.join(' · ')}
-      </p>
+  const depositAtTradYear = Math.round(propertyPrice * 0.10 * Math.pow(1 + APPRECIATION, tradBuyYear))
+  const savingsAtTradYear = Math.round(currentSavings + monthlySavings * 12 * tradBuyYear)
 
-      {/* Realisation moment — no card, typographic only */}
-      <div className="mt-8 py-10 max-w-xl space-y-1">
-        {realisation.lines.map((line, i) => (
-          <p key={i} className="text-lg text-foreground">{line}</p>
+  return (
+    <div className="space-y-4">
+
+      {/* ── Summary stat grid ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-md border divide-x divide-y overflow-hidden">
+        {[
+          { label: 'Target',  value: fmtStat(propertyPrice) },
+          { label: 'Monthly', value: fmtStat(monthlySavings) },
+          { label: 'Saved',   value: fmtStat(currentSavings) },
+          { label: 'Income',  value: fmtStat(ghi) },
+        ].map(({ label, value }) => (
+          <div key={label} className="px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+            <p className="text-lg font-bold tabular-nums mt-0.5">{value}</p>
+          </div>
         ))}
-        {realisation.punchline && (
-          <p className="text-lg font-semibold text-destructive">{realisation.punchline}</p>
-        )}
       </div>
 
-      {/* Traditional section — full-bleed, stone bg */}
-      <div className="-mx-6 mt-2 bg-muted px-6 py-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional route</p>
-        <h3 className="mt-1 text-2xl font-semibold">The deposit keeps moving.</h3>
-        <div className="pt-6">
-          <ChartContainer config={depositChartConfig} className="h-48 w-full">
+      {/* ── Realisation — icon + title + lines ── */}
+      <div className="rounded-md border px-4 py-3 flex items-start gap-3">
+        {realisation.punchline
+          ? <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          : <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+        }
+        <div className="space-y-0.5">
+          {realisation.punchline && (
+            <p className="text-sm font-semibold text-destructive">{realisation.punchline}</p>
+          )}
+          {realisation.lines.map((line, i) => (
+            <p key={i} className="text-sm text-muted-foreground">{line}</p>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Traditional route — card + callout ── */}
+      <Card>
+        <CardHeader className="pb-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional route</p>
+          <p className="text-xl font-bold leading-snug">The deposit keeps moving.</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ChartContainer config={depositChartConfig} className="h-44 w-full">
             <LineChart data={depositData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.06)" />
               <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
@@ -323,25 +333,24 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
                 dot={false} strokeDasharray="5 3" />
             </LineChart>
           </ChartContainer>
-        </div>
-        <div className="flex gap-5 mt-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-5 bg-destructive" />
-            Deposit required
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-5 border-t-2 border-dashed border-primary" />
-            Your savings trajectory
-          </span>
-        </div>
-      </div>
+          <div className="flex items-start gap-2 pt-2 border-t text-sm">
+            <TrendingDown className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Deposit by year {tradBuyYear}: {formatCurrency(depositAtTradYear)}</p>
+              <p className="text-muted-foreground">Your savings reach {formatCurrency(savingsAtTradYear)} in the same period.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Homeown section — full-bleed, green bg */}
-      <div className="-mx-6 bg-brand-green-muted px-6 py-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-brand-green">Homeown pathway</p>
-        <h3 className="mt-1 text-2xl font-semibold">Your price is fixed.<br />The market works for you.</h3>
-        <div className="pt-6">
-          <ChartContainer config={homeownChartConfig} className="h-48 w-full">
+      {/* ── Homeown pathway — card + callout ── */}
+      <Card>
+        <CardHeader className="pb-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-brand-green">Homeown pathway</p>
+          <p className="text-xl font-bold leading-snug">Your price is fixed. The market works for you.</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ChartContainer config={homeownChartConfig} className="h-44 w-full">
             <ComposedChart data={homeownData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.06)" />
               <XAxis dataKey="year" tickFormatter={(v: number) => v === 0 ? 'Now' : `Yr ${v}`}
@@ -363,56 +372,50 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
                 strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
             </ComposedChart>
           </ChartContainer>
-        </div>
-        <div className="flex gap-5 mt-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-5 bg-primary" />
-            Your option price (fixed)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-5 border-t border-dashed border-muted-foreground" />
-            Market value
-          </span>
-        </div>
-      </div>
-
-      {/* Comparison table */}
-      <div className="mt-10 rounded-lg border border-border overflow-hidden">
-        <div className="grid grid-cols-3 text-xs font-semibold uppercase tracking-widest">
-          <div className="px-4 py-3 bg-muted/40 text-muted-foreground" />
-          <div className="px-4 py-3 bg-muted/40 text-muted-foreground">Traditional</div>
-          <div className="px-4 py-3 bg-brand-green text-white">Homeown</div>
-        </div>
-        {compRows.map(({ label, trad, tradSub, hw, hwSub }) => (
-          <div key={label} className="grid grid-cols-3 border-t border-border text-sm">
-            <div className="px-4 py-3 text-xs text-muted-foreground leading-snug">{label}</div>
-            <div className="px-4 py-3">
-              <p className="font-medium tabular-nums">{trad}</p>
-              {tradSub && <p className="text-xs text-muted-foreground mt-0.5">{tradSub}</p>}
-            </div>
-            <div className="px-4 py-3 bg-brand-green-muted">
-              <p className="font-semibold tabular-nums">{hw}</p>
-              {hwSub && <p className="text-xs text-muted-foreground mt-0.5">{hwSub}</p>}
+          <div className="flex items-start gap-2 pt-2 border-t text-sm">
+            <TrendingUp className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Estimated equity at year 5: {formatCurrency(finalEquity)}</p>
+              <p className="text-muted-foreground">{formatCurrency(finalMarket)} market value minus {formatCurrency(strikePrice)} fixed option price.</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Comparison table — clean, no colour ── */}
+      <div className="rounded-md border overflow-hidden">
+        <div className="grid grid-cols-3 border-b text-xs font-semibold uppercase tracking-widest text-muted-foreground bg-muted/30">
+          <div className="px-4 py-2" />
+          <div className="px-4 py-2">Traditional</div>
+          <div className="px-4 py-2">Homeown</div>
+        </div>
+        {compRows.map(({ label, trad, hw }) => (
+          <div key={label} className="grid grid-cols-3 border-t text-sm">
+            <div className="px-4 py-2.5 text-xs text-muted-foreground">{label}</div>
+            <div className="px-4 py-2.5 font-medium tabular-nums">{trad}</div>
+            <div className="px-4 py-2.5 font-semibold tabular-nums">{hw}</div>
+          </div>
         ))}
-        <div className="px-4 py-2 border-t border-border bg-muted/20">
-          <p className="text-xs text-muted-foreground">Assumes 5% annual property appreciation. Equity figure excludes mortgage costs at completion.</p>
+        <div className="px-4 py-2 border-t bg-muted/10">
+          <p className="text-xs text-muted-foreground">5% annual appreciation assumed. Equity excludes mortgage costs at completion.</p>
         </div>
       </div>
 
-      {/* Exit mortgage caveat — only if GHI entered and gap exists */}
+      {/* ── Exit mortgage caveat ── */}
       {!exitMortgageSupported && (
-        <div className="mt-6 rounded-lg border border-brand-burgundy/20 bg-brand-burgundy-muted px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-burgundy mb-1">Worth knowing</p>
-          <p className="text-sm text-brand-burgundy leading-relaxed">
-            On a gross household income of {formatCurrency(ghi)}, standard 4× lending supports a mortgage of up to {formatCurrency(ghi * 4)}. The option price is {formatCurrency(strikePrice)}. Exit affordability is worth discussing on your discovery call.
-          </p>
+        <div className="rounded-md border border-brand-burgundy/20 bg-brand-burgundy-muted px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="h-4 w-4 text-brand-burgundy mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-brand-burgundy">Worth knowing</p>
+            <p className="text-sm text-brand-burgundy/80 mt-0.5">
+              On {formatCurrency(ghi)} income, standard 4× lending supports up to {formatCurrency(ghi * 4)}. The option price is {formatCurrency(strikePrice)}. Discuss exit affordability on your discovery call.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex gap-3 mt-10">
+      {/* ── Actions ── */}
+      <div className="flex gap-3 pt-2">
         <Button variant="outline" onClick={onBack} className="flex-1 h-12">Back</Button>
         <Button onClick={onNext} className="flex-1 h-12" size="lg">
           Show me my numbers
