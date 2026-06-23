@@ -406,7 +406,7 @@ function StepActions({ bucket, onNext, onBack }: { bucket: Bucket; onNext: () =>
   return (
     <div className="flex flex-col-reverse sm:flex-row gap-3 mt-8">
       <Button variant="outline" onClick={onBack} className="flex-1 h-12">Back</Button>
-      <Button onClick={onNext} className="flex-1 h-12" size="lg">
+      <Button onClick={onNext} className="flex-1 h-12">
         {ctaLabel[bucket]}
         <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
