@@ -136,6 +136,18 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
 }
 
 // ── Tooltips ──────────────────────────────────────────────────
+function HomeownTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+  if (!active || !payload?.length) return null
+  const marketValue = payload.find(p => p.dataKey === 'marketValue')?.value
+  const optionPrice = payload.find(p => p.dataKey === 'optionPrice')?.value
+  return (
+    <div className="rounded-md border border-brand-cream bg-white px-3 py-2 text-xs shadow-sm space-y-0.5">
+      {marketValue != null && <p className="tabular-nums">Value: {formatCurrency(marketValue)}</p>}
+      {optionPrice != null && <p className="tabular-nums">Strike: {formatCurrency(optionPrice)}</p>}
+    </div>
+  )
+}
+
 function TraditionalTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
   if (!active || !payload?.length) return null
   const deposit     = payload.find(p => p.dataKey === 'deposit')?.value
@@ -217,29 +229,25 @@ function HomeownSection({ bucket, homeownData, finalEquity, strikePrice, propert
   const yMin = Math.max(0, strikePrice - 50000)
   const yMax = Math.ceil(finalMarket * 1.06 / 10000) * 10000
 
-  const [headlineL1, headlineL2] = bucket === 'already_eligible'
+  const headlineLines = bucket === 'already_eligible'
     ? [`Your price is ${formatCurrency(strikePrice)}.`, `Not ${formatCurrency(propertyPrice)}.`]
-    : ['Your price is fixed.', 'The market works for you.']
+    : ['Fixed strike price, the market working for you.']
 
   return (
     <section className="w-full bg-white py-16">
       <div className="max-w-2xl mx-auto px-6">
         <p className="text-xs font-medium tracking-widest text-brand-green uppercase">Homeown pathway</p>
-        <p className="text-3xl font-semibold text-brand-ink mt-2">{headlineL1}</p>
-        <p className="text-3xl font-semibold text-brand-ink">{headlineL2}</p>
+        <p className="text-3xl font-semibold text-brand-ink mt-2">{headlineLines[0]}</p>
+        {headlineLines[1] && <p className="text-3xl font-semibold text-brand-ink">{headlineLines[1]}</p>}
 
         <ChartContainer config={homeownChartCfg} className="h-48 md:h-56 w-full mt-8">
-          <ComposedChart data={homeownData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <XAxis dataKey="year" hide />
+          <ComposedChart data={homeownData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+            <XAxis dataKey="year" tickLine={false} axisLine={false}
+              tick={{ fontSize: 10, fill: '#857861' }}
+              tickFormatter={(v: number) => v === 0 ? 'Now' : String(v)} />
             <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
               tick={{ fontSize: 10 }} width={36} domain={[yMin, yMax]} />
-            <ChartTooltip content={
-              <ChartTooltipContent
-                formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
-                labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
-                hideIndicator
-              />
-            } />
+            <ChartTooltip content={<HomeownTooltip />} />
             <Area dataKey="marketValue" fill="var(--color-brand-green-muted)" fillOpacity={1}
               stroke="none" baseValue={strikePrice} legendType="none" />
             <Line dataKey="marketValue" stroke="var(--color-marketValue)"
