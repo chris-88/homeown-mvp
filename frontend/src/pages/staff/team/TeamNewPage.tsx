@@ -83,7 +83,7 @@ export default function TeamNewPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              This link is personal to the invitee — do not share it publicly.
+              This link is personal to the invitee. Do not share it publicly.
             </p>
             <div className="flex gap-3">
               <Button asChild variant="outline"><Link to="/app/staff/team">Back to team</Link></Button>

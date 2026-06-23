@@ -61,7 +61,7 @@ export const PROGRAMME_STAGE_META: Record<ProgrammeStage, StageMeta> = {
     nextPreview: 'The property case enters conveyancing.',
   },
   conveyancing: {
-    current: 'The property is going through conveyancing — searches, contracts, and legal checks.',
+    current: 'The property is going through conveyancing: searches, contracts, and legal checks.',
     toProgress: 'Complete conveyancing and have contracts signed by all parties.',
     nextPreview: 'Contracts are signed and the purchase is ready to close.',
   },

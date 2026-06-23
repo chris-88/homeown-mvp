@@ -160,11 +160,20 @@ function Step1({ onNext }: { onNext: () => void }) {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Your situation</h2>
         <p className="mt-2 text-muted-foreground">
-          Adjust the sliders — we'll show you exactly what your options look like.
+          Adjust the sliders to see exactly what your options look like.
         </p>
       </div>
 
       <div className="space-y-2">
+        <SliderCard
+          label="Gross household income"
+          value={state.ghi}
+          display={formatCurrency(state.ghi)}
+          min={25000} max={200000} step={1000}
+          onChange={setGhi}
+          minLabel="€25k" maxLabel="€200k"
+        />
+
         <SliderCard
           label="Property target"
           value={state.propertyPrice}
@@ -198,15 +207,6 @@ function Step1({ onNext }: { onNext: () => void }) {
           onChange={v => update({ monthlySavings: v })}
           minLabel="€100" maxLabel={fmtK(maxMonthly)}
         />
-
-        <SliderCard
-          label="Gross household income"
-          value={state.ghi}
-          display={formatCurrency(state.ghi)}
-          min={25000} max={200000} step={1000}
-          onChange={setGhi}
-          minLabel="€25k" maxLabel="€200k"
-        />
       </div>
 
       <p className="text-xs text-muted-foreground">
@@ -228,21 +228,21 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const items = [
     {
       label: 'Monthly service fee',
-      sublabel: 'Domiter — paid every month for 60 months',
+      sublabel: 'Domiter, paid every month for 60 months',
       value: `${formatCurrency(state.monthlyDomiter)} / mo`,
-      description: 'Replaces your current housing cost for the programme duration. It is not rent — it is a structured service fee that gives you occupation rights and builds towards ownership.',
+      description: 'Replaces your current housing cost for the programme duration. It is not rent. It is a structured service fee that gives you occupation rights and builds towards ownership.',
     },
     {
       label: 'Entry Stake',
       sublabel: '1% of property price, paid once at the start',
       value: formatCurrency(state.entryStake),
-      description: 'Your initial stake in the property. This is equity at risk — it confirms your commitment and gives you a beneficial interest from day one. It is not a returnable deposit.',
+      description: 'Your initial stake in the property. This is equity at risk: it confirms your commitment and gives you a beneficial interest from day one. It is not a returnable deposit.',
     },
     {
       label: 'Purchase option price',
       sublabel: 'Fixed on the day the property is acquired',
       value: formatCurrency(state.strikePrice),
-      description: 'The price you pay to buy the home at the end of the 60-month term. It is fixed in writing from the start — regardless of what the market does in the meantime.',
+      description: 'The price you pay to buy the home at the end of the 60-month term. It is fixed in writing from the start, regardless of what the market does in the meantime.',
     },
   ]
 
