@@ -23,6 +23,7 @@ function SliderCard({
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
+  const [showHint, setShowHint] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const pct = `${Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100))}%`
 
@@ -47,11 +48,16 @@ function SliderCard({
         <div className="flex items-center gap-1">
           <p className="text-sm text-muted-foreground">{label}</p>
           {hint && (
-            <span className="relative group">
-              <Info className="h-3.5 w-3.5 text-muted-foreground/40 cursor-default" />
-              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-md bg-foreground px-3 py-2 text-xs text-background shadow-md invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity z-50">
-                {hint}
-              </span>
+            <span className="relative">
+              <Info
+                className="h-3.5 w-3.5 text-muted-foreground/40 cursor-pointer"
+                onClick={() => setShowHint(v => !v)}
+              />
+              {showHint && (
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-md bg-foreground px-3 py-2 text-xs text-background shadow-md z-50 block">
+                  {hint}
+                </span>
+              )}
             </span>
           )}
         </div>
