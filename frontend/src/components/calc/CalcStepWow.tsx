@@ -320,12 +320,22 @@ function IncomeCapSection({ ghi, strikePrice, maxAffordableProperty, onBack, onN
 
 // ── Comparison table ──────────────────────────────────────────
 function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings,
-  entryStake, strikePrice, tradDepositRequired, tradBuyPrice, startTimeLabel, finalEquity }: {
+  entryStake, strikePrice, tradDepositRequired, tradBuyPrice, startTimeLabel, finalEquity,
+  crossoverYears }: {
   bucket: Bucket; propertyPrice: number; currentSavings: number; monthlySavings: number
   entryStake: number; strikePrice: number; tradDepositRequired: number
-  tradBuyPrice: number; startTimeLabel: string; finalEquity: number
+  tradBuyPrice: number; startTimeLabel: string; finalEquity: number; crossoverYears: number
 }) {
   const yr5TraditSavings = currentSavings + monthlySavings * 60
+
+  // For close_race: they buy at crossoverYears (<5), then hold for the remainder
+  const yr5TraditEquity = (() => {
+    if (bucket !== 'close_race') return 0
+    const tradMortgage = Math.round(tradBuyPrice * 0.90)
+    const yearsInHome = 5 - crossoverYears
+    const propAt5 = Math.round(tradBuyPrice * Math.pow(1.05, yearsInHome))
+    return propAt5 - tradMortgage
+  })()
 
   const tradWhenMoveIn = (() => {
     if (bucket === 'already_eligible') return 'Now'
@@ -347,7 +357,9 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
     { label: 'You buy at',       trad: tradBuyAt,         hw: `${formatCurrency(strikePrice)} (fixed from start)` },
     ...(bucket !== 'already_eligible' ? [{
       label: 'At year 5',
-      trad: `${formatCurrency(yr5TraditSavings)} saved`,
+      trad: bucket === 'close_race'
+        ? `${formatCurrency(yr5TraditEquity)} equity`
+        : `${formatCurrency(yr5TraditSavings)} saved`,
       hw: `${formatCurrency(finalEquity)} equity`,
     }] : []),
   ]
@@ -531,6 +543,7 @@ export default function CalcStepWow({ onNext, onBack }: { onNext: () => void; on
             tradBuyPrice={tradBuyPrice}
             startTimeLabel={startTimeLabel}
             finalEquity={finalEquity}
+            crossoverYears={crossoverYears}
           />
         ) : (
           <p className="text-sm text-brand-taupe text-center mt-10">

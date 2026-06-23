@@ -224,6 +224,42 @@ function Step1({ onNext }: { onNext: () => void }) {
 // ── Step 3 — Pathway fundamentals ────────────────────────────
 function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const { state } = useCalcWizard()
+  const { propertyPrice, currentSavings, monthlySavings, strikePrice, ghi } = state
+
+  // Derive bucket so intro copy answers the CTA the user just clicked
+  const depositData = Array.from({ length: 11 }, (_, i) => ({
+    deposit:      Math.round(propertyPrice * 0.10 * Math.pow(1.05, i)),
+    accumulated:  Math.round(currentSavings + monthlySavings * 12 * i),
+  }))
+  const crossoverIdx = depositData.findIndex((d, i) => i > 0 && d.accumulated >= d.deposit)
+  const crossoverYears = (() => {
+    if (crossoverIdx <= 0) return -1
+    const prev = depositData[crossoverIdx - 1]
+    const curr = depositData[crossoverIdx]
+    const t = (prev.deposit - prev.accumulated) / ((curr.accumulated - prev.accumulated) - (curr.deposit - prev.deposit))
+    return (crossoverIdx - 1) + Math.max(0, Math.min(1, t))
+  })()
+  const bucket = (() => {
+    if (currentSavings >= propertyPrice * 0.10)   return 'already_eligible'
+    if (ghi > 0 && ghi * 4 < strikePrice)         return 'income_capped'
+    if (crossoverYears === -1)                     return 'never'
+    if (crossoverYears > 5)                        return 'too_slow'
+    return 'close_race'
+  })()
+  const fmtYrs = (y: number) => {
+    const t = parseFloat(y.toFixed(1))
+    return t === Math.floor(t) ? `${Math.floor(t)} years` : `${t.toFixed(1)} years`
+  }
+  const tradBuyPrice = Math.round(propertyPrice * Math.pow(1.05, crossoverYears > 0 ? crossoverYears : 10))
+
+  const introLines: Record<string, string> = {
+    already_eligible: `Your option price is ${formatCurrency(strikePrice)}, which is ${formatCurrency(propertyPrice - strikePrice)} below today's market price of ${formatCurrency(propertyPrice)}. That discount is locked from the day the property is acquired.`,
+    close_race:       `Your option price is fixed at ${formatCurrency(strikePrice)} today. By the time you'd reach the traditional deposit in ${fmtYrs(crossoverYears)}, the same property would cost ${formatCurrency(tradBuyPrice)}.`,
+    too_slow:         `At your current rate, you'd wait ${fmtYrs(crossoverYears)} and buy at a higher price. With Homeown, you start this year with the option price fixed at ${formatCurrency(strikePrice)}.`,
+    never:            `Homeown gives you a fixed-price route into the market at ${formatCurrency(strikePrice)}. Here is what the programme involves.`,
+    income_capped:    `These are the programme terms your adviser will walk through with you on the call.`,
+  }
+  const intro = introLines[bucket]
 
   const items = [
     {
@@ -250,9 +286,7 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Your Homeown numbers</h2>
-        <p className="mt-2 text-muted-foreground">
-          For a {formatCurrency(state.propertyPrice)} property. These figures are fixed for the life of the programme.
-        </p>
+        <p className="mt-2 text-brand-ink leading-relaxed">{intro}</p>
       </div>
 
       <div className="space-y-4">
