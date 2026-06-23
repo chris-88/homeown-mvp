@@ -1,14 +1,20 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+const MONTHLY_SAVING = 500
 
 function fmt(n: number) {
   return '€' + Math.round(n).toLocaleString('en-IE')
 }
 
-function yearsToSave(price: number, monthlySaving: number): string {
-  const depositRequired = price * 0.10
-  const totalMonths = Math.ceil(depositRequired / monthlySaving)
+function ghiToProperty(ghi: number): number {
+  return Math.max(200000, Math.min(800000, Math.floor((ghi * 4) / 0.9 / 5000) * 5000))
+}
+
+function timeToSave(price: number): string {
+  const totalMonths = Math.ceil((price * 0.10) / MONTHLY_SAVING)
   const years = Math.floor(totalMonths / 12)
   const months = totalMonths % 12
   if (months === 0) return `${years} years`
@@ -16,121 +22,92 @@ function yearsToSave(price: number, monthlySaving: number): string {
   return `${years} years, ${months} months`
 }
 
-interface DualComparisonWidgetProps {
-  showCta?: boolean
-}
+export function DualComparisonWidget({ showCta = true }: { showCta?: boolean }) {
+  const [ghi, setGhi] = useState(90000)
+  const [showTooltip, setShowTooltip] = useState(false)
 
-export function DualComparisonWidget({ showCta = true }: DualComparisonWidgetProps) {
-  const [price, setPrice] = useState(400000)
-  const [monthlySaving, setMonthlySaving] = useState(350)
+  const price       = ghiToProperty(ghi)
+  const entryStake  = Math.round(price * 0.01)
+  const deposit     = Math.round(price * 0.10)
+  const monthlyFee  = Math.round((price * 0.082) / 12)
+  const optionPrice = Math.round(price * 0.90)
 
-  const monthlyFee = (price * 0.082) / 12
-  const entryStake = price * 0.01
-  const optionPrice = price * 0.90
-  const depositRequired = price * 0.10
+  const rows = [
+    { label: 'Upfront to start',   hw: `Entry Stake ${fmt(entryStake)}`,     trad: `Deposit ${fmt(deposit)}` },
+    { label: 'Time to move in',    hw: '3–6 months',                          trad: timeToSave(price) },
+    { label: 'Monthly commitment', hw: `${fmt(monthlyFee)} service fee`,      trad: `${fmt(MONTHLY_SAVING)}/mo saving` },
+    { label: 'You buy at',         hw: `${fmt(optionPrice)} (fixed today)`,   trad: 'Market price at the time' },
+  ]
 
   return (
     <div>
-      {/* Property price slider */}
-      <div className="mb-6">
+      {/* GHI slider */}
+      <div className="mb-5">
         <div className="flex items-center justify-between mb-2">
-          <label htmlFor="property-price" className="text-sm font-medium">
-            Property price
-          </label>
-          <span className="text-base font-semibold tabular-nums">{fmt(price)}</span>
+          <div className="flex items-center gap-1.5">
+            <label className="text-sm font-medium">Gross household income</label>
+            <span className="relative">
+              <Info
+                className="h-3.5 w-3.5 text-muted-foreground/50 cursor-pointer"
+                onClick={() => setShowTooltip(v => !v)}
+              />
+              {showTooltip && (
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-md bg-foreground px-3 py-2 text-xs text-background shadow-md z-50 block">
+                  Combined pre-tax income of all buyers
+                </span>
+              )}
+            </span>
+          </div>
+          <span className="text-base font-semibold tabular-nums">{fmt(ghi)}</span>
         </div>
         <input
-          id="property-price"
           type="range"
-          min={200000}
-          max={800000}
-          step={5000}
-          value={price}
-          onChange={e => setPrice(Number(e.target.value))}
+          min={25000} max={200000} step={1000}
+          value={ghi}
+          onChange={e => setGhi(Number(e.target.value))}
           className="w-full accent-primary"
           style={{ minHeight: '44px', cursor: 'pointer' }}
         />
         <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+          <span>€25,000</span>
           <span>€200,000</span>
-          <span>€800,000</span>
         </div>
       </div>
 
-      {/* Panels */}
-      <div className="grid gap-4 sm:grid-cols-2">
-
-        {/* Left: With Homeown */}
-        <div className="rounded-md border border-t-0 bg-card overflow-hidden">
-          <div className="h-0.5 bg-primary w-full" />
-          <div className="p-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-5">
-              With Homeown
-            </p>
-            <div className="space-y-5">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Monthly service fee</p>
-                <p className="text-3xl font-semibold tabular-nums">{fmt(monthlyFee)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">per month</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Entry Stake</p>
-                <p className="text-3xl font-semibold tabular-nums">{fmt(entryStake)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">paid once</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Option price</p>
-                <p className="text-3xl font-semibold tabular-nums">{fmt(optionPrice)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">fixed</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Traditional Route */}
-        <div className="rounded-md bg-muted/60 p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-5">
-            Traditional Route
-          </p>
-          <div className="space-y-5">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Deposit required</p>
-              <p className="text-3xl font-semibold tabular-nums">{fmt(depositRequired)}</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="monthly-saving" className="text-xs text-muted-foreground">
-                  Monthly saving
-                </label>
-                <span className="text-xs font-semibold tabular-nums">{fmt(monthlySaving)}</span>
-              </div>
-              <input
-                id="monthly-saving"
-                type="range"
-                min={50}
-                max={2500}
-                step={50}
-                value={monthlySaving}
-                onChange={e => setMonthlySaving(Number(e.target.value))}
-                className="w-full accent-primary"
-                style={{ minHeight: '44px', cursor: 'pointer' }}
-              />
-              <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-                <span>€50</span>
-                <span>€2,500</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Years to save</p>
-              <p className="text-3xl font-semibold tabular-nums min-h-[4.5rem] leading-tight">{yearsToSave(price, monthlySaving)}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Below panels */}
-      <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
-        Figures are illustrative and based on Homeown's current programme parameters. The traditional deposit saving estimate uses your selected monthly saving of {fmt(monthlySaving)}. Individual circumstances will vary.
+      <p className="text-xs text-muted-foreground mb-4">
+        Target property: <span className="font-medium tabular-nums">{fmt(price)}</span>
       </p>
+
+      {/* Comparison table */}
+      <div className="rounded-lg border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className="px-4 py-3 text-left" />
+              <th className="px-4 py-3 text-center text-xs font-semibold tracking-widest text-white uppercase bg-primary">
+                With Homeown
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                Traditional
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ label, hw, trad }) => (
+              <tr key={label} className="border-t">
+                <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{label}</td>
+                <td className="px-4 py-3 font-semibold text-center tabular-nums">{hw}</td>
+                <td className="px-4 py-3 font-normal text-center tabular-nums text-muted-foreground">{trad}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+        Figures are illustrative. Traditional deposit timeline assumes {fmt(MONTHLY_SAVING)} per month net saving. Individual circumstances will vary.
+      </p>
+
       {showCta && (
         <Button asChild className="mt-4 w-full sm:w-auto">
           <Link to="/calc">Check your full numbers</Link>
