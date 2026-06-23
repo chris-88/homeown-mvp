@@ -1,7 +1,7 @@
 import { useCalcWizard } from '@/lib/calcWizard'
 import { formatCurrency } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
 import { LineChart, Line, XAxis, YAxis, ComposedChart, Area } from 'recharts'
 import { ArrowRight, Clock, TrendingUp, XCircle, AlertTriangle, CircleCheck, Lock, Scale, Flag } from 'lucide-react'
 
@@ -43,10 +43,10 @@ function InputSummaryBar({ propertyPrice, monthlySavings, currentSavings, ghi }:
   propertyPrice: number; monthlySavings: number; currentSavings: number; ghi: number
 }) {
   const stats = [
-    { label: 'Target',    value: fmtStat(propertyPrice) },
-    { label: 'Monthly',   value: `${fmtStat(monthlySavings)}/mo` },
-    { label: 'Set aside', value: fmtStat(currentSavings) },
-    { label: 'Income',    value: `${fmtStat(ghi)}/yr` },
+    { label: 'Target', value: fmtStat(propertyPrice) },
+    { label: 'Saving', value: fmtStat(monthlySavings) },
+    { label: 'Saved',  value: fmtStat(currentSavings) },
+    { label: 'Income', value: fmtStat(ghi) },
   ]
   return (
     <div className="flex divide-x divide-brand-cream mt-6">
@@ -98,17 +98,17 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
       punchline: `The question is whether you want to pay ${formatCurrency(strikePrice)} or ${formatCurrency(propertyPrice)}.`,
     },
     close_race: {
-      line1: `At ${formatCurrency(monthlySavings)}/mo, you'd reach the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit in about ${fmtYears(crossoverYears)}.`,
+      line1: `Saving ${formatCurrency(monthlySavings)} a month, you'd reach the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit in about ${fmtYears(crossoverYears)}.`,
       line2: 'But the property costs more each year, so the deposit grows faster than you can accumulate.',
       punchline: 'You can put more aside each month, or you can stop the race entirely.',
     },
     too_slow: {
-      line1: `At ${formatCurrency(monthlySavings)}/mo, the deposit takes ${fmtYears(crossoverYears)} to reach.`,
+      line1: `Saving ${formatCurrency(monthlySavings)} a month, the deposit takes ${fmtYears(crossoverYears)} to reach.`,
       line2: `By then, the property costs ${formatCurrency(tradBuyPrice)}, making the deposit itself ${formatCurrency(tradDepositRequired)}.`,
       punchline: 'The longer you wait, the further away it gets.',
     },
     never: {
-      line1: `At ${formatCurrency(monthlySavings)}/mo, the deposit never catches up.`,
+      line1: `Saving ${formatCurrency(monthlySavings)} a month, the deposit never catches up.`,
       line2: 'Property prices rise faster than your funds accumulate at this rate.',
       punchline: 'The traditional route is closed. Homeown is the route in.',
     },
