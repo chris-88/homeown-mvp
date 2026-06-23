@@ -187,7 +187,16 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     deposit: Math.round(propertyPrice * 0.10 * Math.pow(1 + APPRECIATION, i)),
     savings: Math.round(currentSavings + monthlySavings * 12 * i),
   }))
-  const crossoverYear = depositData.findIndex((d, i) => i > 0 && d.savings >= d.deposit)
+
+  // Fractional crossover year via linear interpolation between integer years
+  const crossoverIdx = depositData.findIndex((d, i) => i > 0 && d.savings >= d.deposit)
+  const crossoverYears = (() => {
+    if (crossoverIdx <= 0) return -1
+    const prev = depositData[crossoverIdx - 1]
+    const curr = depositData[crossoverIdx]
+    const t = (prev.deposit - prev.savings) / ((curr.savings - prev.savings) - (curr.deposit - prev.deposit))
+    return (crossoverIdx - 1) + Math.max(0, Math.min(1, t))
+  })()
 
   const homeownData = Array.from({ length: 6 }, (_, i) => ({
     year: i,
@@ -202,73 +211,73 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const yMinHomeown = Math.max(0, strikePrice - 50000)
   const yMaxHomeown = Math.ceil(finalMarket * 1.06 / 10000) * 10000
 
-  // Derived numbers
-  const alreadyHasDeposit = currentSavings >= propertyPrice * 0.10
-  const tradBuyYear        = crossoverYear > 0 ? crossoverYear : 10
-  const tradBuyPrice       = Math.round(propertyPrice * Math.pow(1 + APPRECIATION, tradBuyYear))
-  const tradInHomeYears    = Math.max(0, 5 - tradBuyYear)
-  const tradValueAtYear5   = Math.round(tradBuyPrice * Math.pow(1 + APPRECIATION, tradInHomeYears))
-  const tradEquityAtYear5  = tradInHomeYears > 0 ? tradValueAtYear5 - Math.round(tradBuyPrice * 0.90) : null
+  // Derived numbers — use fractional crossover year for accurate price forecast
+  const alreadyHasDeposit  = currentSavings >= propertyPrice * 0.10
+  const tradBuyYear         = crossoverYears > 0 ? crossoverYears : 10
+  const tradBuyPrice        = Math.round(propertyPrice * Math.pow(1 + APPRECIATION, tradBuyYear))
+  const tradDepositRequired = Math.round(tradBuyPrice * 0.10)
 
-  const ghiEntered             = ghi > 0
-  const exitMortgageSupported  = !ghiEntered || ghi * 4 >= strikePrice
+  const ghiEntered            = ghi > 0
+  const exitMortgageSupported = !ghiEntered || ghi * 4 >= strikePrice
 
-  // Compact stat formatter — €350k not €350,000 for the summary grid
+  // Compact stat formatter for the summary grid
   function fmtStat(v: number) {
     return v >= 10000 ? `€${Math.round(v / 1000)}k` : formatCurrency(v)
   }
 
-  // Realisation moment text (3 lines + optional punchline)
+  // Start time display
+  const startTimeLabel = crossoverYears > 0
+    ? `${crossoverYears.toFixed(1)} years`
+    : '10+ years'
+
+  // Realisation moment
   const realisation = alreadyHasDeposit
     ? {
         lines: [
           `Your ${formatCurrency(currentSavings)} already covers the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit today.`,
-          'The traditional route is available to you right now.',
-          'The question is whether locking in the price today is worth more than buying at the current market.',
+          'The traditional route is available to you right now. The question is whether locking in the price today is worth more than buying at the current market.',
         ],
         punchline: null as string | null,
       }
-    : crossoverYear > 0
+    : crossoverYears > 0
     ? {
         lines: [
-          `At your savings rate, you'd reach the deposit in year ${crossoverYear}.`,
-          `By then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(Math.round(tradBuyPrice * 0.10))}.`,
+          `At your savings rate, you'd reach the deposit in ${startTimeLabel}. By then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(tradDepositRequired)}.`,
         ],
         punchline: 'The target keeps moving.',
       }
     : {
         lines: [
-          `At your savings rate, your savings reach ${formatCurrency(depositData[10].savings)} over 10 years.`,
-          `The required deposit reaches ${formatCurrency(depositData[10].deposit)} in the same period.`,
+          `At your savings rate, your savings reach ${formatCurrency(depositData[10].savings)} over 10 years. The required deposit reaches ${formatCurrency(depositData[10].deposit)} in the same period.`,
         ],
         punchline: 'The gap widens, not closes.',
       }
 
-  // Comparison table rows
+  // Comparison table
   const compRows = [
     {
-      label: 'Deposit',
-      trad: formatCurrency(Math.round(propertyPrice * 0.10)),
+      label: 'Deposit required',
+      trad: formatCurrency(tradDepositRequired),
       hw:   formatCurrency(entryStake),
     },
     {
-      label: 'Start',
-      trad: crossoverYear > 0 ? `~${crossoverYear} year${crossoverYear === 1 ? '' : 's'}` : '10+ years',
-      hw:   'This year',
+      label: 'Start time',
+      trad: startTimeLabel,
+      hw:   'Now',
     },
     {
       label: 'Purchase price',
-      trad: `~${formatCurrency(tradBuyPrice)}`,
+      trad: formatCurrency(tradBuyPrice),
       hw:   formatCurrency(strikePrice),
     },
     {
       label: 'Yr 5 equity',
-      trad: tradEquityAtYear5 !== null ? `~${formatCurrency(tradEquityAtYear5)}` : 'Still saving',
-      hw:   `~${formatCurrency(finalEquity)}`,
+      trad: formatCurrency(tradDepositRequired),
+      hw:   formatCurrency(finalEquity),
     },
   ]
 
-  const depositAtTradYear = Math.round(propertyPrice * 0.10 * Math.pow(1 + APPRECIATION, tradBuyYear))
+  const depositAtTradYear = tradDepositRequired
   const savingsAtTradYear = Math.round(currentSavings + monthlySavings * 12 * tradBuyYear)
 
   return (
@@ -325,7 +334,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
           <div className="flex items-start gap-2 pt-2 border-t text-sm">
             <TrendingDown className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
             <div>
-              <p className="font-semibold">Deposit by year {tradBuyYear}: {formatCurrency(depositAtTradYear)}</p>
+              <p className="font-semibold">Deposit required by {startTimeLabel}: {formatCurrency(depositAtTradYear)}</p>
               <p className="text-muted-foreground">Your savings reach {formatCurrency(savingsAtTradYear)} in the same period.</p>
             </div>
           </div>
@@ -366,7 +375,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
             <TrendingUp className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div>
               <p className="font-semibold">Estimated equity at year 5: {formatCurrency(finalEquity)}</p>
-              <p className="text-muted-foreground">{formatCurrency(finalMarket)} market value minus {formatCurrency(strikePrice)} fixed option price.</p>
+              <p className="text-muted-foreground">Market appreciation over 5 years on a property locked at {formatCurrency(strikePrice)}.</p>
             </div>
           </div>
         </CardContent>
