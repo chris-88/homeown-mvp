@@ -285,7 +285,7 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     {
       label: 'Monthly service fee',
       sublabel: 'Domiter, paid every month for 60 months',
-      value: `${formatCurrency(state.monthlyDomiter)} / mo`,
+      value: formatCurrency(state.monthlyDomiter),
       description: 'Replaces your current housing cost for the programme duration. It is not rent. It is a structured service fee that gives you occupation rights and builds towards ownership.',
     },
     {
