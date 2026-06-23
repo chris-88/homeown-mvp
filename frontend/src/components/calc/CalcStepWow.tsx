@@ -70,7 +70,7 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
   if (bucket === 'income_capped') {
     const gap = strikePrice - ghi * 4
     return (
-      <div className="py-10 max-w-xl mt-8">
+      <div className="py-12 max-w-xl mt-8">
         <p className="text-xl font-semibold text-brand-ink">Your income and your target are out of step.</p>
         <p className="text-base text-brand-taupe mt-3 leading-relaxed">
           On a household income of {formatCurrency(ghi)}/yr, standard lending typically supports a mortgage
@@ -107,10 +107,10 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
 
   const { line1, line2, punchline } = copy[bucket as NonCapped]
   return (
-    <div className="py-10 max-w-xl mt-8">
-      <p className="text-xl leading-relaxed text-brand-ink">{line1}</p>
-      <p className="text-xl leading-relaxed text-brand-ink mt-2">{line2}</p>
-      <p className="text-xl font-semibold text-brand-burgundy mt-4">{punchline}</p>
+    <div className="py-12 max-w-xl mt-8">
+      <p className="text-2xl md:text-3xl leading-snug text-brand-ink">{line1}</p>
+      <p className="text-2xl md:text-3xl leading-snug text-brand-ink mt-3">{line2}</p>
+      <p className="text-2xl md:text-3xl font-semibold text-brand-burgundy mt-5">{punchline}</p>
     </div>
   )
 }
@@ -150,10 +150,10 @@ function TraditionalSection({ bucket, depositData, crossoverYears, monthlySaving
   })()
 
   return (
-    <section className="w-full bg-brand-stone py-12 mt-2">
+    <section className="w-full bg-brand-stone py-16 mt-2">
       <div className="max-w-2xl mx-auto px-6">
         <p className="text-xs font-medium tracking-widest text-brand-taupe uppercase">Traditional route</p>
-        <p className="text-2xl font-semibold text-brand-ink mt-1">{headlines[bucket]}</p>
+        <p className="text-3xl font-semibold text-brand-ink mt-2">{headlines[bucket]}</p>
 
         <ChartContainer config={depositChartCfg} className="h-48 md:h-56 w-full mt-8">
           <LineChart data={mappedData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -192,11 +192,11 @@ function HomeownSection({ bucket, homeownData, finalEquity, strikePrice, propert
     : ['Your price is fixed.', 'The market works for you.']
 
   return (
-    <section className="w-full bg-white py-12">
+    <section className="w-full bg-white py-16">
       <div className="max-w-2xl mx-auto px-6">
         <p className="text-xs font-medium tracking-widest text-brand-green uppercase">Homeown pathway</p>
-        <p className="text-2xl font-semibold text-brand-ink mt-1">{headlineL1}</p>
-        <p className="text-2xl font-semibold text-brand-ink">{headlineL2}</p>
+        <p className="text-3xl font-semibold text-brand-ink mt-2">{headlineL1}</p>
+        <p className="text-3xl font-semibold text-brand-ink">{headlineL2}</p>
 
         <ChartContainer config={homeownChartCfg} className="h-48 md:h-56 w-full mt-8">
           <ComposedChart data={homeownData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -303,19 +303,25 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
     if (bucket === 'too_slow' || bucket === 'never') {
       return `${formatCurrency(yr5TraditSavings)} set aside — still short`
     }
-    return `${formatCurrency(yr5TraditSavings)} set aside — yet to buy`
+    return `${formatCurrency(yr5TraditSavings)} set aside`
+  })()
+
+  const tradWhenMoveIn = (() => {
+    if (bucket === 'already_eligible') return 'Now'
+    if (bucket === 'never') return '10+ years (never closes)'
+    return tradStartTime
   })()
 
   const rows = [
     { label: 'To get started',   trad: formatCurrency(tradToGetStarted), hw: `${formatCurrency(entryStake)} Entry Stake` },
-    { label: 'When you move in', trad: tradStartTime,                    hw: 'Now' },
+    { label: 'When you move in', trad: tradWhenMoveIn,                   hw: 'Now' },
     { label: 'You buy at',       trad: tradBuyAt,                        hw: `${formatCurrency(strikePrice)} (fixed today)` },
     ...(bucket !== 'already_eligible' ? [{ label: 'At year 5', trad: yr5TradCell, hw: `${formatCurrency(finalEquity)} equity` }] : []),
   ]
 
   return (
     <div className="mt-10">
-      <div className="border border-brand-cream rounded-lg overflow-hidden">
+      <div className="w-full border border-brand-cream rounded-lg overflow-hidden bg-white">
         <table className="w-full text-sm">
           <thead>
             <tr>
@@ -331,9 +337,9 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
           <tbody>
             {rows.map(({ label, trad, hw }) => (
               <tr key={label} className="border-t border-brand-cream">
-                <td className="px-4 py-3 text-sm text-brand-taupe">{label}</td>
-                <td className="px-4 py-3 font-normal text-brand-ink tabular-nums">{trad}</td>
-                <td className="px-4 py-3 font-semibold text-brand-ink bg-brand-green-muted tabular-nums">{hw}</td>
+                <td className="px-4 py-4 text-sm text-brand-taupe">{label}</td>
+                <td className="px-4 py-4 font-normal text-brand-ink tabular-nums">{trad}</td>
+                <td className="px-4 py-4 font-semibold text-brand-ink tabular-nums">{hw}</td>
               </tr>
             ))}
           </tbody>
