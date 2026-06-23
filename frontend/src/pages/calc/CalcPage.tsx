@@ -14,9 +14,9 @@ import CalcStepWow from '@/components/calc/CalcStepWow'
 function fmtK(v: number) { return `€${Math.round(v / 1000)}k` }
 
 function SliderCard({
-  label, value, display, min, max, step, onChange, minLabel, maxLabel,
+  label, hint, value, display, min, max, step, onChange, minLabel, maxLabel,
 }: {
-  label: string; value: number; display: string
+  label: string; hint?: string; value: number; display: string
   min: number; max: number; step: number
   onChange: (v: number) => void
   minLabel?: string; maxLabel?: string
@@ -43,8 +43,11 @@ function SliderCard({
 
   return (
     <div className="rounded-md border bg-card px-5 py-4">
-      <div className="flex items-baseline justify-between gap-4 mb-3">
-        <p className="text-sm text-muted-foreground">{label}</p>
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          {hint && <p className="text-xs text-muted-foreground/70 mt-0.5">{hint}</p>}
+        </div>
         {editing ? (
           <input
             ref={inputRef}
@@ -167,6 +170,7 @@ function Step1({ onNext }: { onNext: () => void }) {
       <div className="space-y-2">
         <SliderCard
           label="Gross household income"
+          hint="Combined pre-tax income of all buyers"
           value={state.ghi}
           display={formatCurrency(state.ghi)}
           min={25000} max={200000} step={1000}
@@ -176,6 +180,7 @@ function Step1({ onNext }: { onNext: () => void }) {
 
         <SliderCard
           label="Property target"
+          hint="The price range you're aiming for"
           value={state.propertyPrice}
           display={formatCurrency(state.propertyPrice)}
           min={200000} max={800000} step={5000}
@@ -186,6 +191,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         <div>
           <SliderCard
             label="Funds set aside"
+            hint="What you currently have available towards a purchase"
             value={currentSavingsValue}
             display={formatCurrency(currentSavingsValue)}
             min={0} max={maxSavings} step={100}
@@ -201,6 +207,7 @@ function Step1({ onNext }: { onNext: () => void }) {
 
         <SliderCard
           label="Monthly contribution"
+          hint="What you can set aside each month"
           value={effectiveMonthly}
           display={formatCurrency(effectiveMonthly)}
           min={100} max={maxMonthly} step={100}
