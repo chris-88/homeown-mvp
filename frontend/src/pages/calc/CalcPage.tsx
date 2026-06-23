@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
@@ -490,6 +490,8 @@ function Step4({ onBack }: { onBack: () => void }) {
 // ── Page root ─────────────────────────────────────────────────
 export default function CalcPage() {
   const [step, setStep] = useState(1)
+
+  useEffect(() => { window.scrollTo(0, 0) }, [step])
 
   // Step 2 is full-width — it controls its own layout and progress bar
   if (step === 2) {
