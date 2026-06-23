@@ -327,34 +327,29 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
 }) {
   const yr5TraditSavings = currentSavings + monthlySavings * 60
 
-  const tradToGetStarted = bucket === 'already_eligible'
-    ? Math.round(propertyPrice * 0.10)
-    : tradDepositRequired
-
-  const tradStartTime = bucket === 'already_eligible' ? 'Now' : startTimeLabel
-
-  const tradBuyAt = bucket === 'already_eligible'
-    ? formatCurrency(propertyPrice)
-    : formatCurrency(tradBuyPrice)
-
-  const yr5TradCell = (() => {
-    if (bucket === 'too_slow' || bucket === 'never') {
-      return `${formatCurrency(yr5TraditSavings)} set aside, still short`
-    }
-    return `${formatCurrency(yr5TraditSavings)} set aside`
-  })()
-
   const tradWhenMoveIn = (() => {
     if (bucket === 'already_eligible') return 'Now'
     if (bucket === 'never') return '10+ years (never closes)'
-    return tradStartTime
+    return startTimeLabel
   })()
 
+  const tradBuyAt = bucket === 'already_eligible'
+    ? formatCurrency(propertyPrice)
+    : `${formatCurrency(tradBuyPrice)} (moving every year)`
+
   const rows = [
-    { label: 'To get started',   trad: formatCurrency(tradToGetStarted), hw: `${formatCurrency(entryStake)} Entry Stake` },
-    { label: 'When you move in', trad: tradWhenMoveIn,                   hw: 'Now' },
-    { label: 'You buy at',       trad: tradBuyAt,                        hw: `${formatCurrency(strikePrice)} (fixed today)` },
-    ...(bucket !== 'already_eligible' ? [{ label: 'At year 5', trad: yr5TradCell, hw: `${formatCurrency(finalEquity)} equity` }] : []),
+    {
+      label: 'To get started',
+      trad: `Deposit ${formatCurrency(bucket === 'already_eligible' ? Math.round(propertyPrice * 0.10) : tradDepositRequired)}`,
+      hw: `Entry Stake ${formatCurrency(entryStake)}`,
+    },
+    { label: 'When you move in', trad: tradWhenMoveIn,   hw: '3-6 months' },
+    { label: 'You buy at',       trad: tradBuyAt,         hw: `${formatCurrency(strikePrice)} (fixed from start)` },
+    ...(bucket !== 'already_eligible' ? [{
+      label: 'At year 5',
+      trad: `${formatCurrency(yr5TraditSavings)} saved`,
+      hw: `${formatCurrency(finalEquity)} equity`,
+    }] : []),
   ]
 
   return (
@@ -364,10 +359,10 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
           <thead>
             <tr>
               <th className="px-4 py-3 text-left w-1/3" />
-              <th className="px-4 py-3 text-left text-xs font-semibold tracking-widest text-brand-taupe uppercase w-1/3">
+              <th className="px-4 py-3 text-center text-xs font-semibold tracking-widest text-brand-taupe uppercase w-1/3">
                 Traditional
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold tracking-widest text-white uppercase bg-brand-green w-1/3">
+              <th className="px-4 py-3 text-center text-xs font-semibold tracking-widest text-white uppercase bg-brand-green w-1/3">
                 Homeown
               </th>
             </tr>
@@ -375,9 +370,9 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
           <tbody>
             {rows.map(({ label, trad, hw }) => (
               <tr key={label} className="border-t border-brand-cream">
-                <td className="px-4 py-4 text-sm text-brand-taupe">{label}</td>
-                <td className="px-4 py-4 font-normal text-brand-ink tabular-nums">{trad}</td>
-                <td className="px-4 py-4 font-semibold text-brand-ink tabular-nums">{hw}</td>
+                <td className="px-4 py-4 text-sm text-brand-taupe text-left">{label}</td>
+                <td className="px-4 py-4 font-normal text-brand-ink tabular-nums text-center">{trad}</td>
+                <td className="px-4 py-4 font-semibold text-brand-ink tabular-nums text-center">{hw}</td>
               </tr>
             ))}
           </tbody>
