@@ -135,6 +135,19 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
   )
 }
 
+// ── Tooltips ──────────────────────────────────────────────────
+function TraditionalTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+  if (!active || !payload?.length) return null
+  const deposit     = payload.find(p => p.dataKey === 'deposit')?.value
+  const accumulated = payload.find(p => p.dataKey === 'accumulated')?.value
+  return (
+    <div className="rounded-md border border-brand-cream bg-white px-3 py-2 text-xs shadow-sm space-y-0.5">
+      {deposit     != null && <p className="tabular-nums">Required: {formatCurrency(deposit)}</p>}
+      {accumulated != null && <p className="tabular-nums">Saved: {formatCurrency(accumulated)}</p>}
+    </div>
+  )
+}
+
 // ── Traditional section ───────────────────────────────────────
 function TraditionalSection({ bucket, depositData, crossoverYears, monthlySavings,
   currentSavings, propertyPrice, tradDepositRequired, tradBuyPrice, tradSavingsAtCrossover }: {
@@ -176,16 +189,13 @@ function TraditionalSection({ bucket, depositData, crossoverYears, monthlySaving
         <p className="text-3xl font-semibold text-brand-ink mt-2">{headlines[bucket]}</p>
 
         <ChartContainer config={depositChartCfg} className="h-48 md:h-56 w-full mt-8">
-          <LineChart data={mappedData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <XAxis dataKey="year" hide />
+          <LineChart data={mappedData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+            <XAxis dataKey="year" tickLine={false} axisLine={false}
+              tick={{ fontSize: 10, fill: '#857861' }}
+              tickFormatter={(v: number) => v === 0 ? 'Now' : String(v)} />
             <YAxis tickFormatter={fmtK} tickLine={false} axisLine={false}
               tick={{ fontSize: 10 }} width={36} domain={[0, yMax]} />
-            <ChartTooltip content={
-              <ChartTooltipContent
-                formatter={(v) => formatCurrency(typeof v === 'number' ? v : 0)}
-                labelFormatter={(l) => Number(l) === 0 ? 'Now' : `Year ${l}`}
-              />
-            } />
+            <ChartTooltip content={<TraditionalTooltip />} />
             <Line dataKey="deposit"     stroke="var(--color-deposit)"     strokeWidth={2.5} dot={false} />
             <Line dataKey="accumulated" stroke="var(--color-accumulated)" strokeWidth={1.5}
               dot={false} strokeDasharray="5 3" />
