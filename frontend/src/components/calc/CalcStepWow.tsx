@@ -390,9 +390,21 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-brand-taupe mt-3">
-        Assumes 5% annual property appreciation. Year 5 equity excludes mortgage costs at completion.
-      </p>
+      <div className="mt-3 space-y-1.5 text-xs text-brand-taupe leading-relaxed">
+        <p>Year 5 equity excludes mortgage costs at completion.</p>
+        <p>
+          The 5% annual appreciation assumption is benchmarked against the{' '}
+          <a
+            href="https://www.cso.ie/en/releasesandpublications/ep/p-rppi/residentialpropertypriceindexapril2026/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-brand-ink transition-colors"
+          >
+            CSO Residential Property Price Index
+          </a>
+          , the official measure of Irish residential property price trends. Over the five complete years from 2021 to 2025, national residential property prices increased at an average annual rate of approximately 8.5%, based on CSO December year-on-year RPPI releases. The model applies a more conservative long-term assumption of 5.0% p.a.
+        </p>
+      </div>
     </div>
   )
 }
