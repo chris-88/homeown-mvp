@@ -42,21 +42,21 @@ function ProgressBar() {
 function InputSummaryBar({ propertyPrice, monthlySavings, currentSavings, ghi }: {
   propertyPrice: number; monthlySavings: number; currentSavings: number; ghi: number
 }) {
-  const parts = [
-    `${fmtStat(propertyPrice)} target`,
-    `${fmtStat(monthlySavings)}/mo`,
-    `${fmtStat(currentSavings)} set aside`,
-    `${fmtStat(ghi)}/yr income`,
+  const stats = [
+    { label: 'Target',    value: fmtStat(propertyPrice) },
+    { label: 'Monthly',   value: `${fmtStat(monthlySavings)}/mo` },
+    { label: 'Set aside', value: fmtStat(currentSavings) },
+    { label: 'Income',    value: `${fmtStat(ghi)}/yr` },
   ]
   return (
-    <p className="text-sm text-brand-taupe flex flex-wrap items-center gap-y-1 mt-6">
-      {parts.map((part, i) => (
-        <span key={i} className="flex items-center">
-          {i > 0 && <span className="mx-2 text-brand-cream select-none">·</span>}
-          {part}
-        </span>
+    <div className="flex divide-x divide-brand-cream mt-6">
+      {stats.map(({ label, value }) => (
+        <div key={label} className="flex-1 flex flex-col px-4 first:pl-0">
+          <span className="text-[10px] font-medium tracking-widest uppercase text-brand-taupe">{label}</span>
+          <span className="text-sm font-semibold tabular-nums text-brand-ink mt-0.5">{value}</span>
+        </div>
       ))}
-    </p>
+    </div>
   )
 }
 
