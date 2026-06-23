@@ -230,28 +230,37 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     ? `${crossoverYears.toFixed(1)} years`
     : '10+ years'
 
-  // Realisation moment
-  const realisation = alreadyHasDeposit
-    ? {
-        lines: [
-          `Your ${formatCurrency(currentSavings)} already covers the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit today.`,
-          'The traditional route is available to you right now. The question is whether locking in the price today is worth more than buying at the current market.',
-        ],
-        punchline: null as string | null,
-      }
-    : crossoverYears > 0
-    ? {
-        lines: [
-          `At your savings rate, you'd reach the deposit in ${startTimeLabel}. By then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(tradDepositRequired)}.`,
-        ],
-        punchline: 'The target keeps moving.',
-      }
-    : {
-        lines: [
-          `At your savings rate, your savings reach ${formatCurrency(depositData[10].savings)} over 10 years. The required deposit reaches ${formatCurrency(depositData[10].deposit)} in the same period.`,
-        ],
-        punchline: 'The gap widens, not closes.',
-      }
+  // Outcome bucket — drives all messaging on this page
+  type Bucket = 'already_eligible' | 'close_race' | 'too_slow' | 'never'
+  const bucket: Bucket = (() => {
+    if (alreadyHasDeposit)    return 'already_eligible'
+    if (crossoverYears === -1) return 'never'
+    if (crossoverYears > 5)   return 'too_slow'
+    return 'close_race'
+  })()
+
+  const bucketCopy: Record<Bucket, { headline: string; body: string; ctaLabel: string }> = {
+    already_eligible: {
+      headline: 'You could buy traditionally today.',
+      body: `Your ${formatCurrency(currentSavings)} already covers the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit. The traditional route is open to you right now. The Homeown comparison is about price — you'd lock in ${formatCurrency(strikePrice)} rather than buying at today's market rate.`,
+      ctaLabel: 'Compare the pathways',
+    },
+    close_race: {
+      headline: 'The target keeps moving.',
+      body: `At your savings rate, you'd reach the deposit in ${startTimeLabel} — within the 5-year Homeown term. By then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(tradDepositRequired)}. The question is what you pay in housing costs while you wait.`,
+      ctaLabel: 'See how they compare',
+    },
+    too_slow: {
+      headline: 'The deposit takes longer than the Homeown pathway.',
+      body: `At your savings rate, you'd reach the deposit in ${startTimeLabel}. By then the Homeown 5-year term would already be over, with an estimated ${formatCurrency(finalEquity)} in equity built. You'd still be saving when Homeown would have given you the keys.`,
+      ctaLabel: 'See my Homeown pathway',
+    },
+    never: {
+      headline: 'The deposit gap never closes at this savings rate.',
+      body: `The deposit grows with the property price. At ${formatCurrency(monthlySavings)}/mo your savings can't keep pace — by year 10 the deposit requires ${formatCurrency(depositData[10].deposit)} and your savings reach only ${formatCurrency(depositData[10].savings)}. This isn't a timeline problem. The traditional route isn't reachable without a change in savings rate.`,
+      ctaLabel: 'See the Homeown alternative',
+    },
+  }
 
   // Comparison table
   const compRows = [
@@ -298,12 +307,10 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
         ))}
       </div>
 
-      {/* ── Realisation — compact, no icon, no red ── */}
+      {/* ── Realisation — bucket-specific messaging ── */}
       <div className="rounded-md border px-4 py-3">
-        {realisation.punchline && (
-          <p className="text-sm font-semibold">{realisation.punchline}</p>
-        )}
-        <p className="text-sm text-muted-foreground">{realisation.lines.join(' ')}</p>
+        <p className="text-sm font-semibold">{bucketCopy[bucket].headline}</p>
+        <p className="text-sm text-muted-foreground mt-0.5">{bucketCopy[bucket].body}</p>
       </div>
 
       {/* ── Traditional route — card + callout ── */}
@@ -417,7 +424,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
       <div className="flex gap-3 pt-2">
         <Button variant="outline" onClick={onBack} className="flex-1 h-12">Back</Button>
         <Button onClick={onNext} className="flex-1 h-12" size="lg">
-          Show me my numbers
+          {bucketCopy[bucket].ctaLabel}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
