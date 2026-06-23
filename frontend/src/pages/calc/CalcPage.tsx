@@ -7,7 +7,7 @@ import { useCalcWizard, ROI_COUNTIES, DUBLIN_POSTCODES, maxMonthlyFor3yDeposit }
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Info } from 'lucide-react'
 import CalcStepWow from '@/components/calc/CalcStepWow'
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -43,10 +43,17 @@ function SliderCard({
 
   return (
     <div className="rounded-md border bg-card px-5 py-4">
-      <div className="flex items-start justify-between gap-4 mb-1">
-        <div>
+      <div className="flex items-baseline justify-between gap-4 mb-3">
+        <div className="flex items-center gap-1">
           <p className="text-sm text-muted-foreground">{label}</p>
-          {hint && <p className="text-xs text-muted-foreground/70 mt-0.5">{hint}</p>}
+          {hint && (
+            <span className="relative group">
+              <Info className="h-3.5 w-3.5 text-muted-foreground/40 cursor-default" />
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-md bg-foreground px-3 py-2 text-xs text-background shadow-md invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity z-50">
+                {hint}
+              </span>
+            </span>
+          )}
         </div>
         {editing ? (
           <input
