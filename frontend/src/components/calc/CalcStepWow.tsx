@@ -98,7 +98,7 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
       punchline: `The question is whether you want to pay ${formatCurrency(strikePrice)} or ${formatCurrency(propertyPrice)}.`,
     },
     close_race: {
-      line1: `Saving ${formatCurrency(monthlySavings)} a month, you'd reach the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit in about ${fmtYears(crossoverYears)}.`,
+      line1: `Saving ${formatCurrency(monthlySavings)} a month, the deposit takes ${fmtYears(crossoverYears)} to reach.`,
       line2: 'But the property costs more each year, so the deposit grows faster than you can accumulate.',
       punchline: 'You can put more aside each month, or you can stop the race entirely.',
     },
