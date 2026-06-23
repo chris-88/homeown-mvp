@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useCalcWizard, ROI_COUNTIES, DUBLIN_POSTCODES } from '@/lib/calcWizard'
+import { useCalcWizard, ROI_COUNTIES, DUBLIN_POSTCODES, maxMonthlyFor3yDeposit } from '@/lib/calcWizard'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -21,12 +21,52 @@ function SliderCard({
   onChange: (v: number) => void
   minLabel?: string; maxLabel?: string
 }) {
-  const pct = `${((value - min) / (max - min)) * 100}%`
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const pct = `${Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100))}%`
+
+  function startEdit() {
+    setDraft(String(value))
+    setEditing(true)
+    setTimeout(() => inputRef.current?.select(), 0)
+  }
+
+  function commit() {
+    const n = parseFloat(draft.replace(/[^0-9.]/g, ''))
+    if (!isNaN(n)) {
+      const snapped = Math.round(Math.max(min, Math.min(max, n)) / step) * step
+      onChange(snapped)
+    }
+    setEditing(false)
+  }
+
   return (
     <div className="rounded-md border bg-card px-5 py-4">
       <div className="flex items-baseline justify-between gap-4 mb-3">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold tabular-nums">{display}</p>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); commit() }
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            className="text-2xl font-bold tabular-nums text-right bg-transparent border-b-2 border-primary outline-none w-36"
+          />
+        ) : (
+          <p
+            className="text-2xl font-bold tabular-nums cursor-text select-none"
+            onClick={startEdit}
+            title="Click to enter exact amount"
+          >
+            {display}
+          </p>
+        )}
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
@@ -100,8 +140,20 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
 
 // ── Step 1 — Sliders ──────────────────────────────────────────
 function Step1({ onNext }: { onNext: () => void }) {
-  const { state, setPrice, update } = useCalcWizard()
+  const { state, setPrice, setGhi, update } = useCalcWizard()
   const maxSavings = Math.round(state.propertyPrice * 0.10)
+  const entryStakeMin = Math.round(state.propertyPrice * 0.01)
+  const currentSavingsValue = Math.min(state.currentSavings, maxSavings)
+  const maxMonthly = maxMonthlyFor3yDeposit(state.propertyPrice, currentSavingsValue)
+  const effectiveMonthly = Math.min(state.monthlySavings, maxMonthly)
+
+  function handleCurrentSavingsChange(v: number) {
+    const newMax = maxMonthlyFor3yDeposit(state.propertyPrice, v)
+    update({
+      currentSavings: v,
+      monthlySavings: Math.min(state.monthlySavings, newMax),
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -113,41 +165,48 @@ function Step1({ onNext }: { onNext: () => void }) {
       </div>
 
       <div className="space-y-2">
-      <SliderCard
-        label="Property target"
-        value={state.propertyPrice}
-        display={formatCurrency(state.propertyPrice)}
-        min={200000} max={800000} step={5000}
-        onChange={setPrice}
-        minLabel="€200k" maxLabel="€800k"
-      />
+        <SliderCard
+          label="Property target"
+          value={state.propertyPrice}
+          display={formatCurrency(state.propertyPrice)}
+          min={200000} max={800000} step={5000}
+          onChange={setPrice}
+          minLabel="€200k" maxLabel="€800k"
+        />
 
-      <SliderCard
-        label="Current savings"
-        value={Math.min(state.currentSavings, maxSavings)}
-        display={formatCurrency(Math.min(state.currentSavings, maxSavings))}
-        min={0} max={maxSavings} step={100}
-        onChange={v => update({ currentSavings: v })}
-        minLabel="€0" maxLabel={fmtK(maxSavings)}
-      />
+        <div>
+          <SliderCard
+            label="Funds set aside"
+            value={currentSavingsValue}
+            display={formatCurrency(currentSavingsValue)}
+            min={0} max={maxSavings} step={100}
+            onChange={handleCurrentSavingsChange}
+            minLabel="€0" maxLabel={fmtK(maxSavings)}
+          />
+          {currentSavingsValue < entryStakeMin && (
+            <p className="text-xs text-muted-foreground mt-1 px-1">
+              A {formatCurrency(entryStakeMin)} Entry Stake is required to join the pathway.
+            </p>
+          )}
+        </div>
 
-      <SliderCard
-        label="Monthly savings"
-        value={state.monthlySavings}
-        display={formatCurrency(state.monthlySavings)}
-        min={100} max={3000} step={100}
-        onChange={v => update({ monthlySavings: v })}
-        minLabel="€100" maxLabel="€3,000"
-      />
+        <SliderCard
+          label="Monthly contribution"
+          value={effectiveMonthly}
+          display={formatCurrency(effectiveMonthly)}
+          min={100} max={maxMonthly} step={100}
+          onChange={v => update({ monthlySavings: v })}
+          minLabel="€100" maxLabel={fmtK(maxMonthly)}
+        />
 
-      <SliderCard
-        label="Gross household income"
-        value={state.ghi}
-        display={formatCurrency(state.ghi)}
-        min={25000} max={200000} step={1000}
-        onChange={v => update({ ghi: v })}
-        minLabel="€25k" maxLabel="€200k"
-      />
+        <SliderCard
+          label="Gross household income"
+          value={state.ghi}
+          display={formatCurrency(state.ghi)}
+          min={25000} max={200000} step={1000}
+          onChange={setGhi}
+          minLabel="€25k" maxLabel="€200k"
+        />
       </div>
 
       <p className="text-xs text-muted-foreground">
