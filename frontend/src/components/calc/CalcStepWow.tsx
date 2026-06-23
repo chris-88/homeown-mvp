@@ -3,7 +3,7 @@ import { formatCurrency } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { LineChart, Line, XAxis, YAxis, ComposedChart, Area } from 'recharts'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Clock, TrendingUp, XCircle, AlertTriangle, CircleCheck, Lock, Scale, Flag } from 'lucide-react'
 
 const APPRECIATION = 0.05
 
@@ -75,13 +75,22 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
         <p className="text-base text-brand-taupe mt-3 leading-relaxed">
           On a household income of {formatCurrency(ghi)}/yr, standard lending typically supports a mortgage
           of up to {formatCurrency(ghi * 4)}. The Homeown purchase option on this property
-          is {formatCurrency(strikePrice)} — {formatCurrency(gap)} above that range.
+          is {formatCurrency(strikePrice)}, which is {formatCurrency(gap)} above that range.
         </p>
       </div>
     )
   }
 
   type NonCapped = Exclude<Bucket, 'income_capped'>
+
+  // [line1 icon, line2 icon, punchline icon]
+  const icons: Record<NonCapped, [React.ElementType, React.ElementType, React.ElementType]> = {
+    already_eligible: [CircleCheck, Lock,        Scale],
+    close_race:       [Clock,       TrendingUp,  Flag],
+    too_slow:         [Clock,       TrendingUp,  AlertTriangle],
+    never:            [XCircle,     TrendingUp,  ArrowRight],
+  }
+
   const copy: Record<NonCapped, { line1: string; line2: string; punchline: string }> = {
     already_eligible: {
       line1: 'You already have enough to buy traditionally.',
@@ -90,12 +99,12 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
     },
     close_race: {
       line1: `At ${formatCurrency(monthlySavings)}/mo, you'd reach the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit in about ${fmtYears(crossoverYears)}.`,
-      line2: 'But the property costs more each year — so the deposit grows faster than you can accumulate.',
+      line2: 'But the property costs more each year, so the deposit grows faster than you can accumulate.',
       punchline: 'You can put more aside each month, or you can stop the race entirely.',
     },
     too_slow: {
       line1: `At ${formatCurrency(monthlySavings)}/mo, the deposit takes ${fmtYears(crossoverYears)} to reach.`,
-      line2: `By then, the property costs ${formatCurrency(tradBuyPrice)} — so the deposit itself is ${formatCurrency(tradDepositRequired)}.`,
+      line2: `By then, the property costs ${formatCurrency(tradBuyPrice)}, making the deposit itself ${formatCurrency(tradDepositRequired)}.`,
       punchline: 'The longer you wait, the further away it gets.',
     },
     never: {
@@ -106,11 +115,22 @@ function RealisationMoment({ bucket, propertyPrice, monthlySavings, strikePrice,
   }
 
   const { line1, line2, punchline } = copy[bucket as NonCapped]
+  const [Icon1, Icon2, Icon3] = icons[bucket as NonCapped]
+
   return (
-    <div className="py-12 max-w-xl mt-8">
-      <p className="text-2xl md:text-3xl leading-snug text-brand-ink">{line1}</p>
-      <p className="text-2xl md:text-3xl leading-snug text-brand-ink mt-3">{line2}</p>
-      <p className="text-2xl md:text-3xl font-semibold text-brand-burgundy mt-5">{punchline}</p>
+    <div className="py-10 max-w-xl mt-6 space-y-4">
+      <div className="flex items-start gap-3">
+        <Icon1 className="h-5 w-5 text-brand-taupe shrink-0 mt-0.5" />
+        <p className="text-base leading-relaxed text-brand-ink">{line1}</p>
+      </div>
+      <div className="flex items-start gap-3">
+        <Icon2 className="h-5 w-5 text-brand-taupe shrink-0 mt-0.5" />
+        <p className="text-base leading-relaxed text-brand-ink">{line2}</p>
+      </div>
+      <div className="flex items-start gap-3">
+        <Icon3 className="h-5 w-5 text-brand-burgundy shrink-0 mt-0.5" />
+        <p className="text-base font-semibold leading-relaxed text-brand-burgundy">{punchline}</p>
+      </div>
     </div>
   )
 }
@@ -138,7 +158,7 @@ function TraditionalSection({ bucket, depositData, crossoverYears, monthlySaving
 
   const callout = (() => {
     if (bucket === 'already_eligible') {
-      return `Deposit: ${formatCurrency(Math.round(propertyPrice * 0.10))} — you have ${formatCurrency(currentSavings)} set aside.`
+      return `You have ${formatCurrency(currentSavings)} set aside toward a deposit of ${formatCurrency(Math.round(propertyPrice * 0.10))}.`
     }
     if (bucket === 'close_race') {
       return `In ${fmtYears(crossoverYears)}: deposit ${formatCurrency(tradDepositRequired)}, you'd have ${formatCurrency(tradSavingsAtCrossover)}. But the property costs ${formatCurrency(tradBuyPrice)} by then.`
@@ -263,7 +283,7 @@ function IncomeCapSection({ ghi, strikePrice, maxAffordableProperty, onBack, onN
             <p className="text-sm font-semibold text-brand-ink">Pay more upfront</p>
             <p className="text-sm text-brand-taupe mt-2 leading-relaxed">
               An Entry Contribution of {formatCurrency(gap)} above the standard 1% Entry Stake
-              reduces your exit mortgage to {formatCurrency(ghi * 4)} — within your income's range.
+              reduces your exit mortgage to {formatCurrency(ghi * 4)}, which is within your income's range.
             </p>
             <p className="text-xs text-brand-taupe mt-3 pt-3 border-t border-brand-green/15 leading-relaxed">
               The Entry Contribution is a confirmed product option, available above the standard 1%.
@@ -301,7 +321,7 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
 
   const yr5TradCell = (() => {
     if (bucket === 'too_slow' || bucket === 'never') {
-      return `${formatCurrency(yr5TraditSavings)} set aside — still short`
+      return `${formatCurrency(yr5TraditSavings)} set aside, still short`
     }
     return `${formatCurrency(yr5TraditSavings)} set aside`
   })()
@@ -356,7 +376,7 @@ function ComparisonTable({ bucket, propertyPrice, currentSavings, monthlySavings
 function TrustBar() {
   return (
     <p className="text-sm text-brand-taupe text-center mt-8">
-      No obligation. No credit check. A 20-minute call — your questions answered.
+      No obligation. No credit check. A 20-minute call with your questions answered.
     </p>
   )
 }
