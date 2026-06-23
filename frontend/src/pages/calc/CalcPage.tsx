@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Area, ComposedChart } from 'recharts'
-import { ArrowRight, TrendingDown, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, TrendingDown, TrendingUp, AlertCircle } from 'lucide-react'
 
 const APPRECIATION = 0.05
 
@@ -232,7 +232,7 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     ? {
         lines: [
           `At your savings rate, you'd reach the deposit in year ${crossoverYear}.`,
-          `By then the property costs ${formatCurrency(tradBuyPrice)} — so the deposit itself is ${formatCurrency(Math.round(tradBuyPrice * 0.10))}.`,
+          `By then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(Math.round(tradBuyPrice * 0.10))}.`,
         ],
         punchline: 'The target keeps moving.',
       }
@@ -247,22 +247,22 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   // Comparison table rows
   const compRows = [
     {
-      label: 'To get started',
+      label: 'Deposit',
       trad: formatCurrency(Math.round(propertyPrice * 0.10)),
       hw:   formatCurrency(entryStake),
     },
     {
-      label: 'Timeline',
+      label: 'Start',
       trad: crossoverYear > 0 ? `~${crossoverYear} year${crossoverYear === 1 ? '' : 's'}` : '10+ years',
       hw:   'This year',
     },
     {
-      label: 'You buy at',
+      label: 'Purchase price',
       trad: `~${formatCurrency(tradBuyPrice)}`,
       hw:   formatCurrency(strikePrice),
     },
     {
-      label: 'At year 5',
+      label: 'Yr 5 equity',
       trad: tradEquityAtYear5 !== null ? `~${formatCurrency(tradEquityAtYear5)}` : 'Still saving',
       hw:   `~${formatCurrency(finalEquity)}`,
     },
@@ -275,34 +275,26 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     <div className="space-y-4">
 
       {/* ── Summary stat grid ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-md border divide-x divide-y overflow-hidden">
+      <div className="grid grid-cols-4 divide-x border-y">
         {[
-          { label: 'Target',  value: fmtStat(propertyPrice) },
-          { label: 'Monthly', value: fmtStat(monthlySavings) },
-          { label: 'Saved',   value: fmtStat(currentSavings) },
-          { label: 'Income',  value: fmtStat(ghi) },
+          { label: 'Target', value: fmtStat(propertyPrice) },
+          { label: 'Saving', value: fmtStat(monthlySavings) },
+          { label: 'Saved',  value: fmtStat(currentSavings) },
+          { label: 'Income', value: fmtStat(ghi) },
         ].map(({ label, value }) => (
-          <div key={label} className="px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
-            <p className="text-lg font-bold tabular-nums mt-0.5">{value}</p>
+          <div key={label} className="px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">{label}</p>
+            <p className="text-base font-bold tabular-nums mt-1 leading-none">{value}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Realisation — icon + title + lines ── */}
-      <div className="rounded-md border px-4 py-3 flex items-start gap-3">
-        {realisation.punchline
-          ? <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-          : <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-        }
-        <div className="space-y-0.5">
-          {realisation.punchline && (
-            <p className="text-sm font-semibold text-destructive">{realisation.punchline}</p>
-          )}
-          {realisation.lines.map((line, i) => (
-            <p key={i} className="text-sm text-muted-foreground">{line}</p>
-          ))}
-        </div>
+      {/* ── Realisation — compact, no icon, no red ── */}
+      <div className="rounded-md border px-4 py-3">
+        {realisation.punchline && (
+          <p className="text-sm font-semibold">{realisation.punchline}</p>
+        )}
+        <p className="text-sm text-muted-foreground">{realisation.lines.join(' ')}</p>
       </div>
 
       {/* ── Traditional route — card + callout ── */}
