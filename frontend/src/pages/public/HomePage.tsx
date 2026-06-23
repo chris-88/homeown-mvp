@@ -196,15 +196,9 @@ export default function HomePage() {
               <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-md">
                 The monthly cost of home ownership isn't the problem. Saving the deposit is what's out of reach. Move in straight away, pay your monthly service fee, and in 5 years you have the option to buy at a price frozen from the start.
               </p>
-              <div className="mt-8">
-                <Button asChild size="lg" className="w-full sm:w-auto">
-                  <Link to="/calc">Check your numbers</Link>
-                </Button>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">Two minutes. No account required.</p>
             </div>
             <div>
-              <DualComparisonWidget showCta={false} />
+              <DualComparisonWidget showCta={true} />
             </div>
           </div>
           <div id="nav-sentinel" />
