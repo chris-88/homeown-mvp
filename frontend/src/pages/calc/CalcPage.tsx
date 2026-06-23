@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Area, ComposedChart } from 'recharts'
-import { ArrowRight, TrendingDown, TrendingUp, AlertCircle } from 'lucide-react'
+import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react'
 
 const APPRECIATION = 0.05
 
@@ -218,8 +218,6 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const tradDepositRequired = Math.round(tradBuyPrice * 0.10)
 
   const ghiEntered            = ghi > 0
-  const exitMortgageSupported = !ghiEntered || ghi * 4 >= strikePrice
-
   // Compact stat formatter for the summary grid
   function fmtStat(v: number) {
     return v >= 10000 ? `€${Math.round(v / 1000)}k` : formatCurrency(v)
@@ -231,34 +229,56 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     : '10+ years'
 
   // Outcome bucket — drives all messaging on this page
-  type Bucket = 'already_eligible' | 'close_race' | 'too_slow' | 'never'
+  type Bucket = 'already_eligible' | 'close_race' | 'too_slow' | 'never' | 'income_capped'
+
+  // Max property where exit mortgage fits within 4× GHI (rounded down to nearest €5k)
+  const maxAffordableProperty = ghiEntered
+    ? Math.floor((ghi * 4 / 0.9) / 5000) * 5000
+    : 0
+
   const bucket: Bucket = (() => {
-    if (alreadyHasDeposit)    return 'already_eligible'
-    if (crossoverYears === -1) return 'never'
-    if (crossoverYears > 5)   return 'too_slow'
+    if (alreadyHasDeposit)                       return 'already_eligible'
+    if (ghiEntered && ghi * 4 < strikePrice)     return 'income_capped'
+    if (crossoverYears === -1)                   return 'never'
+    if (crossoverYears > 5)                      return 'too_slow'
     return 'close_race'
   })()
 
-  const bucketCopy: Record<Bucket, { headline: string; body: string; ctaLabel: string }> = {
+  const bucketCopy: Record<Bucket, { headline: string; body: string; benefit: string; detail: string; ctaLabel: string }> = {
     already_eligible: {
       headline: 'You could buy traditionally today.',
-      body: `Your ${formatCurrency(currentSavings)} already covers the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit. The traditional route is open to you right now. The Homeown comparison is about price — you'd lock in ${formatCurrency(strikePrice)} rather than buying at today's market rate.`,
+      body: `Your ${formatCurrency(currentSavings)} already covers the ${formatCurrency(Math.round(propertyPrice * 0.10))} deposit. The traditional route is open to you right now.`,
+      benefit: `Homeown locks in ${formatCurrency(strikePrice)} — 10% below today's market price.`,
+      detail: `Your 1% Entry Stake (${formatCurrency(entryStake)}) secures the option price in writing for the full 5-year term. If the market rises, your purchase price doesn't move.`,
       ctaLabel: 'Compare the pathways',
     },
     close_race: {
       headline: 'The target keeps moving.',
-      body: `At your savings rate, you'd reach the deposit in ${startTimeLabel} — within the 5-year Homeown term. By then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(tradDepositRequired)}. The question is what you pay in housing costs while you wait.`,
+      body: `At your savings rate, you'd reach the deposit in ${startTimeLabel}. But by then the property costs ${formatCurrency(tradBuyPrice)}, so the deposit itself is ${formatCurrency(tradDepositRequired)}.`,
+      benefit: `Homeown freezes ${formatCurrency(strikePrice)} from today. The race stops now.`,
+      detail: `Instead of chasing a deposit that grows with the market, your 1% Entry Stake (${formatCurrency(entryStake)}) locks in the price. You move in this year and the option price is fixed in writing — regardless of where the market goes.`,
       ctaLabel: 'See how they compare',
     },
     too_slow: {
-      headline: 'The deposit takes longer than the Homeown pathway.',
-      body: `At your savings rate, you'd reach the deposit in ${startTimeLabel}. By then the Homeown 5-year term would already be over, with an estimated ${formatCurrency(finalEquity)} in equity built. You'd still be saving when Homeown would have given you the keys.`,
+      headline: `At your savings rate, the deposit takes ${startTimeLabel}.`,
+      body: `By the time you'd reach the traditional deposit, the Homeown 5-year programme would already be complete. Participants who started now would have built an estimated ${formatCurrency(finalEquity)} in equity.`,
+      benefit: `Homeown gets you started this year.`,
+      detail: `1% Entry Stake (${formatCurrency(entryStake)}). Option price fixed at ${formatCurrency(strikePrice)}. By the time you'd have saved the traditional deposit, you'd already own the home.`,
       ctaLabel: 'See my Homeown pathway',
     },
     never: {
       headline: 'The deposit gap never closes at this savings rate.',
-      body: `The deposit grows with the property price. At ${formatCurrency(monthlySavings)}/mo your savings can't keep pace — by year 10 the deposit requires ${formatCurrency(depositData[10].deposit)} and your savings reach only ${formatCurrency(depositData[10].savings)}. This isn't a timeline problem. The traditional route isn't reachable without a change in savings rate.`,
+      body: `The deposit grows with the property price. At ${formatCurrency(monthlySavings)}/mo your savings fall further behind each year — by year 10 the gap is ${formatCurrency(depositData[10].deposit - depositData[10].savings)}.`,
+      benefit: `Homeown is the route in. No deposit race.`,
+      detail: `1% Entry Stake (${formatCurrency(entryStake)}) to get started. Move in this year with the option to purchase at ${formatCurrency(strikePrice)}, fixed for the full term. The monthly service fee replaces your current housing cost — the deposit gap is removed from the equation.`,
       ctaLabel: 'See the Homeown alternative',
+    },
+    income_capped: {
+      headline: `On ${formatCurrency(ghi)} income, the exit mortgage is the constraint.`,
+      body: `Standard 4× lending supports a mortgage of ${formatCurrency(ghi * 4)}. The Homeown option price on this property is ${formatCurrency(strikePrice)} — a gap of ${formatCurrency(strikePrice - ghi * 4)}.`,
+      benefit: `Two ways to make it work.`,
+      detail: `1. Lower target: at your income, properties up to ${formatCurrency(maxAffordableProperty)} fit the Homeown pathway. 2. Increase Entry Contribution: an additional upfront payment of ${formatCurrency(strikePrice - ghi * 4)} brings your exit mortgage to ${formatCurrency(ghi * 4)}, within your income's range. Your adviser can walk through both.`,
+      ctaLabel: 'Discuss my options',
     },
   }
 
@@ -308,9 +328,16 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
       </div>
 
       {/* ── Realisation — bucket-specific messaging ── */}
-      <div className="rounded-md border px-4 py-3">
-        <p className="text-sm font-semibold">{bucketCopy[bucket].headline}</p>
-        <p className="text-sm text-muted-foreground mt-0.5">{bucketCopy[bucket].body}</p>
+      <div className="rounded-md border overflow-hidden">
+        <div className="px-4 py-3">
+          <p className="text-sm font-semibold">{bucketCopy[bucket].headline}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{bucketCopy[bucket].body}</p>
+        </div>
+        <div className="px-4 py-3 bg-brand-green-muted border-t border-brand-green/15">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-green mb-1.5">Homeown pathway</p>
+          <p className="text-sm font-semibold text-brand-green">{bucketCopy[bucket].benefit}</p>
+          <p className="text-sm text-brand-green/80 mt-0.5">{bucketCopy[bucket].detail}</p>
+        </div>
       </div>
 
       {/* ── Traditional route — card + callout ── */}
@@ -406,19 +433,6 @@ function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
           <p className="text-xs text-muted-foreground">5% annual appreciation assumed. Equity excludes mortgage costs at completion.</p>
         </div>
       </div>
-
-      {/* ── Exit mortgage caveat ── */}
-      {!exitMortgageSupported && (
-        <div className="rounded-md border border-brand-burgundy/20 bg-brand-burgundy-muted px-4 py-3 flex items-start gap-3">
-          <AlertCircle className="h-4 w-4 text-brand-burgundy mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-brand-burgundy">Worth knowing</p>
-            <p className="text-sm text-brand-burgundy/80 mt-0.5">
-              On {formatCurrency(ghi)} income, standard 4× lending supports up to {formatCurrency(ghi * 4)}. The option price is {formatCurrency(strikePrice)}. Discuss exit affordability on your discovery call.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* ── Actions ── */}
       <div className="flex gap-3 pt-2">
