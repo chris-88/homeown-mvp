@@ -95,9 +95,7 @@ function SliderCard({
         </div>
       )}
       {warning && (
-        <p className="mt-3 rounded-sm bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800 leading-relaxed">
-          {warning}
-        </p>
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{warning}</p>
       )}
     </div>
   )
@@ -216,7 +214,7 @@ function Step1({ onNext }: { onNext: () => void }) {
           onChange={handleCurrentSavingsChange}
           minLabel="€0" maxLabel={fmtK(maxSavings)}
           warning={currentSavingsValue < entryStakeMin
-            ? `A ${formatCurrency(entryStakeMin)} Entry Stake (1% of your target price) is required by the time you go sale agreed on your chosen home. This does not need to be in place before you start the programme.`
+            ? `A ${formatCurrency(entryStakeMin)} Entry Stake (1% of your target price) is required by the time you go sale agreed on your chosen home. This does not need to be in place before you start the pathway.`
             : undefined}
         />
 
