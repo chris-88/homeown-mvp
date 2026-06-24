@@ -129,17 +129,29 @@ function Slider({
   )
 }
 
-function RadioCard({ selected, onClick, children }: {
-  selected: boolean; onClick: () => void; children: React.ReactNode
+function TogglePills({ options, value, onChange }: {
+  options: { value: string; label: string }[]
+  value: string | null
+  onChange: (v: string) => void
 }) {
   return (
-    <button type="button" onClick={onClick}
-      className={cn(
-        'w-full rounded-md border-2 p-4 text-left transition-colors hover:bg-accent',
-        selected ? 'border-primary bg-primary/5' : 'border-border bg-background',
-      )}>
-      {children}
-    </button>
+    <div className="flex flex-wrap gap-2">
+      {options.map(opt => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={cn(
+            'rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
+            value === opt.value
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'border-input bg-background text-foreground hover:bg-accent',
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -386,7 +398,7 @@ function Step4({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">About you</h2>
         <p className="mt-2 text-muted-foreground">
@@ -394,70 +406,69 @@ function Step4({ onBack }: { onBack: () => void }) {
         </p>
       </div>
 
-      {/* Location */}
-      <div className="space-y-4">
+      {/* Location — county badges */}
+      <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Location</p>
-
-        <div className="space-y-3">
+        <div className="grid grid-cols-4 gap-1.5">
+          {ROI_COUNTIES.map(county => (
+            <button
+              key={county}
+              type="button"
+              onClick={() => update({ county, dublinPostcode: county !== 'Dublin' ? null : state.dublinPostcode })}
+              className={cn(
+                'rounded-full border px-2 py-1 text-xs font-medium text-center transition-colors',
+                state.county === county
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-input bg-background text-foreground hover:bg-accent',
+              )}
+            >
+              {county}
+            </button>
+          ))}
+        </div>
+        {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
+        {state.county === 'Dublin' && (
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Where are you looking to buy?</label>
-            <Select value={state.county || undefined}
-              onValueChange={v => update({ county: v, dublinPostcode: v !== 'Dublin' ? null : state.dublinPostcode })}>
-              <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+            <label className="text-sm font-medium">Dublin postcode</label>
+            <Select value={state.dublinPostcode || undefined}
+              onValueChange={v => update({ dublinPostcode: v })}>
+              <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
               <SelectContent>
-                {ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
               </SelectContent>
             </Select>
-            {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
+            {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
           </div>
-
-          {state.county === 'Dublin' && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Dublin postcode</label>
-              <Select value={state.dublinPostcode || undefined}
-                onValueChange={v => update({ dublinPostcode: v })}>
-                <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
-                <SelectContent>
-                  {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Household */}
-      <div className="space-y-5">
+      <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Your household</p>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <p className="text-sm font-medium">Who will be on the pathway?</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <RadioCard selected={state.householdType === 'solo'} onClick={() => update({ householdType: 'solo' })}>
-              <p className="font-medium">Just me</p>
-              <p className="text-sm text-muted-foreground mt-0.5">Single applicant</p>
-            </RadioCard>
-            <RadioCard selected={state.householdType === 'couple'} onClick={() => update({ householdType: 'couple' })}>
-              <p className="font-medium">Me and my partner</p>
-              <p className="text-sm text-muted-foreground mt-0.5">Two applicants</p>
-            </RadioCard>
-          </div>
+          <TogglePills
+            options={[
+              { value: 'solo', label: 'Just me' },
+              { value: 'couple', label: 'Me and my partner' },
+            ]}
+            value={state.householdType}
+            onChange={v => update({ householdType: v as 'solo' | 'couple' })}
+          />
           {errors.householdType && <p className="text-sm text-destructive">{errors.householdType}</p>}
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <p className="text-sm font-medium">Have you ever owned a home?</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <RadioCard selected={state.isFtb === true} onClick={() => update({ isFtb: true })}>
-              <p className="font-medium">No, never</p>
-              <p className="text-sm text-muted-foreground mt-0.5">I am a first-time buyer</p>
-            </RadioCard>
-            <RadioCard selected={state.isFtb === false} onClick={() => update({ isFtb: false })}>
-              <p className="font-medium">Yes</p>
-              <p className="text-sm text-muted-foreground mt-0.5">I currently own or have previously owned a home</p>
-            </RadioCard>
-          </div>
+          <TogglePills
+            options={[
+              { value: 'ftb', label: 'No, never' },
+              { value: 'prev', label: 'Yes' },
+            ]}
+            value={state.isFtb === null ? null : state.isFtb ? 'ftb' : 'prev'}
+            onChange={v => update({ isFtb: v === 'ftb' })}
+          />
           {errors.isFtb && <p className="text-sm text-destructive">{errors.isFtb}</p>}
         </div>
 
@@ -472,33 +483,28 @@ function Step4({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Employment */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Employment</p>
-        <p className="text-sm font-medium">How is your income structured?</p>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {([
+        <TogglePills
+          options={[
             { value: 'paye', label: 'Employed (PAYE)' },
             { value: 'self_employed', label: 'Self-employed' },
             { value: 'mixed', label: 'Mix of both' },
-          ] as const).map(({ value, label }) => (
-            <RadioCard key={value}
-              selected={state.employmentType === value}
-              onClick={() => update({ employmentType: value })}>
-              <p className="text-sm font-medium">{label}</p>
-            </RadioCard>
-          ))}
-        </div>
+          ]}
+          value={state.employmentType}
+          onChange={v => update({ employmentType: v as 'paye' | 'self_employed' | 'mixed' })}
+        />
         {errors.employmentType && <p className="text-sm text-destructive">{errors.employmentType}</p>}
       </div>
 
       {/* Current housing cost */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Current housing</p>
         <SliderCard
-          label="What do you currently pay per month for housing?"
-          hint="What you pay today to live where you are. Your adviser will compare this directly with the Homeown service fee."
+          label="Monthly housing cost"
+          hint="What you pay today to live where you are."
           value={state.currentHousingCost}
-          display={`${formatCurrency(state.currentHousingCost)}/mo`}
+          display={formatCurrency(state.currentHousingCost)}
           min={0} max={3500} step={50}
           onChange={v => update({ currentHousingCost: v })}
           minLabel="€0" maxLabel="€3,500"
