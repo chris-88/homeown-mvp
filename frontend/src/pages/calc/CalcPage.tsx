@@ -321,18 +321,20 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
         <p className="mt-2 text-brand-ink leading-relaxed">{intro}</p>
       </div>
 
-      {/* Timeline — stacked mobile, 3 columns desktop */}
-      <div className="rounded-lg border bg-card">
-        <div className="flex flex-col divide-y sm:flex-row sm:divide-x sm:divide-y-0">
-          {moments.map(({ when, value, label, note }) => (
-            <div key={label} className="flex-1 px-6 py-6">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">{when}</p>
-              <p className="text-3xl font-bold tabular-nums text-primary">{value}</p>
-              <p className="mt-1 text-sm font-medium text-foreground">{label}</p>
-              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{note}</p>
+      {/* Timeline — stacked cards */}
+      <div className="space-y-2">
+        {moments.map(({ when, value, label, note }) => (
+          <div key={label} className="rounded-md border bg-card px-5 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">{when}</p>
+            <div className="flex items-baseline justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{note}</p>
+              </div>
+              <p className="text-2xl font-bold tabular-nums text-primary shrink-0">{value}</p>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       <p className="text-xs text-muted-foreground leading-relaxed">
