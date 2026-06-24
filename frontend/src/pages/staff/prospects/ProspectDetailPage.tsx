@@ -324,10 +324,7 @@ export default function ProspectDetailPage() {
         }
       />
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Left — tabbed content */}
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="overview">
+      <Tabs defaultValue="overview">
             <div className="flex items-center justify-between gap-4">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -400,6 +397,75 @@ export default function ProspectDetailPage() {
                   </div>
                 )}
               </section>
+
+              {/* Actions */}
+              <section className="rounded-md border bg-card p-5 space-y-3">
+                <h2 className="font-semibold text-sm">Actions</h2>
+                <div className="flex flex-wrap gap-2">
+                  {client.user_id ? (
+                    <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
+                      <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={copyPortalLink}>
+                      {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-primary" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                      {linkCopied ? 'Copied!' : 'Copy portal link'}
+                    </Button>
+                  )}
+                  {!inPhase1Terminal && canAdvance && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
+                      <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/5" onClick={() => setNotEligOpen(true)}>
+                        Not eligible
+                      </Button>
+                    </>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleToggleActive} disabled={disableLoading}>
+                        {disableLoading ? '…' : client.active
+                          ? <><Ban className="h-3.5 w-3.5 mr-1.5" />Disable</>
+                          : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Enable</>}
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/5" onClick={() => setDeleteOpen(true)}>
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </section>
+
+              {/* Signing pack — shown when eligible and no KFS sent yet */}
+              {client.lead_stage === 'eligible' && !(deliveries ?? []).some(d => d.document_type === 'kfs') && (
+                <ProspectSigningPackCard
+                  clientId={client.id}
+                  staffUserId={user?.id ?? ''}
+                  onSent={() => qc.invalidateQueries({ queryKey: ['prospect-deliveries', id] })}
+                />
+              )}
+
+              {/* Assign to DAC */}
+              {canAssign && client.lead_stage === 'eligible' && (
+                <section className="rounded-md border bg-card p-5 space-y-3">
+                  <h2 className="font-semibold text-sm">Assign to DAC</h2>
+                  <Select
+                    value={client.dac_id ?? 'none'}
+                    onValueChange={async v => {
+                      await supabase.from('clients').update({ dac_id: v === 'none' ? null : v, programme_stage: v === 'none' ? null : 'dac_assigned' }).eq('id', client.id!)
+                      refresh()
+                    }}
+                  >
+                    <SelectTrigger className="text-sm"><SelectValue placeholder="No DAC assigned" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No DAC</SelectItem>
+                      {allDacs?.filter(d => d.status === 'open' || d.status === 'closed').map(d => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}{d.cohort_label ? ` (${d.cohort_label})` : ''}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Assigning a DAC moves this prospect to Phase 2.</p>
+                </section>
+              )}
             </TabsContent>
 
             {/* Ticket */}
@@ -460,81 +526,7 @@ export default function ProspectDetailPage() {
                 <p>No property cases yet.</p>
               </div>
             </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Right — sidebar */}
-        <aside className="space-y-6">
-          {/* Actions */}
-          <div className="rounded-md border bg-card p-5 space-y-3">
-            <h2 className="font-semibold text-sm">Actions</h2>
-            <div className="flex flex-col gap-2">
-              {client.user_id ? (
-                <Button variant="outline" size="sm" disabled className="justify-start text-green-700 border-green-200 bg-green-50 opacity-100">
-                  <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" className="justify-start" onClick={copyPortalLink}>
-                  {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-primary" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-                  {linkCopied ? 'Copied!' : 'Copy portal link'}
-                </Button>
-              )}
-              {!inPhase1Terminal && canAdvance && (
-                <>
-                  <Button variant="outline" size="sm" className="justify-start" onClick={() => setDeferOpen(true)}>Defer</Button>
-                  <Button variant="outline" size="sm" className="justify-start text-destructive border-destructive/40 hover:bg-destructive/5" onClick={() => setNotEligOpen(true)}>
-                    Not eligible
-                  </Button>
-                </>
-              )}
-              {isAdmin && (
-                <>
-                  <Button variant="outline" size="sm" className="justify-start" onClick={handleToggleActive} disabled={disableLoading}>
-                    {disableLoading ? '…' : client.active
-                      ? <><Ban className="h-3.5 w-3.5 mr-1.5" />Disable</>
-                      : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Enable</>}
-                  </Button>
-                  <Button variant="outline" size="sm" className="justify-start text-destructive border-destructive/40 hover:bg-destructive/5" onClick={() => setDeleteOpen(true)}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Signing pack — shown when eligible and no KFS sent yet */}
-          {client.lead_stage === 'eligible' && !(deliveries ?? []).some(d => d.document_type === 'kfs') && (
-            <ProspectSigningPackCard
-              clientId={client.id}
-              staffUserId={user?.id ?? ''}
-              onSent={() => qc.invalidateQueries({ queryKey: ['prospect-deliveries', id] })}
-            />
-          )}
-
-          {/* Assign to DAC (finance + admin when eligible) */}
-          {canAssign && client.lead_stage === 'eligible' && (
-            <div className="rounded-md border bg-card p-5 space-y-3">
-              <h2 className="font-semibold text-sm">Assign to DAC</h2>
-              <Select
-                value={client.dac_id ?? 'none'}
-                onValueChange={async v => {
-                  await supabase.from('clients').update({ dac_id: v === 'none' ? null : v, programme_stage: v === 'none' ? null : 'dac_assigned' }).eq('id', client.id!)
-                  refresh()
-                }}
-              >
-                <SelectTrigger className="text-sm"><SelectValue placeholder="No DAC assigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No DAC</SelectItem>
-                  {allDacs?.filter(d => d.status === 'open' || d.status === 'closed').map(d => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}{d.cohort_label ? ` (${d.cohort_label})` : ''}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Assigning a DAC moves this prospect to Phase 2.</p>
-            </div>
-          )}
-        </aside>
-      </div>
+      </Tabs>
 
       {/* Modals */}
       {client && (
