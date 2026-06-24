@@ -10,7 +10,7 @@ import type { Dac, Subscription } from '@/types'
 import { formatCurrency, cn } from '@/lib/utils'
 import {
   Route, CheckCircle2, UserSearch, Users2, Landmark, TrendingUp,
-  ChevronRight, ArrowRight,
+  Home, ArrowRight,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -33,9 +33,9 @@ type DacWithRelations = Dac & {
 }
 
 const ACCENTS = {
-  green:    { badge: 'bg-brand-green text-brand-cream', ring: 'group-hover:border-brand-green/40' },
+  green:    { badge: 'bg-brand-green text-brand-cream',   ring: 'group-hover:border-brand-green/40' },
   burgundy: { badge: 'bg-brand-burgundy text-brand-cream', ring: 'group-hover:border-brand-burgundy/40' },
-  cream:    { badge: 'bg-brand-cream-light text-brand-ink', ring: 'group-hover:border-brand-cream/60' },
+  stone:    { badge: 'bg-brand-stone text-brand-ink',      ring: 'group-hover:border-brand-taupe/30' },
 } as const
 
 function StatCard({ label, value, sub, to, icon: Icon, accent = 'green' }: {
@@ -57,7 +57,6 @@ function StatCard({ label, value, sub, to, icon: Icon, accent = 'green' }: {
         <p className="mt-0.5 text-2xl font-bold">{value}</p>
         {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
       </div>
-      {to && <ChevronRight className="h-4 w-4 shrink-0 self-center text-muted-foreground/40 transition-colors group-hover:text-foreground" />}
     </div>
   )
   if (to) {
@@ -187,17 +186,33 @@ export default function OverviewPage() {
       {/* Mission numbers */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Mission numbers</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
-            label="On pathway"
+            label="Prospects"
+            value={metrics?.total_prospects ?? '-'}
+            sub={metrics ? `${metrics.eligible_unassigned} eligible, not yet assigned` : undefined}
+            to="/app/staff/prospects"
+            icon={UserSearch}
+            accent="stone"
+          />
+          <StatCard
+            label="Property"
+            value={['dac_assigned','searching','sale_agreed','conveyancing','contracts_signed'].reduce((s, k) => s + (stageCounts[k] ?? 0), 0) || '-'}
+            sub={stageCounts['sale_agreed'] ? `${stageCounts['sale_agreed']} at sale agreed` : 'Phase 2 clients'}
+            to="/app/staff/property"
+            icon={Home}
+            accent="green"
+          />
+          <StatCard
+            label="Pathway"
             value={metrics?.on_pathway_count ?? '-'}
-            sub="Families in their home"
+            sub={(() => { const n = (stageCounts['exit_prep'] ?? 0) + (stageCounts['option_window'] ?? 0); return n ? `${n} approaching exit` : 'Families in their home' })()}
             to="/app/staff/pathway"
             icon={Route}
             accent="green"
           />
           <StatCard
-            label="Pathway complete"
+            label="Complete"
             value={metrics?.pathway_complete_count ?? '-'}
             sub="Completed the programme"
             to="/app/staff/pathway?stage=pathway_complete"
@@ -205,20 +220,12 @@ export default function OverviewPage() {
             accent="green"
           />
           <StatCard
-            label="Active prospects"
-            value={metrics?.total_prospects ?? '-'}
-            sub={metrics ? `${metrics.eligible_unassigned} eligible, awaiting DAC` : undefined}
-            to="/app/staff/prospects"
-            icon={UserSearch}
-            accent="burgundy"
-          />
-          <StatCard
-            label="Circle members"
+            label="Circle"
             value={metrics?.circle_member_count ?? '-'}
             sub={metrics ? `${metrics.circle_kyc_complete} KYC complete` : undefined}
             to="/app/staff/circle"
             icon={Users2}
-            accent="cream"
+            accent="burgundy"
           />
         </div>
       </section>
@@ -367,7 +374,7 @@ export default function OverviewPage() {
             sub="Subscribed + funded"
             to="/app/staff/circle"
             icon={TrendingUp}
-            accent="burgundy"
+            accent="stone"
           />
           <StatCard
             label="Total funded"
@@ -375,7 +382,7 @@ export default function OverviewPage() {
             sub="Funds received"
             to="/app/staff/circle"
             icon={Landmark}
-            accent="burgundy"
+            accent="stone"
           />
           <StatCard
             label="Open DACs"
