@@ -23,10 +23,13 @@ function StatBlock({ label, value, sub }: { label: string; value: string; sub?: 
   )
 }
 
-function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+function Row({ label, value, muted, sub }: { label: string; value: string; muted?: boolean; sub?: string }) {
   return (
     <div className="flex items-center justify-between py-2.5 border-b last:border-0">
-      <span className={`text-sm ${muted ? 'text-muted-foreground' : ''}`}>{label}</span>
+      <div>
+        <span className={`text-sm ${muted ? 'text-muted-foreground' : ''}`}>{label}</span>
+        {sub && <p className="text-xs text-muted-foreground/70">{sub}</p>}
+      </div>
       <span className={`text-sm font-medium tabular-nums ${muted ? 'text-muted-foreground' : ''}`}>{value}</span>
     </div>
   )
