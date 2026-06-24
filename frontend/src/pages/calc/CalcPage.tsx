@@ -281,24 +281,24 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   }
   const intro = introLines[bucket]
 
-  const items = [
+  const moments = [
     {
-      label: 'Monthly service fee',
-      sublabel: 'Domiter, paid every month for 60 months',
-      value: formatCurrency(state.monthlyDomiter),
-      description: 'Replaces your current housing cost for the programme duration. It is not rent. It is a structured service fee that gives you occupation rights and builds towards ownership.',
-    },
-    {
-      label: 'Entry Stake',
-      sublabel: '1% of property price, paid once at the start',
+      when: 'At sale agreed',
       value: formatCurrency(state.entryStake),
-      description: 'Your initial stake in the property. This is equity at risk: it confirms your commitment and gives you a beneficial interest from day one. It is not a returnable deposit.',
+      label: 'Entry Stake',
+      note: 'Paid once. Your stake in the property from day one.',
     },
     {
-      label: 'Purchase option price',
-      sublabel: 'Fixed on the day the property is acquired',
+      when: 'Every month',
+      value: `${formatCurrency(state.monthlyDomiter)}/mo`,
+      label: 'Monthly service fee',
+      note: 'Your housing cost for 60 months. Not a mortgage.',
+    },
+    {
+      when: 'At year 5',
       value: formatCurrency(state.strikePrice),
-      description: 'The price you pay to buy the home at the end of the 60-month term. It is fixed in writing from the start, regardless of what the market does in the meantime.',
+      label: 'Option price',
+      note: 'Fixed from the start. The price you buy at.',
     },
   ]
 
@@ -309,24 +309,23 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
         <p className="mt-2 text-brand-ink leading-relaxed">{intro}</p>
       </div>
 
-      <div className="space-y-4">
-        {items.map(({ label, sublabel, value, description }) => (
-          <div key={label} className="rounded-lg border p-5 space-y-2">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold">{label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{sublabel}</p>
-              </div>
-              <p className="text-xl font-bold tabular-nums shrink-0 text-primary">{value}</p>
+      {/* Timeline — 3 columns desktop, stacked mobile */}
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="grid sm:grid-cols-3 sm:divide-x divide-y sm:divide-y-0">
+          {moments.map(({ when, value, label, note }) => (
+            <div key={label} className="px-6 py-6">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">{when}</p>
+              <p className="text-3xl font-bold tabular-nums text-primary">{value}</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{label}</p>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{note}</p>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <div className="rounded-md border bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
-        These figures are illustrative based on your target property price. The programme is subject to independent property valuation and document verification. The monthly service fee is not a mortgage repayment and does not reduce the option price.
-      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        Figures are illustrative. Subject to independent property valuation and document verification.
+      </p>
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={onBack} className="flex-1">Back</Button>
