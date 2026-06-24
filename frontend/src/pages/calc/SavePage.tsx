@@ -37,17 +37,6 @@ const COPY: Record<string, { heading: string; sub: string; button: string }> = {
   },
 }
 
-const NEXT_STEPS: Record<string, string[]> = {
-  eligible: [
-    "We'll review your details within 1 business day",
-    "You'll get an email to book your discovery call (20 minutes, no obligation)",
-    "The call is a two-way conversation; we'll answer your questions too",
-  ],
-  mover: [
-    "We'll notify you as soon as the mover pathway opens",
-    'No commitment required at this stage',
-  ],
-}
 
 async function submitCalcResults(
   first_name: string,
@@ -117,7 +106,6 @@ export default function SavePage() {
 
   // ── Success state ─────────────────────────────────────────────
   if (savedName) {
-    const nextSteps = NEXT_STEPS[variant] ?? NEXT_STEPS.eligible
     return (
       <div className="min-h-screen bg-background">
         <PublicNav />
@@ -134,18 +122,6 @@ export default function SavePage() {
                 ? "Check your inbox. We'll be in touch shortly to book your call."
                 : "We'll keep your details and reach out when something changes."}
             </p>
-          </div>
-
-          <div className="mt-8 rounded border bg-muted/30 p-5">
-            <p className="text-sm font-medium">What happens next</p>
-            <ul className="mt-3 space-y-2">
-              {nextSteps.map((step) => (
-                <li key={step} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="mt-0.5 shrink-0 text-primary">•</span>
-                  {step}
-                </li>
-              ))}
-            </ul>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -249,7 +225,11 @@ export default function SavePage() {
           <div className="rounded-md border bg-muted/30 p-5">
             <p className="text-sm font-medium mb-3">What happens next</p>
             <ul className="space-y-2">
-              {NEXT_STEPS.eligible.map((s) => (
+              {[
+                "We'll review your details within 1 business day",
+                "You'll get an email to book your discovery call (20 minutes, no obligation)",
+                "The call is a two-way conversation; we'll answer your questions too",
+              ].map((s) => (
                 <li key={s} className="flex items-start gap-2 text-sm text-muted-foreground">
                   <span className="mt-0.5 shrink-0 text-primary">•</span>
                   {s}
