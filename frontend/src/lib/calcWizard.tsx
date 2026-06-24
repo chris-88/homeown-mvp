@@ -38,7 +38,7 @@ function computeFromPrice(price: number) {
 // Max monthly contribution at which a user can save a 10% deposit (+ 3yr appreciation) in 3 years
 export function maxMonthlyFor3yDeposit(price: number, savings: number): number {
   const deposit3y = Math.round(price * 0.10 * Math.pow(1.05, 3))
-  return Math.max(100, Math.ceil(Math.max(0, deposit3y - savings) / 36 / 100) * 100)
+  return Math.max(100, Math.ceil(Math.max(0, deposit3y - savings) / 36 / 5) * 5)
 }
 
 // GHI that matches default property (minimum income to pass income check)

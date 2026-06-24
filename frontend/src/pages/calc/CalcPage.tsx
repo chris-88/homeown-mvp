@@ -157,6 +157,7 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
 // ── Step 1 — Sliders ──────────────────────────────────────────
 function Step1({ onNext }: { onNext: () => void }) {
   const { state, setPrice, setGhi, update } = useCalcWizard()
+  const maxPropertyPrice = Math.min(800000, Math.floor(state.ghi * 4 / 0.9 / 5000) * 5000)
   const maxSavings = Math.round(state.propertyPrice * 0.10)
   const entryStakeMin = Math.round(state.propertyPrice * 0.01)
   const currentSavingsValue = Math.min(state.currentSavings, maxSavings)
@@ -186,19 +187,19 @@ function Step1({ onNext }: { onNext: () => void }) {
           hint="Combined pre-tax income of all buyers"
           value={state.ghi}
           display={formatCurrency(state.ghi)}
-          min={25000} max={200000} step={1000}
+          min={45000} max={180000} step={1000}
           onChange={setGhi}
-          minLabel="€25k" maxLabel="€200k"
+          minLabel="€45k" maxLabel="€180k"
         />
 
         <SliderCard
           label="Property target"
           hint="The price range you're aiming for"
-          value={state.propertyPrice}
-          display={formatCurrency(state.propertyPrice)}
-          min={200000} max={800000} step={5000}
+          value={Math.min(state.propertyPrice, maxPropertyPrice)}
+          display={formatCurrency(Math.min(state.propertyPrice, maxPropertyPrice))}
+          min={200000} max={maxPropertyPrice} step={5000}
           onChange={setPrice}
-          minLabel="€200k" maxLabel="€800k"
+          minLabel="€200k" maxLabel={fmtK(maxPropertyPrice)}
         />
 
         <div>
@@ -223,7 +224,7 @@ function Step1({ onNext }: { onNext: () => void }) {
           hint="What you can set aside each month"
           value={effectiveMonthly}
           display={formatCurrency(effectiveMonthly)}
-          min={100} max={maxMonthly} step={100}
+          min={100} max={maxMonthly} step={5}
           onChange={v => update({ monthlySavings: v })}
           minLabel="€100" maxLabel={fmtK(maxMonthly)}
         />
