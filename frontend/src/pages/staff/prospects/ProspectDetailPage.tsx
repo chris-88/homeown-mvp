@@ -230,17 +230,26 @@ export default function ProspectDetailPage() {
     enabled: !!id,
   })
 
-  const { data: calcSnapshot } = useQuery<{ ghi: number | null } | null>({
+  const { data: calcSnapshot } = useQuery<{
+    ghi: number | null
+    age: number | null
+    household_type: string | null
+    is_ftb: boolean | null
+    employment_type: string | null
+    county: string | null
+    dublin_postcode: string | null
+    current_housing_cost: number | null
+  } | null>({
     queryKey: ['prospect-snapshot', id],
     queryFn: async () => {
       const { data } = await supabase
         .from('calculator_snapshots')
-        .select('ghi')
+        .select('ghi, age, household_type, is_ftb, employment_type, county, dublin_postcode, current_housing_cost')
         .eq('client_id', id!)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      return data as { ghi: number | null } | null
+      return data
     },
     enabled: !!id,
   })
@@ -330,7 +339,7 @@ export default function ProspectDetailPage() {
 
             {/* Overview */}
             <TabsContent value="overview" className="mt-4 space-y-6">
-              <ClientDetailsSection client={client} />
+              <ClientDetailsSection client={client} snapshot={calcSnapshot} />
 
               <section className="rounded-md border bg-card p-5 space-y-5">
                 <h2 className="font-semibold">Stage</h2>
@@ -467,7 +476,17 @@ export default function ProspectDetailPage() {
 
           {/* Ticket */}
           {client.target_price && calcSnapshot?.ghi ? (
-            <TicketPanel propertyPrice={client.target_price} ghi={calcSnapshot.ghi} />
+            <TicketPanel
+              propertyPrice={client.target_price}
+              ghi={calcSnapshot.ghi}
+              age={calcSnapshot.age}
+              householdType={calcSnapshot.household_type}
+              isFtb={calcSnapshot.is_ftb}
+              employmentType={calcSnapshot.employment_type}
+              county={calcSnapshot.county}
+              dublinPostcode={calcSnapshot.dublin_postcode}
+              currentHousingCost={calcSnapshot.current_housing_cost}
+            />
           ) : null}
 
           {/* Assign to DAC (finance + admin when eligible) */}

@@ -67,9 +67,11 @@ async function submitCalcResults(
     p_is_ftb:           calcState.isFtb ?? null,
     p_ghi:              calcState.ghi > 0 ? calcState.ghi : null,
     p_employment_type:  calcState.employmentType ?? null,
-    p_eligible:         variant === 'mover' ? false : calcState.eligible,
-    p_anon_session_id:  sessionStorage.getItem('anon_id') ?? null,
-    p_user_agent:       navigator.userAgent,
+    p_eligible:               variant === 'mover' ? false : calcState.eligible,
+    p_anon_session_id:        sessionStorage.getItem('anon_id') ?? null,
+    p_user_agent:             navigator.userAgent,
+    p_current_housing_cost:   calcState.currentHousingCost > 0 ? calcState.currentHousingCost : null,
+    p_age:                    calcState.age > 0 ? calcState.age : null,
   })
 }
 
