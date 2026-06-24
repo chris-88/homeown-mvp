@@ -222,21 +222,30 @@ export default function SavePage() {
           ]
 
           return (
-            <div className="rounded border overflow-hidden text-sm">
-              <div className="grid grid-cols-3 divide-x bg-muted/40 border-b">
-                <div className="px-3 py-2" />
-                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-primary">Homeown</div>
-                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Traditional</div>
+            <div className="rounded-lg border overflow-hidden">
+              {/* Column headers */}
+              <div className="grid grid-cols-[90px_1fr_1fr] sm:grid-cols-[110px_1fr_1fr]">
+                <div className="bg-muted/40 border-b border-r" />
+                {/* Homeown — featured column with green top accent */}
+                <div className="bg-muted/40 border-b border-r border-t-2 border-t-primary px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-primary">Homeown</p>
+                </div>
+                <div className="bg-muted/40 border-b px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional</p>
+                </div>
               </div>
+
               {rows.map(({ label, homeown, trad }) => (
-                <div key={label} className="grid grid-cols-3 divide-x border-b last:border-b-0">
-                  <div className="px-3 py-3 flex items-center text-xs font-medium text-muted-foreground">{label}</div>
-                  <div className="px-3 py-3">
-                    <p className="font-semibold tabular-nums">{homeown.main}</p>
+                <div key={label} className="grid grid-cols-[90px_1fr_1fr] sm:grid-cols-[110px_1fr_1fr] border-b last:border-b-0">
+                  <div className="bg-muted/20 border-r px-3 py-4 flex items-center">
+                    <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                  </div>
+                  <div className="border-r px-4 py-4">
+                    <p className="text-lg font-bold tabular-nums text-foreground">{homeown.main}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{homeown.sub}</p>
                   </div>
-                  <div className="px-3 py-3">
-                    <p className="font-semibold tabular-nums text-muted-foreground">{trad.main}</p>
+                  <div className="px-4 py-4">
+                    <p className="text-lg font-bold tabular-nums text-muted-foreground">{trad.main}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{trad.sub}</p>
                   </div>
                 </div>
