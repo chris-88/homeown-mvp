@@ -377,6 +377,7 @@ function Step4({ onBack }: { onBack: () => void }) {
       employment_type: state.employmentType,
       eligible,
       saved: false,
+      current_housing_cost: state.currentHousingCost > 0 ? state.currentHousingCost : null,
     }).select('id').single()
 
     if (data?.id) sessionStorage.setItem('snapshot_id', data.id)
@@ -385,62 +386,50 @@ function Step4({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">A bit about you</h2>
+        <h2 className="text-2xl font-bold tracking-tight">About you</h2>
         <p className="mt-2 text-muted-foreground">
-          Helps us understand programme demand and prepare for your discovery call.
+          A few questions so your adviser can make the most of your discovery call.
         </p>
       </div>
 
-      {/* Age */}
-      <Slider
-        label="Your age"
-        value={state.age}
-        display={`${state.age}`}
-        min={22} max={55} step={1}
-        onChange={v => update({ age: v })}
-        minLabel="22" maxLabel="55"
-      />
-
-      <div className="border-t" />
-
       {/* Location */}
       <div className="space-y-4">
-        <h3 className="text-base font-semibold">Where are you looking to buy?</h3>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Location</p>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">County</label>
-          <Select value={state.county || undefined}
-            onValueChange={v => update({ county: v, dublinPostcode: v !== 'Dublin' ? null : state.dublinPostcode })}>
-            <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
-            <SelectContent>
-              {ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
-        </div>
-
-        {state.county === 'Dublin' && (
+        <div className="space-y-3">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Dublin postcode</label>
-            <Select value={state.dublinPostcode || undefined}
-              onValueChange={v => update({ dublinPostcode: v })}>
-              <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
+            <label className="text-sm font-medium">Where are you looking to buy?</label>
+            <Select value={state.county || undefined}
+              onValueChange={v => update({ county: v, dublinPostcode: v !== 'Dublin' ? null : state.dublinPostcode })}>
+              <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
               <SelectContent>
-                {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                {ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
-            {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
+            {errors.county && <p className="text-sm text-destructive">{errors.county}</p>}
           </div>
-        )}
+
+          {state.county === 'Dublin' && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Dublin postcode</label>
+              <Select value={state.dublinPostcode || undefined}
+                onValueChange={v => update({ dublinPostcode: v })}>
+                <SelectTrigger><SelectValue placeholder="Select postcode" /></SelectTrigger>
+                <SelectContent>
+                  {DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {errors.dublinPostcode && <p className="text-sm text-destructive">{errors.dublinPostcode}</p>}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="border-t" />
-
       {/* Household */}
-      <div className="space-y-4">
-        <h3 className="text-base font-semibold">Your household</h3>
+      <div className="space-y-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Your household</p>
 
         <div className="space-y-2">
           <p className="text-sm font-medium">Who will be on the pathway?</p>
@@ -471,14 +460,21 @@ function Step4({ onBack }: { onBack: () => void }) {
           </div>
           {errors.isFtb && <p className="text-sm text-destructive">{errors.isFtb}</p>}
         </div>
+
+        <Slider
+          label="Your age"
+          value={state.age}
+          display={`${state.age}`}
+          min={22} max={55} step={1}
+          onChange={v => update({ age: v })}
+          minLabel="22" maxLabel="55"
+        />
       </div>
 
-      <div className="border-t" />
-
       {/* Employment */}
-      <div className="space-y-3">
-        <h3 className="text-base font-semibold">Employment</h3>
-        <p className="text-sm font-medium">How is your income earned?</p>
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Employment</p>
+        <p className="text-sm font-medium">How is your income structured?</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {([
             { value: 'paye', label: 'Employed (PAYE)' },
@@ -493,6 +489,20 @@ function Step4({ onBack }: { onBack: () => void }) {
           ))}
         </div>
         {errors.employmentType && <p className="text-sm text-destructive">{errors.employmentType}</p>}
+      </div>
+
+      {/* Current housing cost */}
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Current housing</p>
+        <SliderCard
+          label="What do you currently pay per month for housing?"
+          hint="What you pay today to live where you are. Your adviser will compare this directly with the Homeown service fee."
+          value={state.currentHousingCost}
+          display={`${formatCurrency(state.currentHousingCost)}/mo`}
+          min={0} max={3500} step={50}
+          onChange={v => update({ currentHousingCost: v })}
+          minLabel="€0" maxLabel="€3,500"
+        />
       </div>
 
       <div className="flex gap-3">

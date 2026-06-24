@@ -20,6 +20,7 @@ export interface CalcWizardState {
   isFtb: boolean | null
   employmentType: 'paye' | 'self_employed' | 'mixed' | null
   ghi: number
+  currentHousingCost: number
   // Derived
   eligible: boolean
   variant: CalcVariant
@@ -57,6 +58,7 @@ const DEFAULT: CalcWizardState = {
   isFtb: null,
   employmentType: null,
   ghi: DEFAULT_GHI,
+  currentHousingCost: 1200,
   eligible: false,
   variant: null,
 }
