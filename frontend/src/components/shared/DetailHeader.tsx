@@ -5,18 +5,19 @@ import { ArrowLeft, Ban, RotateCcw, Trash2 } from 'lucide-react'
 
 export function DetailHeader({
   backTo, backLabel, name, subtitle, active, statusBadge,
-  isAdmin, disableLoading, onToggleActive, onDelete,
+  isAdmin, disableLoading, onToggleActive, onDelete, hideAdminButtons,
 }: {
   backTo: string
   backLabel: string
   name: string
-  subtitle: string
+  subtitle?: string
   active: boolean
   statusBadge?: React.ReactNode
   isAdmin: boolean
   disableLoading: boolean
   onToggleActive: () => void
   onDelete: () => void
+  hideAdminButtons?: boolean
 }) {
   return (
     <>
@@ -27,12 +28,12 @@ export function DetailHeader({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{name}</h1>
-          <p className="mt-1 text-muted-foreground">{subtitle}</p>
+          {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2">
           {!active && <Badge variant="outline" className="text-sm px-3 py-1 text-muted-foreground">Disabled</Badge>}
           {statusBadge}
-          {isAdmin && (
+          {isAdmin && !hideAdminButtons && (
             <>
               <Button variant="outline" size="sm" onClick={onToggleActive} disabled={disableLoading}>
                 {active

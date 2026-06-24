@@ -14,14 +14,12 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Home, Check, Copy, UserCheck, Download, Send } from 'lucide-react'
+import { Home, Check, Copy, UserCheck, Download, Send, Ban, RotateCcw, Trash2 } from 'lucide-react'
 import { DetailHeader } from '@/components/shared/DetailHeader'
 import { StageTimeline } from '@/components/shared/StageTimeline'
 import { StaffDocumentsSection } from '@/components/shared/StaffDocumentsSection'
 import { NotesTab } from '@/components/shared/NotesTab'
 import { EventTimelineTab } from '@/components/shared/EventTimelineTab'
-import { AssignedToCard } from '@/components/shared/AssignedToCard'
-import { StageManagementCard } from '@/components/shared/StageManagementCard'
 import { TicketPanel } from '@/components/shared/TicketPanel'
 import { ClientDetailsSection } from '@/components/shared/ClientDetailsSection'
 import { SendDocumentDrawer } from '@/components/shared/SendDocumentDrawer'
@@ -164,6 +162,8 @@ export default function ProspectDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [disableLoading, setDisableLoading] = useState(false)
   const [stageLoading, setStageLoading] = useState(false)
+  const [stagePending, setStagePending] = useState<LeadStage | null>(null)
+  const [stagingNote, setStagingNote] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
   const [sendDocOpen, setSendDocOpen] = useState(false)
 
@@ -312,9 +312,9 @@ export default function ProspectDetailPage() {
         backTo="/app/staff/prospects"
         backLabel="Prospects"
         name={`${client.first_name} ${client.last_name}`}
-        subtitle={client.email}
         active={client.active}
         isAdmin={isAdmin}
+        hideAdminButtons
         disableLoading={disableLoading}
         onToggleActive={handleToggleActive}
         onDelete={() => setDeleteOpen(true)}
@@ -329,49 +329,39 @@ export default function ProspectDetailPage() {
         {/* Left — tabbed content */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="overview">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              <TabsTrigger value="property">Property</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between gap-4">
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="notes">Notes</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="property">Property</TabsTrigger>
+              </TabsList>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">Assigned</span>
+                <Select
+                  value={client.assigned_to ?? 'none'}
+                  onValueChange={v => handleAssignTo(v === 'none' ? '' : v)}
+                  disabled={!(isAdmin || staffMember?.role === 'onboarding')}
+                >
+                  <SelectTrigger className="h-8 text-xs w-40">
+                    <SelectValue placeholder="Not assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not assigned</SelectItem>
+                    {staffMembers
+                      ?.filter(s => s.role === 'onboarding' || s.role === 'admin')
+                      .map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             {/* Overview */}
             <TabsContent value="overview" className="mt-4 space-y-6">
               <ClientDetailsSection client={client} snapshot={calcSnapshot} />
-
-              <section className="rounded-md border bg-card p-5 space-y-5">
-                <h2 className="font-semibold">Stage</h2>
-                <StageTimeline
-                  stages={LEAD_STAGE_ORDER}
-                  labels={LEAD_STAGE_LABELS}
-                  current={client.lead_stage}
-                  terminal={inPhase1Terminal}
-                />
-                <div className="space-y-1 pt-1">
-                  <p className="text-sm font-medium">{LEAD_STAGE_LABELS[client.lead_stage]}</p>
-                  <p className="text-sm text-muted-foreground">{LEAD_STAGE_META[client.lead_stage].current}</p>
-                  {!inPhase1Terminal && LEAD_STAGE_META[client.lead_stage].toProgress && (
-                    <p className="text-sm text-muted-foreground pt-0.5">
-                      <span className="font-medium text-foreground">To progress: </span>
-                      {LEAD_STAGE_META[client.lead_stage].toProgress}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {client.user_id ? (
-                    <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
-                      <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={copyPortalLink}>
-                      {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-primary" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-                      {linkCopied ? 'Copied!' : 'Copy portal link'}
-                    </Button>
-                  )}
-                </div>
-              </section>
             </TabsContent>
 
             {/* Documents */}
@@ -437,33 +427,106 @@ export default function ProspectDetailPage() {
 
         {/* Right — sidebar */}
         <aside className="space-y-6">
-          {/* Stage management */}
-          <StageManagementCard
-            current={client.lead_stage}
-            labels={LEAD_STAGE_LABELS}
-            options={stageOptions}
-            canChange={canAdvance}
-            loading={stageLoading}
-            onConfirm={handleStageChange}
-            extraActions={!inPhase1Terminal && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
-                <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
-                  className="text-destructive border-destructive/40 hover:bg-destructive/5">
-                  Not eligible
-                </Button>
+          {/* Stage — all actions in one card */}
+          <div className="rounded-md border bg-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm">Stage</h2>
+              <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-xs">
+                {LEAD_STAGE_LABELS[client.lead_stage]}
+              </Badge>
+            </div>
+
+            <StageTimeline
+              stages={LEAD_STAGE_ORDER}
+              labels={LEAD_STAGE_LABELS}
+              current={client.lead_stage}
+              terminal={inPhase1Terminal}
+            />
+
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">{LEAD_STAGE_META[client.lead_stage].current}</p>
+              {!inPhase1Terminal && LEAD_STAGE_META[client.lead_stage].toProgress && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">To progress: </span>
+                  {LEAD_STAGE_META[client.lead_stage].toProgress}
+                </p>
+              )}
+            </div>
+
+            {canAdvance && (
+              <div className="space-y-2">
+                <Select
+                  value={stagePending ?? client.lead_stage}
+                  onValueChange={v => v === client.lead_stage ? setStagePending(null) : setStagePending(v as LeadStage)}
+                >
+                  <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={client.lead_stage}>{LEAD_STAGE_LABELS[client.lead_stage]}</SelectItem>
+                    {stageOptions.filter(s => s !== client.lead_stage).map(s => (
+                      <SelectItem key={s} value={s}>{LEAD_STAGE_LABELS[s]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {stagePending && (
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Optional note (recorded internally)…"
+                      value={stagingNote}
+                      onChange={e => setStagingNote(e.target.value)}
+                      rows={2}
+                      className="text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={async () => {
+                        await handleStageChange(stagePending, stagingNote)
+                        setStagePending(null); setStagingNote('')
+                      }} disabled={stageLoading}>
+                        {stageLoading ? 'Saving…' : `Confirm: ${LEAD_STAGE_LABELS[stagePending]}`}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setStagePending(null); setStagingNote('') }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          />
 
-          {/* Assigned to */}
-          <AssignedToCard
-            assignedTo={client.assigned_to}
-            staffMembers={staffMembers ?? []}
-            canAssign={isAdmin || staffMember?.role === 'onboarding'}
-            eligibleRoles={['onboarding']}
-            onAssign={handleAssignTo}
-          />
+            <div className="flex flex-wrap gap-1.5 pt-1 border-t">
+              {client.user_id ? (
+                <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
+                  <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={copyPortalLink}>
+                  {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-primary" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                  {linkCopied ? 'Copied!' : 'Portal link'}
+                </Button>
+              )}
+              {!inPhase1Terminal && canAdvance && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
+                  <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
+                    className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                    Not eligible
+                  </Button>
+                </>
+              )}
+              {isAdmin && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleToggleActive} disabled={disableLoading}>
+                    {disableLoading ? '…' : client.active
+                      ? <><Ban className="h-3.5 w-3.5 mr-1.5" />Disable</>
+                      : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Enable</>}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}
+                    className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                    <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
 
           {/* Signing pack — shown when eligible and no KFS sent yet */}
           {client.lead_stage === 'eligible' && !(deliveries ?? []).some(d => d.document_type === 'kfs') && (
