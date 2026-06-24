@@ -510,9 +510,9 @@ function Step4({ onBack }: { onBack: () => void }) {
           hint="What you pay today to live where you are."
           value={state.currentHousingCost}
           display={formatCurrency(state.currentHousingCost)}
-          min={0} max={3500} step={50}
+          min={0} max={7000} step={50}
           onChange={v => update({ currentHousingCost: v })}
-          minLabel="€0" maxLabel="€3,500"
+          minLabel="€0" maxLabel="€7,000"
         />
       </div>
 

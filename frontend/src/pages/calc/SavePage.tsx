@@ -170,21 +170,80 @@ export default function SavePage() {
           <p className="mt-2 text-sm text-muted-foreground">{copy.sub}</p>
         </div>
 
-        {/* Results summary — eligible only */}
-        {variant === 'eligible' && activeState.propertyPrice > 0 && (
-          <div className="divide-y rounded border bg-muted/30">
-            {[
-              { label: 'Monthly service fee', value: `${formatCurrency(activeState.monthlyDomiter)} / mo` },
-              { label: 'Entry Stake', value: formatCurrency(activeState.entryStake) },
-              { label: 'Purchase option price', value: formatCurrency(activeState.strikePrice) },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between px-4 py-3 text-sm">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="font-semibold numeric">{value}</span>
+        {/* Comparison table — eligible only */}
+        {variant === 'eligible' && activeState.propertyPrice > 0 && (() => {
+          const { propertyPrice, currentSavings, monthlySavings, strikePrice, entryStake, monthlyDomiter, currentHousingCost } = activeState
+          const deposit = Math.round(propertyPrice * 0.10)
+
+          const depositData = Array.from({ length: 11 }, (_, i) => ({
+            deposit: Math.round(propertyPrice * 0.10 * Math.pow(1.05, i)),
+            accumulated: Math.round(currentSavings + monthlySavings * 12 * i),
+          }))
+          const crossoverIdx = depositData.findIndex((d, i) => i > 0 && d.accumulated >= d.deposit)
+          const crossoverYears: number = crossoverIdx <= 0 ? -1 : (() => {
+            const prev = depositData[crossoverIdx - 1]!
+            const curr = depositData[crossoverIdx]!
+            const t = (prev.deposit - prev.accumulated) / ((curr.accumulated - prev.accumulated) - (curr.deposit - prev.deposit))
+            return (crossoverIdx - 1) + Math.max(0, Math.min(1, t))
+          })()
+
+          const fmtYrsMonths = (y: number) => {
+            const totalMonths = Math.round(y * 12)
+            const yrs = Math.floor(totalMonths / 12)
+            const mos = totalMonths % 12
+            return mos === 0 ? `${yrs} yrs` : `${yrs} yrs, ${mos} mo`
+          }
+
+          const tradMoveIn = crossoverYears === -1 ? '> 10 years' : fmtYrsMonths(crossoverYears)
+          const tradBuyPrice = Math.round(propertyPrice * Math.pow(1.05, crossoverYears === -1 ? 10 : crossoverYears))
+          const tradMonthly = (currentHousingCost ?? 0) + monthlySavings
+
+          const rows = [
+            {
+              label: 'Upfront',
+              homeown: { main: formatCurrency(entryStake), sub: 'Entry Stake' },
+              trad:    { main: formatCurrency(deposit),    sub: '10% deposit' },
+            },
+            {
+              label: 'Move in',
+              homeown: { main: '3–6 months', sub: 'from today' },
+              trad:    { main: tradMoveIn,   sub: 'to save the deposit' },
+            },
+            {
+              label: 'Monthly',
+              homeown: { main: formatCurrency(monthlyDomiter), sub: 'service fee' },
+              trad:    { main: formatCurrency(tradMonthly),    sub: 'housing + monthly contribution' },
+            },
+            {
+              label: 'Buy price',
+              homeown: { main: formatCurrency(strikePrice),    sub: 'fixed today' },
+              trad:    { main: `~${formatCurrency(tradBuyPrice)}`, sub: crossoverYears === -1 ? 'estimated market price (10+ yrs)' : 'market price at purchase' },
+            },
+          ]
+
+          return (
+            <div className="rounded border overflow-hidden text-sm">
+              <div className="grid grid-cols-3 divide-x bg-muted/40 border-b">
+                <div className="px-3 py-2" />
+                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-primary">Homeown</div>
+                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Traditional</div>
               </div>
-            ))}
-          </div>
-        )}
+              {rows.map(({ label, homeown, trad }) => (
+                <div key={label} className="grid grid-cols-3 divide-x border-b last:border-b-0">
+                  <div className="px-3 py-3 flex items-center text-xs font-medium text-muted-foreground">{label}</div>
+                  <div className="px-3 py-3">
+                    <p className="font-semibold tabular-nums">{homeown.main}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{homeown.sub}</p>
+                  </div>
+                  <div className="px-3 py-3">
+                    <p className="font-semibold tabular-nums text-muted-foreground">{trad.main}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{trad.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
 
         {/* What to expect */}
         {variant === 'eligible' && (
