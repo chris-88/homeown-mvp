@@ -34,6 +34,7 @@ import StaffJoinPage from '@/pages/staff/join/JoinPage'
 import ClientLayout from '@/pages/client/ClientLayout'
 import ClientDashboard from '@/pages/client/DashboardPage'
 import ClientDocuments from '@/pages/client/DocumentsPage'
+import ClientPathway from '@/pages/client/PathwayPage'
 import ClientProperty from '@/pages/client/PropertyPage'
 import ClientTimeline from '@/pages/client/TimelinePage'
 import ClientProfile from '@/pages/client/ProfilePage'
@@ -115,6 +116,7 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <ClientDashboard /> },
       { path: 'documents', element: <ClientDocuments /> },
+      { path: 'pathway', element: <ClientPathway /> },
       { path: 'property', element: <ClientProperty /> },
       { path: 'timeline', element: <ClientTimeline /> },
       { path: 'profile', element: <ClientProfile /> },

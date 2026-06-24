@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
     await db.from('events').insert({
       client_id: clientId,
       event_type: 'call_cancelled',
-      visibility: 'internal',
+      visibility: 'client',
       payload: { booking_uid: payload.uid, cancelled_at: new Date().toISOString() },
     })
     return json({ ok: true, action: 'cancelled' })
@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
   await db.from('events').insert({
     client_id: clientId,
     event_type: eventType,
-    visibility: 'internal',
+    visibility: 'client',
     payload: {
       appointment_at: startTime,
       phone: phone ?? null,

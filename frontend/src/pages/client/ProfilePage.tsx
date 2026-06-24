@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import { CalendarDays } from 'lucide-react'
 
 const schema = z.object({
   first_name: z.string().min(1, 'Required'),
@@ -48,6 +49,10 @@ export default function ProfilePage() {
     form.reset(values)
   }
 
+  const callDt = client.appointment_at
+    ? new Date(client.appointment_at).toLocaleString('en-IE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-8">
       <div>
@@ -77,17 +82,23 @@ export default function ProfilePage() {
               <FormField control={form.control} name="household_size" render={({ field }) => (
                 <FormItem><FormLabel>Household size (optional)</FormLabel><FormControl><Input type="number" min={1} {...field} /></FormControl><FormMessage /></FormItem>
               )} />
+              <div className="border-t pt-4 space-y-2 text-sm text-muted-foreground">
+                <p>Email: <span className="text-foreground">{client.email}</span></p>
+                {callDt && (
+                  <p className="flex items-center gap-2">
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary" />
+                    Discovery call: <span className="text-foreground">{callDt}</span>
+                  </p>
+                )}
+                {!callDt && (
+                  <p>Discovery call: <span className="text-foreground">Not yet booked — check your email for the booking link.</span></p>
+                )}
+              </div>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving…' : 'Save changes'}
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Email: <span className="text-foreground">{client.email}</span></p>
         </CardContent>
       </Card>
     </div>

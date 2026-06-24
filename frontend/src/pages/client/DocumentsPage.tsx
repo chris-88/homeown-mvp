@@ -6,14 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { DOC_TYPE_LABELS } from '@/types'
 import { getTemplate, getDisplayName } from '@/lib/documents/registry'
 import type { DocumentRequest, DocType, DocumentDelivery } from '@/types'
 import { Upload, CheckCircle2, AlertTriangle, FileText, Eye, Download, X } from 'lucide-react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-// ── Document upload section (existing behaviour) ──────────────────────────────
+// ── Document metadata ─────────────────────────────────────────────────────────
 
 const DOC_META: Record<DocType, { description: string; accepted: string }> = {
   photo_id: {
@@ -68,6 +67,8 @@ function docStatusVariant(status: string) {
 function docStatusLabel(status: string) {
   return { requested: 'Requested', needs_review: 'Under Review', approved: 'Approved', rejected: 'Rejected' }[status] ?? status
 }
+
+// ── Doc upload row ────────────────────────────────────────────────────────────
 
 function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
   const qc = useQueryClient()
@@ -124,10 +125,10 @@ function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
   )
 }
 
-// ── Delivery status helpers ───────────────────────────────────────────────────
+// ── Delivery helpers ──────────────────────────────────────────────────────────
 
 function deliveryStatusLabel(d: DocumentDelivery): string {
-  if (d.requires_ack && !d.acknowledged_at) return 'Unacknowledged'
+  if (d.requires_ack && !d.acknowledged_at) return 'Action required'
   if (d.acknowledged_at) return 'Acknowledged'
   if (d.read_at) return 'Read'
   return 'Unread'
@@ -140,7 +141,7 @@ function deliveryStatusClass(d: DocumentDelivery): string {
   return 'bg-muted text-muted-foreground border-border'
 }
 
-// ── Document viewer drawer ────────────────────────────────────────────────────
+// ── Document viewer ───────────────────────────────────────────────────────────
 
 function DocumentViewer({ delivery, clientId, onClose }: { delivery: DocumentDelivery; clientId: string; onClose: () => void }) {
   const qc = useQueryClient()
@@ -171,7 +172,6 @@ function DocumentViewer({ delivery, clientId, onClose }: { delivery: DocumentDel
     if (data?.signedUrl) window.open(data.signedUrl, '_blank')
   }
 
-  // Mark as read when viewer opens (run once via ref trick)
   const readFired = useRef(false)
   if (!readFired.current) { readFired.current = true; markRead() }
 
@@ -260,7 +260,6 @@ function DeliveryRow({ delivery, onView }: { delivery: DocumentDelivery; onView:
           <p className="font-medium text-sm">{getDisplayName(delivery.document_type)}</p>
           <p className="text-xs text-muted-foreground">
             Sent {new Date(delivery.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}
-            &nbsp;·&nbsp; v{delivery.document_version}
           </p>
           <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${deliveryStatusClass(delivery)}`}>
             {deliveryStatusLabel(delivery)}
@@ -288,11 +287,6 @@ function DeliveryRow({ delivery, onView }: { delivery: DocumentDelivery; onView:
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-const STAGES_SHOWING_DELIVERIES = new Set([
-  'eligible', 'sale_agreed', 'in_review', 'contracts_signed', 'in_home',
-  'exit_prep', 'option_window', 'pathway_complete', 'exited',
-])
-
 export default function DocumentsPage() {
   const { client } = useAuth()
   const [viewingDelivery, setViewingDelivery] = useState<DocumentDelivery | null>(null)
@@ -307,8 +301,6 @@ export default function DocumentsPage() {
     enabled: !!client,
   })
 
-  const showDeliveries = client?.lead_stage ? STAGES_SHOWING_DELIVERIES.has(client.lead_stage) : false
-
   const { data: deliveries, isLoading: deliveriesLoading } = useQuery({
     queryKey: ['deliveries', client?.id],
     queryFn: async () => {
@@ -321,12 +313,13 @@ export default function DocumentsPage() {
         .order('created_at', { ascending: false })
       return (data ?? []) as DocumentDelivery[]
     },
-    enabled: !!client && showDeliveries,
+    enabled: !!client,
   })
 
   if (!client) return null
 
   const pendingAck = (deliveries ?? []).filter(d => d.requires_ack && !d.acknowledged_at)
+  const hasDeliveries = !deliveriesLoading && (deliveries ?? []).length > 0
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-8">
@@ -335,7 +328,7 @@ export default function DocumentsPage() {
         <p className="mt-1 text-muted-foreground">View and manage your Homeown documents.</p>
       </div>
 
-      {showDeliveries && pendingAck.length > 0 && (
+      {pendingAck.length > 0 && (
         <Alert className="border-brand-burgundy/30 bg-brand-burgundy-muted">
           <AlertTriangle className="h-4 w-4 text-brand-burgundy" />
           <AlertDescription className="text-brand-burgundy">
@@ -346,46 +339,35 @@ export default function DocumentsPage() {
         </Alert>
       )}
 
-      {showDeliveries ? (
-        <Tabs defaultValue="received">
-          <TabsList className="mb-4">
-            <TabsTrigger value="received">
-              Received documents
-              {pendingAck.length > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-burgundy-muted0 text-white text-xs font-bold">
-                  {pendingAck.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="upload">Required documents</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="received">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Documents from Homeown</CardTitle></CardHeader>
-              <CardContent>
-                {deliveriesLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-                {!deliveriesLoading && (!deliveries || deliveries.length === 0) && (
-                  <p className="text-sm text-muted-foreground">No documents have been sent to you yet.</p>
-                )}
-                {deliveries && deliveries.length > 0 && (
-                  <div className="divide-y">
-                    {deliveries.map(d => (
-                      <DeliveryRow key={d.id} delivery={d} onView={setViewingDelivery} />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="upload">
-            <UploadSection docs={docs} docsLoading={docsLoading} clientId={client.id} />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <UploadSection docs={docs} docsLoading={docsLoading} clientId={client.id} />
+      {/* Documents from Homeown — always shown when any exist */}
+      {hasDeliveries && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">From Homeown</CardTitle></CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {deliveries!.map(d => (
+                <DeliveryRow key={d.id} delivery={d} onView={setViewingDelivery} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Documents we need from the client */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Required documents</CardTitle></CardHeader>
+        <CardContent>
+          {docsLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+          {!docsLoading && (!docs || docs.length === 0) && (
+            <p className="text-sm text-muted-foreground">No documents have been requested yet. Our team will be in touch shortly.</p>
+          )}
+          {docs && docs.length > 0 && (
+            <div className="divide-y">
+              {docs.map(doc => <DocRow key={doc.id} doc={doc} clientId={client.id} />)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {viewingDelivery && (
         <DocumentViewer
@@ -395,24 +377,5 @@ export default function DocumentsPage() {
         />
       )}
     </div>
-  )
-}
-
-function UploadSection({ docs, docsLoading, clientId }: { docs: DocumentRequest[] | undefined; docsLoading: boolean; clientId: string }) {
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">Required documents</CardTitle></CardHeader>
-      <CardContent>
-        {docsLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {!docsLoading && (!docs || docs.length === 0) && (
-          <p className="text-sm text-muted-foreground">No documents have been requested yet. Our team will be in touch shortly.</p>
-        )}
-        {docs && docs.length > 0 && (
-          <div className="divide-y">
-            {docs.map((doc) => <DocRow key={doc.id} doc={doc} clientId={clientId} />)}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   )
 }
