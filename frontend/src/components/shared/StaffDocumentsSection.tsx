@@ -21,8 +21,8 @@ function docStatusVariant(status: DocStatus) {
 }
 
 export function StaffDocumentsSection({
-  clientId, docs, onRefresh,
-}: { clientId: string; docs: DocumentRequest[]; onRefresh: () => void }) {
+  clientId, docs, onRefresh, sendRequestEmail = true,
+}: { clientId: string; docs: DocumentRequest[]; onRefresh: () => void; sendRequestEmail?: boolean }) {
   const { user } = useAuth()
   const [showRequest, setShowRequest] = useState(false)
   const [selected, setSelected] = useState<Set<DocType>>(new Set())
@@ -45,9 +45,21 @@ export function StaffDocumentsSection({
   async function handleRequest() {
     if (!selected.size) return
     setRequestLoading(true)
+    const docTypes = [...selected]
     await supabase.from('document_requests').insert(
-      [...selected].map(doc_type => ({ client_id: clientId, doc_type, status: 'requested' }))
+      docTypes.map(doc_type => ({ client_id: clientId, doc_type, status: 'requested' }))
     )
+    if (sendRequestEmail) {
+      const session = (await supabase.auth.getSession()).data.session
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-docs-request-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ client_id: clientId, doc_types: docTypes }),
+      }).catch(err => console.warn('send-docs-request-email failed:', err))
+    }
     setSelected(new Set())
     setShowRequest(false)
     setRequestLoading(false)
