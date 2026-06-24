@@ -358,12 +358,9 @@ export default function ProspectDetailPage() {
               <ClientDetailsSection client={client} snapshot={calcSnapshot} />
 
               <section className="rounded-md border bg-card p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold">Stage</h2>
-                  <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-xs">
-                    {LEAD_STAGE_LABELS[client.lead_stage]}
-                  </Badge>
-                </div>
+                <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-xs">
+                  {LEAD_STAGE_LABELS[client.lead_stage]}
+                </Badge>
                 <StageTimeline
                   stages={LEAD_STAGE_ORDER}
                   labels={LEAD_STAGE_LABELS}
@@ -396,12 +393,7 @@ export default function ProspectDetailPage() {
                     </div>
                   </div>
                 )}
-              </section>
-
-              {/* Actions */}
-              <section className="rounded-md border bg-card p-5 space-y-3">
-                <h2 className="font-semibold text-sm">Actions</h2>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pt-1 border-t">
                   {client.user_id ? (
                     <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
                       <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
@@ -704,116 +696,117 @@ function ProspectTicketTab({ clientId, targetPrice, snapshot, onSaved }: {
   }
 
   return (
-    <div className="rounded-md border bg-card p-5 space-y-1">
+    <div className="grid grid-cols-2 gap-4 items-start">
 
-      <SectionHead>Profile</SectionHead>
-      <FieldRow label="County">
-        <Select value={form.county || 'none'} onValueChange={v => {
-          set('county', v === 'none' ? '' : v)
-          if (v !== 'Dublin') set('dublinPostcode', null)
-        }}>
-          <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select county" /></SelectTrigger>
-          <SelectContent>{ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-        </Select>
-      </FieldRow>
-      {form.county === 'Dublin' && (
-        <FieldRow label="Dublin postcode">
-          <Select value={form.dublinPostcode ?? 'none'} onValueChange={v => set('dublinPostcode', v === 'none' ? null : v)}>
-            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select postcode" /></SelectTrigger>
-            <SelectContent>{DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+      {/* Left — editable inputs */}
+      <div className="rounded-md border bg-card p-5 space-y-1">
+        <SectionHead>Profile</SectionHead>
+        <FieldRow label="County">
+          <Select value={form.county || 'none'} onValueChange={v => {
+            set('county', v === 'none' ? '' : v)
+            if (v !== 'Dublin') set('dublinPostcode', null)
+          }}>
+            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select county" /></SelectTrigger>
+            <SelectContent>{ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
         </FieldRow>
-      )}
-      <FieldRow label="Age">
-        <Input type="number" min={18} max={65} className="h-8 text-sm w-24"
-          value={numInput(form.age)}
-          onChange={e => set('age', parseNum(e.target.value))} />
-      </FieldRow>
-      <FieldRow label="Household">
-        <ToggleGroup value={form.householdType} onChange={v => set('householdType', v)}
-          options={[{ value: 'solo', label: 'Solo' }, { value: 'couple', label: 'Couple' }]} />
-      </FieldRow>
-      <FieldRow label="First-time buyer">
-        <ToggleGroup value={form.isFtb === null ? null : String(form.isFtb)} onChange={v => set('isFtb', v === null ? null : v === 'true')}
-          options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]} />
-      </FieldRow>
-      <FieldRow label="Employment">
-        <ToggleGroup value={form.employmentType} onChange={v => set('employmentType', v)}
-          options={[{ value: 'paye', label: 'PAYE' }, { value: 'self_employed', label: 'Self-employed' }, { value: 'mixed', label: 'Mixed' }]} />
-      </FieldRow>
+        {form.county === 'Dublin' && (
+          <FieldRow label="Dublin postcode">
+            <Select value={form.dublinPostcode ?? 'none'} onValueChange={v => set('dublinPostcode', v === 'none' ? null : v)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select postcode" /></SelectTrigger>
+              <SelectContent>{DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+            </Select>
+          </FieldRow>
+        )}
+        <FieldRow label="Age">
+          <Input type="number" min={18} max={65} className="h-8 text-sm w-24"
+            value={numInput(form.age)} onChange={e => set('age', parseNum(e.target.value))} />
+        </FieldRow>
+        <FieldRow label="Household">
+          <ToggleGroup value={form.householdType} onChange={v => set('householdType', v)}
+            options={[{ value: 'solo', label: 'Solo' }, { value: 'couple', label: 'Couple' }]} />
+        </FieldRow>
+        <FieldRow label="First-time buyer">
+          <ToggleGroup value={form.isFtb === null ? null : String(form.isFtb)} onChange={v => set('isFtb', v === null ? null : v === 'true')}
+            options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]} />
+        </FieldRow>
+        <FieldRow label="Employment">
+          <ToggleGroup value={form.employmentType} onChange={v => set('employmentType', v)}
+            options={[{ value: 'paye', label: 'PAYE' }, { value: 'self_employed', label: 'Self-employed' }, { value: 'mixed', label: 'Mixed' }]} />
+        </FieldRow>
 
-      <SectionHead>Finances</SectionHead>
-      <FieldRow label="Gross household income">
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-muted-foreground">€</span>
-          <Input type="number" min={0} step={1000} className="h-8 text-sm w-32"
-            value={numInput(form.ghi)}
-            onChange={e => set('ghi', parseNum(e.target.value) ?? 0)} />
-          <span className="text-xs text-muted-foreground">/yr</span>
-        </div>
-      </FieldRow>
-      <FieldRow label="Current housing cost">
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-muted-foreground">€</span>
-          <Input type="number" min={0} step={50} className="h-8 text-sm w-28"
-            value={numInput(form.currentHousingCost)}
-            onChange={e => set('currentHousingCost', parseNum(e.target.value))} />
-          <span className="text-xs text-muted-foreground">/mo</span>
-        </div>
-      </FieldRow>
-      <FieldRow label="Current savings">
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-muted-foreground">€</span>
-          <Input type="number" min={0} step={500} className="h-8 text-sm w-28"
-            value={numInput(form.currentSavings)}
-            onChange={e => set('currentSavings', parseNum(e.target.value))} />
-        </div>
-      </FieldRow>
-      <FieldRow label="Monthly saving">
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-muted-foreground">€</span>
-          <Input type="number" min={0} step={50} className="h-8 text-sm w-28"
-            value={numInput(form.monthlySavings)}
-            onChange={e => set('monthlySavings', parseNum(e.target.value))} />
-          <span className="text-xs text-muted-foreground">/mo</span>
-        </div>
-      </FieldRow>
+        <SectionHead>Finances</SectionHead>
+        <FieldRow label="Gross income">
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">€</span>
+            <Input type="number" min={0} step={1000} className="h-8 text-sm w-32"
+              value={numInput(form.ghi)} onChange={e => set('ghi', parseNum(e.target.value) ?? 0)} />
+            <span className="text-xs text-muted-foreground">/yr</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Housing cost">
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">€</span>
+            <Input type="number" min={0} step={50} className="h-8 text-sm w-28"
+              value={numInput(form.currentHousingCost)} onChange={e => set('currentHousingCost', parseNum(e.target.value))} />
+            <span className="text-xs text-muted-foreground">/mo</span>
+          </div>
+        </FieldRow>
+        <FieldRow label="Current savings">
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">€</span>
+            <Input type="number" min={0} step={500} className="h-8 text-sm w-28"
+              value={numInput(form.currentSavings)} onChange={e => set('currentSavings', parseNum(e.target.value))} />
+          </div>
+        </FieldRow>
+        <FieldRow label="Monthly saving">
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">€</span>
+            <Input type="number" min={0} step={50} className="h-8 text-sm w-28"
+              value={numInput(form.monthlySavings)} onChange={e => set('monthlySavings', parseNum(e.target.value))} />
+            <span className="text-xs text-muted-foreground">/mo</span>
+          </div>
+        </FieldRow>
 
-      <SectionHead>Target property</SectionHead>
-      <FieldRow label="Property price">
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-muted-foreground">€</span>
-          <Input type="number" min={100000} max={1000000} step={5000} className="h-8 text-sm w-32"
-            value={numInput(form.propertyPrice || null)}
-            onChange={e => set('propertyPrice', parseNum(e.target.value) ?? 0)} />
-        </div>
-      </FieldRow>
+        <SectionHead>Target property</SectionHead>
+        <FieldRow label="Property price">
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">€</span>
+            <Input type="number" min={100000} max={1000000} step={5000} className="h-8 text-sm w-32"
+              value={numInput(form.propertyPrice || null)} onChange={e => set('propertyPrice', parseNum(e.target.value) ?? 0)} />
+          </div>
+        </FieldRow>
 
-      <SectionHead>Homeown numbers</SectionHead>
-      <div className="rounded-md border bg-muted/30 p-3 space-y-0">
-        <CalcRow label="Entry Stake" value={fmt(entryStake)} />
-        <CalcRow label="Monthly service fee" value={fmt(monthlyFee)} note={feePct !== null ? `${feePct}% of GHI` : undefined} />
-        <CalcRow label="Option price" value={fmt(strikePrice)} />
-        <CalcRow label="Strike reduction" value={fmt(price - strikePrice)} />
+        <div className="pt-3">
+          <Button onClick={handleSave} disabled={saving} size="sm">
+            {saved ? <><Check className="h-3.5 w-3.5 mr-1.5" />Saved</> : saving ? 'Saving…' : 'Save changes'}
+          </Button>
+        </div>
       </div>
 
-      <SectionHead>Financial model</SectionHead>
-      <div className="rounded-md border bg-muted/30 p-3 space-y-0">
-        <CalcRow label="Projected value (Y5)" value={fmt(projected)} />
-        <CalcRow label="Appreciation (€)" value={fmt(appEur)} />
-        <CalcRow label="Appreciation (%)" value={`${appPct.toFixed(2)}%`} />
-        <CalcRow label="LTV at completion" value={`${ltv.toFixed(2)}%`} />
-        <CalcRow label="Stress mortgage" value={fmt(stressMtg)} note={stressPct !== null ? `${stressPct}% of GHI` : undefined} />
-        <CalcRow label="Base mortgage" value={fmt(baseMtg)} note={basePct !== null ? `${basePct}% of GHI` : undefined} />
-        <CalcRow label="Fee vs stress diff" value={fmt(monthlyFee - stressMtg)} />
-        <CalcRow label="Fee vs base diff" value={fmt(monthlyFee - baseMtg)} />
+      {/* Right — calculated outputs */}
+      <div className="rounded-md border bg-card p-5 space-y-1">
+        <SectionHead>Homeown numbers</SectionHead>
+        <div className="rounded-md border bg-muted/30 p-3 space-y-0 mb-3">
+          <CalcRow label="Entry Stake" value={fmt(entryStake)} />
+          <CalcRow label="Monthly service fee" value={fmt(monthlyFee)} note={feePct !== null ? `${feePct}% of GHI` : undefined} />
+          <CalcRow label="Option price" value={fmt(strikePrice)} />
+          <CalcRow label="Strike reduction" value={fmt(price - strikePrice)} />
+        </div>
+
+        <SectionHead>Financial model</SectionHead>
+        <div className="rounded-md border bg-muted/30 p-3 space-y-0">
+          <CalcRow label="Projected value (Y5)" value={fmt(projected)} />
+          <CalcRow label="Appreciation (€)" value={fmt(appEur)} />
+          <CalcRow label="Appreciation (%)" value={`${appPct.toFixed(2)}%`} />
+          <CalcRow label="LTV at completion" value={`${ltv.toFixed(2)}%`} />
+          <CalcRow label="Stress mortgage" value={fmt(stressMtg)} note={stressPct !== null ? `${stressPct}% of GHI` : undefined} />
+          <CalcRow label="Base mortgage" value={fmt(baseMtg)} note={basePct !== null ? `${basePct}% of GHI` : undefined} />
+          <CalcRow label="Fee vs stress diff" value={fmt(monthlyFee - stressMtg)} />
+          <CalcRow label="Fee vs base diff" value={fmt(monthlyFee - baseMtg)} />
+        </div>
       </div>
 
-      <div className="pt-3">
-        <Button onClick={handleSave} disabled={saving} size="sm">
-          {saved ? <><Check className="h-3.5 w-3.5 mr-1.5" />Saved</> : saving ? 'Saving…' : 'Save changes'}
-        </Button>
-      </div>
     </div>
   )
 }
