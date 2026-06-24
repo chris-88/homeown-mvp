@@ -122,6 +122,17 @@ function DeleteClientModal({
     setLoading(true); setError('')
     const { error: deleteErr } = await supabase.from('clients').delete().eq('id', client.id)
     if (deleteErr) { setError(deleteErr.message); setLoading(false); return }
+    if (client.user_id) {
+      const session = (await supabase.auth.getSession()).data.session
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-auth-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ user_id: client.user_id }),
+      }).catch(err => console.warn('delete-auth-user failed:', err))
+    }
     onDeleted()
   }
 
