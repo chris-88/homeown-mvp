@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -19,8 +19,10 @@ type FormValues = z.infer<typeof schema>
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const prefillEmail = searchParams.get('email') ?? ''
   const { user, profile, loading } = useAuth()
-  const form = useForm<FormValues>({ resolver: zodResolver(schema) })
+  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: prefillEmail } })
 
   useEffect(() => {
     if (!loading && user && profile) {

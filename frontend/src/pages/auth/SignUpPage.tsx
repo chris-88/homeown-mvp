@@ -11,8 +11,8 @@ import { useAuth } from '@/lib/auth'
 import { AuthLayout } from '@/components/shared/AuthLayout'
 
 const schema = z.object({
-  first_name: z.string().min(1, 'Required'),
-  last_name: z.string().min(1, 'Required'),
+  first_name: z.string().optional().default(''),
+  last_name: z.string().optional().default(''),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'At least 8 characters'),
 })
@@ -22,10 +22,18 @@ export default function SignUpPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const prefillEmail = searchParams.get('email') ?? ''
+  const prefillFirst = searchParams.get('first') ?? ''
+  const prefillLast = searchParams.get('last') ?? ''
+  const fromLink = !!prefillEmail
   const { user, profile, loading } = useAuth()
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: prefillEmail },
+    defaultValues: {
+      email: prefillEmail,
+      first_name: prefillFirst,
+      last_name: prefillLast,
+    },
   })
 
   useEffect(() => {
@@ -38,9 +46,16 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { first_name, last_name } },
+      options: { data: { first_name: first_name || prefillFirst, last_name: last_name || prefillLast } },
     })
-    if (error) { form.setError('root', { message: error.message }); return }
+    if (error) {
+      if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('already been registered')) {
+        navigate(`/auth/login?email=${encodeURIComponent(email)}`, { replace: true })
+        return
+      }
+      form.setError('root', { message: error.message })
+      return
+    }
     navigate('/app/client', { replace: true })
   }
 
@@ -51,28 +66,31 @@ export default function SignUpPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <FormField control={form.control} name="first_name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>First name</FormLabel>
-                <FormControl><Input placeholder="Jane" autoComplete="given-name" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="last_name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last name</FormLabel>
-                <FormControl><Input placeholder="Smith" autoComplete="family-name" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </div>
+          {!fromLink && (
+            <div className="grid grid-cols-2 gap-3">
+              <FormField control={form.control} name="first_name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First name</FormLabel>
+                  <FormControl><Input placeholder="Jane" autoComplete="given-name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="last_name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last name</FormLabel>
+                  <FormControl><Input placeholder="Smith" autoComplete="family-name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+          )}
 
           <FormField control={form.control} name="email" render={({ field }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="me@example.com" autoComplete="email" {...field} />
+                <Input type="email" placeholder="me@example.com" autoComplete="email"
+                  readOnly={fromLink} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -104,7 +122,10 @@ export default function SignUpPage() {
 
       <p className="mt-6 text-sm text-muted-foreground">
         Already have an account?{' '}
-        <Link to="/auth/login" className="font-medium text-foreground hover:underline underline-offset-4">
+        <Link
+          to={`/auth/login${prefillEmail ? `?email=${encodeURIComponent(prefillEmail)}` : ''}`}
+          className="font-medium text-foreground hover:underline underline-offset-4"
+        >
           Sign in
         </Link>
       </p>

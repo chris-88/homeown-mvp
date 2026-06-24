@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: client, error: clientErr } = await db
       .from('clients')
-      .select('id, user_id, first_name, email')
+      .select('id, user_id, first_name, last_name, email')
       .eq('id', client_id)
       .single()
 
@@ -50,16 +50,18 @@ Deno.serve(async (req: Request) => {
     }
 
     let firstName = (client.first_name as string) ?? 'there'
+    let lastName = (client.last_name as string) ?? ''
     let email = (client.email as string) ?? ''
 
     if (client.user_id) {
       const { data: profile } = await db
         .from('profiles')
-        .select('first_name, email')
+        .select('first_name, last_name, email')
         .eq('id', client.user_id)
         .maybeSingle()
       if (profile) {
         firstName = (profile.first_name as string) ?? firstName
+        lastName = (profile.last_name as string) ?? lastName
         email = (profile.email as string) ?? email
       }
     }
@@ -70,7 +72,7 @@ Deno.serve(async (req: Request) => {
 
     const isNewAccount = !client.user_id
     const portalUrl = isNewAccount
-      ? `${SITE_URL}/#/auth/signup?email=${encodeURIComponent(email)}`
+      ? `${SITE_URL}/#/auth/signup?email=${encodeURIComponent(email)}&first=${encodeURIComponent(firstName)}&last=${encodeURIComponent(lastName)}`
       : `${SITE_URL}/#/app/client/documents`
 
     const docLabels = doc_types.map(t => DOC_LABELS[t] ?? t)

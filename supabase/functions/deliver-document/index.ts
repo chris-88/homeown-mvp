@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
     // 2. Get client info
     const { data: client, error: clientErr } = await db
       .from('clients')
-      .select('id, user_id, first_name, email, lead_stage, programme_stage')
+      .select('id, user_id, first_name, last_name, email, lead_stage, programme_stage')
       .eq('id', client_id)
       .single()
 
@@ -65,15 +65,17 @@ Deno.serve(async (req: Request) => {
 
     let clientEmail = (client.email as string) ?? ''
     let clientFirstName = (client.first_name as string) ?? ''
+    let clientLastName = (client.last_name as string) ?? ''
 
     if (client.user_id) {
       const { data: profile } = await db
         .from('profiles')
-        .select('first_name, email')
+        .select('first_name, last_name, email')
         .eq('id', client.user_id)
         .maybeSingle()
       if (profile) {
         clientFirstName = (profile.first_name as string) ?? clientFirstName
+        clientLastName = (profile.last_name as string) ?? clientLastName
         clientEmail = (profile.email as string) ?? clientEmail
       }
     }
@@ -135,7 +137,7 @@ Deno.serve(async (req: Request) => {
           document_type,
           portal_url: client.user_id
             ? `${SITE_URL}/#/app/client/documents`
-            : `${SITE_URL}/#/auth/signup?email=${encodeURIComponent(clientEmail)}`,
+            : `${SITE_URL}/#/auth/signup?email=${encodeURIComponent(clientEmail)}&first=${encodeURIComponent(clientFirstName)}&last=${encodeURIComponent(clientLastName)}`,
         },
         related_table: 'clients',
         related_id: client_id,
