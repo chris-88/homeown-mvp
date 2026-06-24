@@ -51,7 +51,7 @@ function InputSummaryBar({ propertyPrice, monthlySavings, currentSavings, ghi }:
   return (
     <div className="flex divide-x divide-brand-cream mt-6">
       {stats.map(({ label, value }) => (
-        <div key={label} className="flex-1 flex flex-col px-4 first:pl-0">
+        <div key={label} className="flex-1 flex flex-col items-center px-4">
           <span className="text-[10px] font-medium tracking-widest uppercase text-brand-taupe">{label}</span>
           <span className="text-sm font-semibold tabular-nums text-brand-ink mt-0.5">{value}</span>
         </div>
