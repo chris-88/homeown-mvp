@@ -14,9 +14,9 @@ import CalcStepWow from '@/components/calc/CalcStepWow'
 function fmtK(v: number) { return `€${Math.round(v / 1000)}k` }
 
 function SliderCard({
-  label, hint, value, display, min, max, step, onChange, minLabel, maxLabel,
+  label, hint, warning, value, display, min, max, step, onChange, minLabel, maxLabel,
 }: {
-  label: string; hint?: string; value: number; display: string
+  label: string; hint?: string; warning?: string; value: number; display: string
   min: number; max: number; step: number
   onChange: (v: number) => void
   minLabel?: string; maxLabel?: string
@@ -93,6 +93,11 @@ function SliderCard({
           <span>{minLabel}</span>
           <span>{maxLabel}</span>
         </div>
+      )}
+      {warning && (
+        <p className="mt-3 rounded-sm bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800 leading-relaxed">
+          {warning}
+        </p>
       )}
     </div>
   )
@@ -202,22 +207,18 @@ function Step1({ onNext }: { onNext: () => void }) {
           minLabel="€200k" maxLabel={fmtK(maxPropertyPrice)}
         />
 
-        <div>
-          <SliderCard
-            label="Funds set aside"
-            hint="What you currently have available towards a purchase"
-            value={currentSavingsValue}
-            display={formatCurrency(currentSavingsValue)}
-            min={0} max={maxSavings} step={100}
-            onChange={handleCurrentSavingsChange}
-            minLabel="€0" maxLabel={fmtK(maxSavings)}
-          />
-          {currentSavingsValue < entryStakeMin && (
-            <p className="text-xs text-muted-foreground mt-1 px-1">
-              A {formatCurrency(entryStakeMin)} Entry Stake is required to join the pathway.
-            </p>
-          )}
-        </div>
+        <SliderCard
+          label="Funds set aside"
+          hint="What you currently have available towards a purchase"
+          value={currentSavingsValue}
+          display={formatCurrency(currentSavingsValue)}
+          min={0} max={maxSavings} step={100}
+          onChange={handleCurrentSavingsChange}
+          minLabel="€0" maxLabel={fmtK(maxSavings)}
+          warning={currentSavingsValue < entryStakeMin
+            ? `A ${formatCurrency(entryStakeMin)} Entry Stake (1% of your target price) is required by the time you go sale agreed on your chosen home. This does not need to be in place before you start the programme.`
+            : undefined}
+        />
 
         <SliderCard
           label="Monthly contribution"
