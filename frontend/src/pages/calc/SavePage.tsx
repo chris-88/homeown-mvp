@@ -170,13 +170,12 @@ export default function SavePage() {
           <p className="mt-2 text-sm text-muted-foreground">{copy.sub}</p>
         </div>
 
-        {/* Comparison table — eligible only */}
+        {/* Benefits summary — eligible only */}
         {variant === 'eligible' && activeState.propertyPrice > 0 && (() => {
           const { propertyPrice, currentSavings, monthlySavings, strikePrice, entryStake, monthlyDomiter, currentHousingCost } = activeState
-          const deposit = Math.round(propertyPrice * 0.10)
 
           const depositData = Array.from({ length: 11 }, (_, i) => ({
-            deposit: Math.round(propertyPrice * 0.10 * Math.pow(1.05, i)),
+            deposit:     Math.round(propertyPrice * 0.10 * Math.pow(1.05, i)),
             accumulated: Math.round(currentSavings + monthlySavings * 12 * i),
           }))
           const crossoverIdx = depositData.findIndex((d, i) => i > 0 && d.accumulated >= d.deposit)
@@ -187,69 +186,60 @@ export default function SavePage() {
             return (crossoverIdx - 1) + Math.max(0, Math.min(1, t))
           })()
 
+          const tradBuyYears  = crossoverYears === -1 ? 10 : crossoverYears
+          const tradBuyPrice  = Math.round(propertyPrice * Math.pow(1.05, tradBuyYears))
+          const tradDeposit   = Math.round(tradBuyPrice * 0.10)
+          const finalMarket   = Math.round(propertyPrice * Math.pow(1.05, 5))
+          const tradMonthly   = (currentHousingCost ?? 0) + monthlySavings
+          const monthlyPct    = tradMonthly > monthlyDomiter
+            ? Math.round((tradMonthly - monthlyDomiter) / tradMonthly * 100)
+            : null
+
           const fmtYrsMonths = (y: number) => {
-            const totalMonths = Math.round(y * 12)
-            const yrs = Math.floor(totalMonths / 12)
-            const mos = totalMonths % 12
+            const m = Math.round(y * 12)
+            const yrs = Math.floor(m / 12), mos = m % 12
             return mos === 0 ? `${yrs} yrs` : `${yrs} yrs, ${mos} mo`
           }
 
-          const tradMoveIn = crossoverYears === -1 ? '> 10 years' : fmtYrsMonths(crossoverYears)
-          const tradBuyPrice = Math.round(propertyPrice * Math.pow(1.05, crossoverYears === -1 ? 10 : crossoverYears))
-          const tradMonthly = (currentHousingCost ?? 0) + monthlySavings
-
-          const rows = [
+          const benefits = [
             {
-              label: 'Upfront',
-              homeown: { main: formatCurrency(entryStake), sub: 'Entry Stake' },
-              trad:    { main: formatCurrency(deposit),    sub: '10% deposit' },
+              stat:  formatCurrency(tradDeposit - entryStake),
+              label: 'less needed upfront than a traditional deposit',
             },
             {
-              label: 'Move in',
-              homeown: { main: '3–6 months', sub: 'from today' },
-              trad:    { main: tradMoveIn,   sub: 'to save the deposit' },
+              stat:  crossoverYears === -1 ? '10+ years' : fmtYrsMonths(crossoverYears),
+              label: 'sooner in your home',
+            },
+            ...(monthlyPct !== null ? [{
+              stat:  `${monthlyPct}%`,
+              label: 'lower monthly commitment during the pathway',
+            }] : []),
+            {
+              stat:  formatCurrency(tradBuyPrice - strikePrice),
+              label: 'less on the purchase price, locked from today',
             },
             {
-              label: 'Monthly',
-              homeown: { main: formatCurrency(monthlyDomiter), sub: 'service fee' },
-              trad:    { main: formatCurrency(tradMonthly),    sub: 'housing + monthly contribution' },
-            },
-            {
-              label: 'Buy price',
-              homeown: { main: formatCurrency(strikePrice),    sub: 'fixed today' },
-              trad:    { main: `~${formatCurrency(tradBuyPrice)}`, sub: crossoverYears === -1 ? 'estimated market price (10+ yrs)' : 'market price at purchase' },
+              stat:  formatCurrency(finalMarket - strikePrice),
+              label: 'potential equity when you exercise your option',
             },
           ]
 
-          return (
-            <div className="rounded-lg border overflow-hidden">
-              {/* Column headers */}
-              <div className="grid grid-cols-[90px_1fr_1fr] sm:grid-cols-[110px_1fr_1fr]">
-                <div className="bg-muted/40 border-b border-r" />
-                {/* Homeown — featured column with green top accent */}
-                <div className="bg-muted/40 border-b border-r border-t-2 border-t-primary px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-primary">Homeown</p>
-                </div>
-                <div className="bg-muted/40 border-b px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Traditional</p>
-                </div>
-              </div>
+          const lastIsOrphan = benefits.length % 2 !== 0
 
-              {rows.map(({ label, homeown, trad }) => (
-                <div key={label} className="grid grid-cols-[90px_1fr_1fr] sm:grid-cols-[110px_1fr_1fr] border-b last:border-b-0">
-                  <div className="bg-muted/20 border-r px-3 py-4 flex items-center">
-                    <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          return (
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">What the pathway gives you</p>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+                {benefits.map((b, i) => (
+                  <div
+                    key={i}
+                    className={lastIsOrphan && i === benefits.length - 1 ? 'col-span-2 border-t pt-4' : ''}
+                  >
+                    <p className="text-2xl font-bold tabular-nums text-primary">{b.stat}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground leading-snug">{b.label}</p>
                   </div>
-                  <div className="border-r px-4 py-4">
-                    <p className="text-lg font-bold tabular-nums text-foreground">{homeown.main}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{homeown.sub}</p>
-                  </div>
-                  <div className="px-4 py-4">
-                    <p className="text-lg font-bold tabular-nums text-muted-foreground">{trad.main}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{trad.sub}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )
         })()}
