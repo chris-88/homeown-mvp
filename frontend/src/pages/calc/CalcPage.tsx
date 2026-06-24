@@ -377,7 +377,10 @@ function Step4({ onBack }: { onBack: () => void }) {
     const anonId = sessionStorage.getItem('anon_id') ?? crypto.randomUUID()
     sessionStorage.setItem('anon_id', anonId)
 
-    const { data } = await supabase.from('calculator_snapshots').insert({
+    // Generate ID client-side to avoid needing a SELECT policy for anon users
+    const snapshotId = crypto.randomUUID()
+    await supabase.from('calculator_snapshots').insert({
+      id: snapshotId,
       anon_session_id: anonId,
       property_price: state.propertyPrice,
       entry_stake: state.entryStake,
@@ -392,9 +395,9 @@ function Step4({ onBack }: { onBack: () => void }) {
       eligible,
       saved: false,
       current_housing_cost: state.currentHousingCost > 0 ? state.currentHousingCost : null,
-    }).select('id').single()
+    })
 
-    if (data?.id) sessionStorage.setItem('snapshot_id', data.id)
+    sessionStorage.setItem('snapshot_id', snapshotId)
     setSubmitting(false)
     navigate('/calc/save')
   }
