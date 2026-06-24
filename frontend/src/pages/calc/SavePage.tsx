@@ -72,6 +72,8 @@ async function submitCalcResults(
     p_user_agent:             navigator.userAgent,
     p_current_housing_cost:   calcState.currentHousingCost > 0 ? calcState.currentHousingCost : null,
     p_age:                    calcState.age > 0 ? calcState.age : null,
+    p_current_savings:        calcState.currentSavings > 0 ? calcState.currentSavings : null,
+    p_monthly_savings:        calcState.monthlySavings > 0 ? calcState.monthlySavings : null,
   })
 }
 

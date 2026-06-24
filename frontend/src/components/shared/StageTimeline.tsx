@@ -2,8 +2,14 @@ import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function StageTimeline<T extends string>({
-  stages, labels, current, terminal,
-}: { stages: T[]; labels: Record<T, string>; current: T; terminal?: boolean }) {
+  stages, labels, current, terminal, onStageClick,
+}: {
+  stages: T[]
+  labels: Record<T, string>
+  current: T
+  terminal?: boolean
+  onStageClick?: (stage: T) => void
+}) {
   const currentIdx = stages.indexOf(current)
 
   return (
@@ -11,18 +17,25 @@ export function StageTimeline<T extends string>({
       {stages.map((stage, i) => {
         const done = !terminal && currentIdx > i
         const active = !terminal && currentIdx === i
+        const clickable = !!onStageClick && !active && !terminal
         return (
           <div key={stage} className="flex items-center flex-1 min-w-0">
             <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-              <div className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors',
-                done ? 'bg-brand-green border-brand-green text-white'
-                  : active ? 'bg-white border-brand-green text-brand-green'
-                    : terminal ? 'bg-white border-muted-foreground/20 text-muted-foreground/40'
-                      : 'bg-white border-muted-foreground/30 text-muted-foreground/40',
-              )}>
+              <button
+                type="button"
+                onClick={clickable ? () => onStageClick(stage) : undefined}
+                disabled={!clickable}
+                className={cn(
+                  'flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors',
+                  done ? 'bg-brand-green border-brand-green text-white'
+                    : active ? 'bg-white border-brand-green text-brand-green'
+                      : terminal ? 'bg-white border-muted-foreground/20 text-muted-foreground/40'
+                        : 'bg-white border-muted-foreground/30 text-muted-foreground/40',
+                  clickable && 'cursor-pointer hover:border-brand-green hover:text-brand-green',
+                )}
+              >
                 {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
-              </div>
+              </button>
               <span className={cn(
                 'text-[10px] font-medium text-center leading-tight whitespace-nowrap',
                 active ? 'text-brand-green' : done ? 'text-foreground' : 'text-muted-foreground/50',

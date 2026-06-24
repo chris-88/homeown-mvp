@@ -20,9 +20,9 @@ import { StageTimeline } from '@/components/shared/StageTimeline'
 import { StaffDocumentsSection } from '@/components/shared/StaffDocumentsSection'
 import { NotesTab } from '@/components/shared/NotesTab'
 import { EventTimelineTab } from '@/components/shared/EventTimelineTab'
-import { TicketPanel } from '@/components/shared/TicketPanel'
 import { ClientDetailsSection } from '@/components/shared/ClientDetailsSection'
 import { SendDocumentDrawer } from '@/components/shared/SendDocumentDrawer'
+import { ROI_COUNTIES, DUBLIN_POSTCODES } from '@/lib/calcWizard'
 import { getDisplayName } from '@/lib/documents/registry'
 import type { DocumentDelivery } from '@/types'
 
@@ -162,8 +162,7 @@ export default function ProspectDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [disableLoading, setDisableLoading] = useState(false)
   const [stageLoading, setStageLoading] = useState(false)
-  const [stagePending, setStagePending] = useState<LeadStage | null>(null)
-  const [stagingNote, setStagingNote] = useState('')
+  const [stageClickPending, setStageClickPending] = useState<LeadStage | null>(null)
   const [linkCopied, setLinkCopied] = useState(false)
   const [sendDocOpen, setSendDocOpen] = useState(false)
 
@@ -231,6 +230,8 @@ export default function ProspectDetailPage() {
   })
 
   const { data: calcSnapshot } = useQuery<{
+    id: string
+    property_price: number | null
     ghi: number | null
     age: number | null
     household_type: string | null
@@ -239,12 +240,14 @@ export default function ProspectDetailPage() {
     county: string | null
     dublin_postcode: string | null
     current_housing_cost: number | null
+    current_savings: number | null
+    monthly_savings: number | null
   } | null>({
     queryKey: ['prospect-snapshot', id],
     queryFn: async () => {
       const { data } = await supabase
         .from('calculator_snapshots')
-        .select('ghi, age, household_type, is_ftb, employment_type, county, dublin_postcode, current_housing_cost')
+        .select('id, property_price, ghi, age, household_type, is_ftb, employment_type, county, dublin_postcode, current_housing_cost, current_savings, monthly_savings')
         .eq('client_id', id!)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -302,10 +305,6 @@ export default function ProspectDetailPage() {
   if (isLoading) return <div className="p-8 text-muted-foreground">Loading…</div>
   if (!client) return <div className="p-8 text-muted-foreground">Prospect not found.</div>
 
-  const stageOptions = isAdmin
-    ? [...LEAD_STAGE_ORDER, 'not_eligible' as LeadStage, 'deferred' as LeadStage]
-    : LEAD_STAGE_ORDER
-
   return (
     <div className="mx-auto max-w-6xl p-8 space-y-6">
       <DetailHeader
@@ -332,36 +331,85 @@ export default function ProspectDetailPage() {
             <div className="flex items-center justify-between gap-4">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="ticket">Ticket</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
                 <TabsTrigger value="property">Property</TabsTrigger>
               </TabsList>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-muted-foreground">Assigned</span>
-                <Select
-                  value={client.assigned_to ?? 'none'}
-                  onValueChange={v => handleAssignTo(v === 'none' ? '' : v)}
-                  disabled={!(isAdmin || staffMember?.role === 'onboarding')}
-                >
-                  <SelectTrigger className="h-8 text-xs w-40">
-                    <SelectValue placeholder="Not assigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not assigned</SelectItem>
-                    {staffMembers
-                      ?.filter(s => s.role === 'onboarding' || s.role === 'admin')
-                      .map(s => (
-                        <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select
+                value={client.assigned_to ?? 'none'}
+                onValueChange={v => handleAssignTo(v === 'none' ? '' : v)}
+                disabled={!(isAdmin || staffMember?.role === 'onboarding')}
+              >
+                <SelectTrigger className="h-8 text-xs w-40 shrink-0">
+                  <SelectValue placeholder="Not assigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Not assigned</SelectItem>
+                  {staffMembers
+                    ?.filter(s => s.role === 'onboarding' || s.role === 'admin')
+                    .map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Overview */}
             <TabsContent value="overview" className="mt-4 space-y-6">
               <ClientDetailsSection client={client} snapshot={calcSnapshot} />
+
+              <section className="rounded-md border bg-card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold">Stage</h2>
+                  <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-xs">
+                    {LEAD_STAGE_LABELS[client.lead_stage]}
+                  </Badge>
+                </div>
+                <StageTimeline
+                  stages={LEAD_STAGE_ORDER}
+                  labels={LEAD_STAGE_LABELS}
+                  current={client.lead_stage}
+                  terminal={inPhase1Terminal}
+                  onStageClick={canAdvance && !inPhase1Terminal ? s => setStageClickPending(s) : undefined}
+                />
+                <div className="space-y-1 text-sm">
+                  <p className="text-muted-foreground">{LEAD_STAGE_META[client.lead_stage].current}</p>
+                  {!inPhase1Terminal && LEAD_STAGE_META[client.lead_stage].toProgress && (
+                    <p className="text-muted-foreground">
+                      <span className="font-medium text-foreground">To progress: </span>
+                      {LEAD_STAGE_META[client.lead_stage].toProgress}
+                    </p>
+                  )}
+                </div>
+                {stageClickPending && stageClickPending !== client.lead_stage && (
+                  <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">Move to</span>
+                    <span className="font-medium">{LEAD_STAGE_LABELS[stageClickPending]}</span>
+                    <span className="text-muted-foreground">?</span>
+                    <div className="ml-auto flex gap-2">
+                      <Button size="sm" onClick={async () => {
+                        await handleStageChange(stageClickPending, '')
+                        setStageClickPending(null)
+                      }} disabled={stageLoading}>
+                        {stageLoading ? '…' : 'Confirm'}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setStageClickPending(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </TabsContent>
+
+            {/* Ticket */}
+            <TabsContent value="ticket" className="mt-4">
+              <ProspectTicketTab
+                clientId={client.id}
+                targetPrice={client.target_price}
+                snapshot={calcSnapshot ?? null}
+                onSaved={refresh}
+              />
             </TabsContent>
 
             {/* Documents */}
@@ -372,7 +420,6 @@ export default function ProspectDetailPage() {
                   <Send className="h-3.5 w-3.5 mr-1.5" /> Send document
                 </Button>
               </div>
-
               <Tabs defaultValue="client-files">
                 <TabsList className="mb-3">
                   <TabsTrigger value="client-files">Client files</TabsTrigger>
@@ -383,7 +430,6 @@ export default function ProspectDetailPage() {
                     )}
                   </TabsTrigger>
                 </TabsList>
-
                 <TabsContent value="client-files">
                   <StaffDocumentsSection
                     clientId={client.id}
@@ -391,23 +437,15 @@ export default function ProspectDetailPage() {
                     onRefresh={() => qc.invalidateQueries({ queryKey: ['prospect-docs', id] })}
                   />
                 </TabsContent>
-
                 <TabsContent value="sent-docs">
-                  <ProspectDeliveryLog
-                    deliveries={deliveries ?? []}
-                    onSend={() => setSendDocOpen(true)}
-                  />
+                  <ProspectDeliveryLog deliveries={deliveries ?? []} onSend={() => setSendDocOpen(true)} />
                 </TabsContent>
               </Tabs>
             </TabsContent>
 
             {/* Notes */}
             <TabsContent value="notes" className="mt-4">
-              <NotesTab
-                clientId={client.id}
-                events={events ?? []}
-                onAdded={() => qc.invalidateQueries({ queryKey: ['prospect-events', id] })}
-              />
+              <NotesTab clientId={client.id} events={events ?? []} onAdded={() => qc.invalidateQueries({ queryKey: ['prospect-events', id] })} />
             </TabsContent>
 
             {/* Timeline */}
@@ -427,100 +465,36 @@ export default function ProspectDetailPage() {
 
         {/* Right — sidebar */}
         <aside className="space-y-6">
-          {/* Stage — all actions in one card */}
-          <div className="rounded-md border bg-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-sm">Stage</h2>
-              <Badge variant={stageBadgeVariant(client.lead_stage)} className="text-xs">
-                {LEAD_STAGE_LABELS[client.lead_stage]}
-              </Badge>
-            </div>
-
-            <StageTimeline
-              stages={LEAD_STAGE_ORDER}
-              labels={LEAD_STAGE_LABELS}
-              current={client.lead_stage}
-              terminal={inPhase1Terminal}
-            />
-
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">{LEAD_STAGE_META[client.lead_stage].current}</p>
-              {!inPhase1Terminal && LEAD_STAGE_META[client.lead_stage].toProgress && (
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">To progress: </span>
-                  {LEAD_STAGE_META[client.lead_stage].toProgress}
-                </p>
-              )}
-            </div>
-
-            {canAdvance && (
-              <div className="space-y-2">
-                <Select
-                  value={stagePending ?? client.lead_stage}
-                  onValueChange={v => v === client.lead_stage ? setStagePending(null) : setStagePending(v as LeadStage)}
-                >
-                  <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={client.lead_stage}>{LEAD_STAGE_LABELS[client.lead_stage]}</SelectItem>
-                    {stageOptions.filter(s => s !== client.lead_stage).map(s => (
-                      <SelectItem key={s} value={s}>{LEAD_STAGE_LABELS[s]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {stagePending && (
-                  <div className="space-y-2">
-                    <Textarea
-                      placeholder="Optional note (recorded internally)…"
-                      value={stagingNote}
-                      onChange={e => setStagingNote(e.target.value)}
-                      rows={2}
-                      className="text-sm"
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={async () => {
-                        await handleStageChange(stagePending, stagingNote)
-                        setStagePending(null); setStagingNote('')
-                      }} disabled={stageLoading}>
-                        {stageLoading ? 'Saving…' : `Confirm: ${LEAD_STAGE_LABELS[stagePending]}`}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setStagePending(null); setStagingNote('') }}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-1.5 pt-1 border-t">
+          {/* Actions */}
+          <div className="rounded-md border bg-card p-5 space-y-3">
+            <h2 className="font-semibold text-sm">Actions</h2>
+            <div className="flex flex-col gap-2">
               {client.user_id ? (
-                <Button variant="outline" size="sm" disabled className="text-green-700 border-green-200 bg-green-50 opacity-100">
+                <Button variant="outline" size="sm" disabled className="justify-start text-green-700 border-green-200 bg-green-50 opacity-100">
                   <UserCheck className="h-3.5 w-3.5 mr-1.5" />Portal active
                 </Button>
               ) : (
-                <Button variant="outline" size="sm" onClick={copyPortalLink}>
+                <Button variant="outline" size="sm" className="justify-start" onClick={copyPortalLink}>
                   {linkCopied ? <Check className="h-3.5 w-3.5 mr-1.5 text-primary" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-                  {linkCopied ? 'Copied!' : 'Portal link'}
+                  {linkCopied ? 'Copied!' : 'Copy portal link'}
                 </Button>
               )}
               {!inPhase1Terminal && canAdvance && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => setDeferOpen(true)}>Defer</Button>
-                  <Button variant="outline" size="sm" onClick={() => setNotEligOpen(true)}
-                    className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                  <Button variant="outline" size="sm" className="justify-start" onClick={() => setDeferOpen(true)}>Defer</Button>
+                  <Button variant="outline" size="sm" className="justify-start text-destructive border-destructive/40 hover:bg-destructive/5" onClick={() => setNotEligOpen(true)}>
                     Not eligible
                   </Button>
                 </>
               )}
               {isAdmin && (
                 <>
-                  <Button variant="outline" size="sm" onClick={handleToggleActive} disabled={disableLoading}>
+                  <Button variant="outline" size="sm" className="justify-start" onClick={handleToggleActive} disabled={disableLoading}>
                     {disableLoading ? '…' : client.active
                       ? <><Ban className="h-3.5 w-3.5 mr-1.5" />Disable</>
                       : <><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Enable</>}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}
-                    className="text-destructive border-destructive/40 hover:bg-destructive/5">
+                  <Button variant="outline" size="sm" className="justify-start text-destructive border-destructive/40 hover:bg-destructive/5" onClick={() => setDeleteOpen(true)}>
                     <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete
                   </Button>
                 </>
@@ -536,21 +510,6 @@ export default function ProspectDetailPage() {
               onSent={() => qc.invalidateQueries({ queryKey: ['prospect-deliveries', id] })}
             />
           )}
-
-          {/* Ticket */}
-          {client.target_price && calcSnapshot?.ghi ? (
-            <TicketPanel
-              propertyPrice={client.target_price}
-              ghi={calcSnapshot.ghi}
-              age={calcSnapshot.age}
-              householdType={calcSnapshot.household_type}
-              isFtb={calcSnapshot.is_ftb}
-              employmentType={calcSnapshot.employment_type}
-              county={calcSnapshot.county}
-              dublinPostcode={calcSnapshot.dublin_postcode}
-              currentHousingCost={calcSnapshot.current_housing_cost}
-            />
-          ) : null}
 
           {/* Assign to DAC (finance + admin when eligible) */}
           {canAssign && client.lead_stage === 'eligible' && (
@@ -596,6 +555,273 @@ export default function ProspectDetailPage() {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// ── Ticket tab ────────────────────────────────────────────────────────────────
+
+type SnapType = {
+  id: string; property_price: number | null; ghi: number | null; age: number | null
+  household_type: string | null; is_ftb: boolean | null; employment_type: string | null
+  county: string | null; dublin_postcode: string | null
+  current_housing_cost: number | null; current_savings: number | null; monthly_savings: number | null
+} | null
+
+function numInput(val: number | null) { return val === null ? '' : String(val) }
+function parseNum(s: string) { const n = parseInt(s.replace(/[^0-9]/g, ''), 10); return isNaN(n) ? null : n }
+
+function ToggleGroup({ value, options, onChange }: {
+  value: string | null
+  options: { value: string; label: string }[]
+  onChange: (v: string | null) => void
+}) {
+  return (
+    <div className="flex gap-1">
+      {options.map(o => (
+        <button key={o.value} type="button" onClick={() => onChange(value === o.value ? null : o.value)}
+          className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+            value === o.value ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-primary/50'
+          }`}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2 border-b last:border-0">
+      <span className="text-sm text-muted-foreground w-40 shrink-0">{label}</span>
+      <div className="flex-1">{children}</div>
+    </div>
+  )
+}
+
+function CalcRow({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 py-1.5 border-b last:border-0 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2 tabular-nums shrink-0">
+        <span className="font-medium">{value}</span>
+        {note && <span className="text-xs text-muted-foreground">{note}</span>}
+      </div>
+    </div>
+  )
+}
+
+function SectionHead({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground pt-2 pb-1">{children}</p>
+}
+
+function pmtCalc(r: number, n: number, pv: number) {
+  if (r === 0) return pv / n
+  const f = Math.pow(1 + r, n)
+  return (pv * r * f) / (f - 1)
+}
+
+function ProspectTicketTab({ clientId, targetPrice, snapshot, onSaved }: {
+  clientId: string; targetPrice: number | null; snapshot: SnapType; onSaved: () => void
+}) {
+  const init = () => ({
+    propertyPrice: targetPrice ?? snapshot?.property_price ?? 0,
+    ghi:           snapshot?.ghi ?? 0,
+    age:           snapshot?.age ?? null as number | null,
+    householdType: snapshot?.household_type ?? null as string | null,
+    isFtb:         snapshot?.is_ftb ?? null as boolean | null,
+    employmentType:snapshot?.employment_type ?? null as string | null,
+    county:        snapshot?.county ?? '',
+    dublinPostcode:snapshot?.dublin_postcode ?? null as string | null,
+    currentHousingCost: snapshot?.current_housing_cost ?? null as number | null,
+    currentSavings:     snapshot?.current_savings ?? null as number | null,
+    monthlySavings:     snapshot?.monthly_savings ?? null as number | null,
+  })
+
+  const [form, setForm] = useState(init)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  // Re-sync when snapshot arrives from the query
+  const [synced, setSynced] = useState(false)
+  if (!synced && snapshot) { setForm(init()); setSynced(true) }
+
+  const set = (k: keyof typeof form, v: unknown) => setForm(prev => ({ ...prev, [k]: v }))
+
+  const price        = form.propertyPrice || 0
+  const entryStake   = Math.round(price * 0.01)
+  const monthlyFee   = parseFloat(((price * 0.082) / 12).toFixed(2))
+  const strikePrice  = Math.round(price * 0.9)
+  const projected    = Math.round(price * Math.pow(1.05, 5))
+  const appEur       = projected - strikePrice
+  const appPct       = price > 0 ? (appEur / price) * 100 : 0
+  const ltv          = projected > 0 ? (strikePrice / projected) * 100 : 0
+  const gmiMonthly   = (form.ghi || 0) / 12
+  const feePct       = gmiMonthly > 0 ? Math.round((monthlyFee / gmiMonthly) * 100) : null
+  const stressMtg    = Math.round(pmtCalc(0.055 / 12, 360, strikePrice))
+  const baseMtg      = Math.round(pmtCalc(0.035 / 12, 360, strikePrice))
+  const stressPct    = gmiMonthly > 0 ? Math.round((stressMtg / gmiMonthly) * 100) : null
+  const basePct      = gmiMonthly > 0 ? Math.round((baseMtg / gmiMonthly) * 100) : null
+
+  async function handleSave() {
+    setSaving(true)
+    const { data: snap } = await supabase
+      .from('calculator_snapshots').select('id').eq('client_id', clientId)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+
+    if (snap) {
+      await supabase.from('calculator_snapshots').update({
+        property_price: price || null,
+        entry_stake: entryStake,
+        monthly_domiter: monthlyFee,
+        strike_price: strikePrice,
+        ghi: form.ghi || null,
+        age: form.age,
+        household_type: form.householdType,
+        is_ftb: form.isFtb,
+        employment_type: form.employmentType,
+        county: form.county || null,
+        dublin_postcode: form.dublinPostcode,
+        current_housing_cost: form.currentHousingCost,
+        current_savings: form.currentSavings,
+        monthly_savings: form.monthlySavings,
+      }).eq('id', snap.id)
+    }
+
+    const targetArea = form.county
+      ? form.county + (form.dublinPostcode ? ` ${form.dublinPostcode}` : '')
+      : null
+    await supabase.from('clients').update({
+      target_price: price || null,
+      target_areas: targetArea,
+    }).eq('id', clientId)
+
+    setSaving(false); setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+    onSaved()
+  }
+
+  const fmt = (n: number) => `€${Math.round(n).toLocaleString('en-IE')}`
+
+  if (!snapshot) {
+    return (
+      <div className="rounded-md border bg-card p-8 text-center text-muted-foreground text-sm">
+        No calculator data on record yet.
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-md border bg-card p-5 space-y-1">
+
+      <SectionHead>Profile</SectionHead>
+      <FieldRow label="County">
+        <Select value={form.county || 'none'} onValueChange={v => {
+          set('county', v === 'none' ? '' : v)
+          if (v !== 'Dublin') set('dublinPostcode', null)
+        }}>
+          <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select county" /></SelectTrigger>
+          <SelectContent>{ROI_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+        </Select>
+      </FieldRow>
+      {form.county === 'Dublin' && (
+        <FieldRow label="Dublin postcode">
+          <Select value={form.dublinPostcode ?? 'none'} onValueChange={v => set('dublinPostcode', v === 'none' ? null : v)}>
+            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select postcode" /></SelectTrigger>
+            <SelectContent>{DUBLIN_POSTCODES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+          </Select>
+        </FieldRow>
+      )}
+      <FieldRow label="Age">
+        <Input type="number" min={18} max={65} className="h-8 text-sm w-24"
+          value={numInput(form.age)}
+          onChange={e => set('age', parseNum(e.target.value))} />
+      </FieldRow>
+      <FieldRow label="Household">
+        <ToggleGroup value={form.householdType} onChange={v => set('householdType', v)}
+          options={[{ value: 'solo', label: 'Solo' }, { value: 'couple', label: 'Couple' }]} />
+      </FieldRow>
+      <FieldRow label="First-time buyer">
+        <ToggleGroup value={form.isFtb === null ? null : String(form.isFtb)} onChange={v => set('isFtb', v === null ? null : v === 'true')}
+          options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]} />
+      </FieldRow>
+      <FieldRow label="Employment">
+        <ToggleGroup value={form.employmentType} onChange={v => set('employmentType', v)}
+          options={[{ value: 'paye', label: 'PAYE' }, { value: 'self_employed', label: 'Self-employed' }, { value: 'mixed', label: 'Mixed' }]} />
+      </FieldRow>
+
+      <SectionHead>Finances</SectionHead>
+      <FieldRow label="Gross household income">
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-muted-foreground">€</span>
+          <Input type="number" min={0} step={1000} className="h-8 text-sm w-32"
+            value={numInput(form.ghi)}
+            onChange={e => set('ghi', parseNum(e.target.value) ?? 0)} />
+          <span className="text-xs text-muted-foreground">/yr</span>
+        </div>
+      </FieldRow>
+      <FieldRow label="Current housing cost">
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-muted-foreground">€</span>
+          <Input type="number" min={0} step={50} className="h-8 text-sm w-28"
+            value={numInput(form.currentHousingCost)}
+            onChange={e => set('currentHousingCost', parseNum(e.target.value))} />
+          <span className="text-xs text-muted-foreground">/mo</span>
+        </div>
+      </FieldRow>
+      <FieldRow label="Current savings">
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-muted-foreground">€</span>
+          <Input type="number" min={0} step={500} className="h-8 text-sm w-28"
+            value={numInput(form.currentSavings)}
+            onChange={e => set('currentSavings', parseNum(e.target.value))} />
+        </div>
+      </FieldRow>
+      <FieldRow label="Monthly saving">
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-muted-foreground">€</span>
+          <Input type="number" min={0} step={50} className="h-8 text-sm w-28"
+            value={numInput(form.monthlySavings)}
+            onChange={e => set('monthlySavings', parseNum(e.target.value))} />
+          <span className="text-xs text-muted-foreground">/mo</span>
+        </div>
+      </FieldRow>
+
+      <SectionHead>Target property</SectionHead>
+      <FieldRow label="Property price">
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-muted-foreground">€</span>
+          <Input type="number" min={100000} max={1000000} step={5000} className="h-8 text-sm w-32"
+            value={numInput(form.propertyPrice || null)}
+            onChange={e => set('propertyPrice', parseNum(e.target.value) ?? 0)} />
+        </div>
+      </FieldRow>
+
+      <SectionHead>Homeown numbers</SectionHead>
+      <div className="rounded-md border bg-muted/30 p-3 space-y-0">
+        <CalcRow label="Entry Stake" value={fmt(entryStake)} />
+        <CalcRow label="Monthly service fee" value={fmt(monthlyFee)} note={feePct !== null ? `${feePct}% of GHI` : undefined} />
+        <CalcRow label="Option price" value={fmt(strikePrice)} />
+        <CalcRow label="Strike reduction" value={fmt(price - strikePrice)} />
+      </div>
+
+      <SectionHead>Financial model</SectionHead>
+      <div className="rounded-md border bg-muted/30 p-3 space-y-0">
+        <CalcRow label="Projected value (Y5)" value={fmt(projected)} />
+        <CalcRow label="Appreciation (€)" value={fmt(appEur)} />
+        <CalcRow label="Appreciation (%)" value={`${appPct.toFixed(2)}%`} />
+        <CalcRow label="LTV at completion" value={`${ltv.toFixed(2)}%`} />
+        <CalcRow label="Stress mortgage" value={fmt(stressMtg)} note={stressPct !== null ? `${stressPct}% of GHI` : undefined} />
+        <CalcRow label="Base mortgage" value={fmt(baseMtg)} note={basePct !== null ? `${basePct}% of GHI` : undefined} />
+        <CalcRow label="Fee vs stress diff" value={fmt(monthlyFee - stressMtg)} />
+        <CalcRow label="Fee vs base diff" value={fmt(monthlyFee - baseMtg)} />
+      </div>
+
+      <div className="pt-3">
+        <Button onClick={handleSave} disabled={saving} size="sm">
+          {saved ? <><Check className="h-3.5 w-3.5 mr-1.5" />Saved</> : saving ? 'Saving…' : 'Save changes'}
+        </Button>
+      </div>
     </div>
   )
 }

@@ -395,6 +395,9 @@ function Step4({ onBack }: { onBack: () => void }) {
       eligible,
       saved: false,
       current_housing_cost: state.currentHousingCost > 0 ? state.currentHousingCost : null,
+      age:             state.age > 0 ? state.age : null,
+      current_savings: state.currentSavings > 0 ? state.currentSavings : null,
+      monthly_savings: state.monthlySavings > 0 ? state.monthlySavings : null,
     })
 
     sessionStorage.setItem('snapshot_id', snapshotId)
