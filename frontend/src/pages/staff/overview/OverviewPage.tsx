@@ -75,55 +75,52 @@ function StatCard({ label, value, sub, to, icon: Icon, accent = 'green' }: {
   return <div className="rounded-md border bg-card p-5 shadow-sm">{content}</div>
 }
 
-const PHASE1_COLOR = { border: 'border-border', bar: 'bg-muted-foreground/30' }
-const PHASE2_COLOR = { border: 'border-brand-burgundy/20', bar: 'bg-brand-burgundy' }
-const PHASE3_COLOR = { border: 'border-brand-green/25', bar: 'bg-brand-green' }
-
-function StageBox({ stage, count, color, to }: {
-  stage: string
-  count: number
-  color: { border: string; bar: string }
-  to: string
-}) {
-  const label = LEAD_STAGE_LABELS[stage as keyof typeof LEAD_STAGE_LABELS] ??
-    PROGRAMME_STAGE_LABELS[stage as keyof typeof PROGRAMME_STAGE_LABELS] ??
-    stage
-  return (
-    <Link
-      to={to}
-      className={cn(
-        'group relative flex-1 min-w-0 overflow-hidden rounded-lg border bg-card p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-sm',
-        color.border,
-      )}
-    >
-      <span className={cn('absolute inset-x-0 top-0 h-0.5', color.bar)} />
-      <p className={`text-2xl font-bold tabular-nums ${count === 0 ? 'text-muted-foreground/30' : ''}`}>
-        {count === 0 ? '-' : count}
-      </p>
-      <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{label}</p>
-    </Link>
-  )
-}
-
-function PhaseGroup({ label, stages, counts, color, basePath }: {
+function PipelineStepper({ label, stages, counts, circleClass, lineClass, basePath }: {
   label: string
   stages: string[]
   counts: Record<string, number>
-  color: { border: string; bar: string }
+  circleClass: string   // active circle border + text colour
+  lineClass: string     // connecting line colour
   basePath: string
 }) {
+  const stageLabel = (s: string) =>
+    LEAD_STAGE_LABELS[s as keyof typeof LEAD_STAGE_LABELS] ??
+    PROGRAMME_STAGE_LABELS[s as keyof typeof PROGRAMME_STAGE_LABELS] ??
+    s
   const total = stages.reduce((sum, s) => sum + (counts[s] ?? 0), 0)
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className={cn('h-1.5 w-1.5 rounded-full', color.bar)} />
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-        <span className="text-xs text-muted-foreground/60">· {total}</span>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <span className="text-xs text-muted-foreground/50">· {total}</span>
       </div>
-      <div className="flex gap-1.5">
-        {stages.map(s => (
-          <StageBox key={s} stage={s} count={counts[s] ?? 0} color={color} to={`${basePath}?stage=${s}`} />
-        ))}
+      <div className="flex items-start">
+        {stages.map((s, i) => {
+          const n = counts[s] ?? 0
+          const hasCount = n > 0
+          return (
+            <div key={s} className="flex flex-1 items-start min-w-0">
+              <div className="flex flex-col items-center flex-1 min-w-0">
+                <Link
+                  to={`${basePath}?stage=${s}`}
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold tabular-nums transition-colors hover:opacity-80',
+                    hasCount ? circleClass : 'border-border text-muted-foreground/30',
+                  )}
+                >
+                  {hasCount ? n : '-'}
+                </Link>
+                <p className="mt-1.5 text-center text-[11px] leading-tight text-muted-foreground px-0.5">
+                  {stageLabel(s)}
+                </p>
+              </div>
+              {i < stages.length - 1 && (
+                <div className={cn('h-px flex-1 mt-5 mx-1 shrink', hasCount ? lineClass : 'bg-border')} />
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -189,8 +186,8 @@ export default function OverviewPage() {
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
             label="Prospects"
-            value={metrics?.total_prospects ?? '-'}
-            sub={metrics ? `${metrics.eligible_unassigned} eligible, not yet assigned` : undefined}
+            value={LEAD_STAGE_ORDER.reduce((s, k) => s + (stageCounts[k] ?? 0), 0) || '-'}
+            sub={stageCounts['eligible'] ? `${stageCounts['eligible']} eligible, awaiting DAC` : 'Phase 1 pipeline'}
             to="/app/staff/prospects"
             icon={UserSearch}
             accent="stone"
@@ -238,26 +235,29 @@ export default function OverviewPage() {
             View all clients <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="space-y-4 rounded-md border bg-card p-5 shadow-sm">
-          <PhaseGroup
-            label="Phase 1: Discovery"
+        <div className="space-y-6 rounded-md border bg-card p-5 shadow-sm">
+          <PipelineStepper
+            label="Prospect"
             stages={LEAD_STAGE_ORDER}
             counts={stageCounts}
-            color={PHASE1_COLOR}
+            circleClass="border-muted-foreground/40 text-foreground"
+            lineClass="bg-muted-foreground/20"
             basePath="/app/staff/prospects"
           />
-          <PhaseGroup
-            label="Phase 2: Property"
+          <PipelineStepper
+            label="Property"
             stages={['dac_assigned','searching','sale_agreed','conveyancing','contracts_signed']}
             counts={stageCounts}
-            color={PHASE2_COLOR}
+            circleClass="border-brand-burgundy text-brand-burgundy"
+            lineClass="bg-brand-burgundy/30"
             basePath="/app/staff/property"
           />
-          <PhaseGroup
-            label="Phase 3: Pathway"
+          <PipelineStepper
+            label="Pathway"
             stages={['in_home','servicing','exit_prep','option_window','pathway_complete']}
             counts={stageCounts}
-            color={PHASE3_COLOR}
+            circleClass="border-brand-green text-brand-green"
+            lineClass="bg-brand-green/30"
             basePath="/app/staff/pathway"
           />
           <div className="flex flex-wrap gap-2 border-t pt-3">
