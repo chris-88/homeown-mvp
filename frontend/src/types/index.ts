@@ -94,6 +94,7 @@ export interface Client {
   last_name: string
   email: string
   phone: string | null
+  appointment_at: string | null
   lead_stage: LeadStage
   programme_stage: ProgrammeStage | null
   target_price: number | null

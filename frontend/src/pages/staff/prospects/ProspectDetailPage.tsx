@@ -477,6 +477,8 @@ export default function ProspectDetailPage() {
                 clientId={client.id}
                 targetPrice={client.target_price}
                 snapshot={calcSnapshot ?? null}
+                phone={client.phone}
+                appointmentAt={client.appointment_at}
                 onSaved={refresh}
               />
             </TabsContent>
@@ -616,8 +618,9 @@ function pmtCalc(r: number, n: number, pv: number) {
   return (pv * r * f) / (f - 1)
 }
 
-function ProspectTicketTab({ clientId, targetPrice, snapshot, onSaved }: {
-  clientId: string; targetPrice: number | null; snapshot: SnapType; onSaved: () => void
+function ProspectTicketTab({ clientId, targetPrice, snapshot, phone, appointmentAt, onSaved }: {
+  clientId: string; targetPrice: number | null; snapshot: SnapType
+  phone: string | null; appointmentAt: string | null; onSaved: () => void
 }) {
   const init = () => ({
     propertyPrice: targetPrice ?? snapshot?.property_price ?? 0,
@@ -712,6 +715,14 @@ function ProspectTicketTab({ clientId, targetPrice, snapshot, onSaved }: {
       {/* Left — editable inputs */}
       <div className="rounded-md border bg-card p-5 space-y-1">
         <SectionHead>Profile</SectionHead>
+        {phone && <FieldRow label="Phone"><span className="text-sm">{phone}</span></FieldRow>}
+        {appointmentAt && (
+          <FieldRow label="Call booked">
+            <span className="text-sm">
+              {new Date(appointmentAt).toLocaleString('en-IE', { dateStyle: 'medium', timeStyle: 'short' })}
+            </span>
+          </FieldRow>
+        )}
         <FieldRow label="County">
           <Select value={form.county || 'none'} onValueChange={v => {
             set('county', v === 'none' ? '' : v)
