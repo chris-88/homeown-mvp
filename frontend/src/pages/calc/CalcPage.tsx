@@ -290,7 +290,7 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
     },
     {
       when: 'Every month',
-      value: `${formatCurrency(state.monthlyDomiter)}/mo`,
+      value: formatCurrency(state.monthlyDomiter),
       label: 'Monthly service fee',
       note: 'Your housing cost for 60 months. Not a mortgage.',
     },
@@ -309,11 +309,11 @@ function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
         <p className="mt-2 text-brand-ink leading-relaxed">{intro}</p>
       </div>
 
-      {/* Timeline — 3 columns desktop, stacked mobile */}
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <div className="grid sm:grid-cols-3 sm:divide-x divide-y sm:divide-y-0">
+      {/* Timeline — stacked mobile, 3 columns desktop */}
+      <div className="rounded-lg border bg-card">
+        <div className="flex flex-col divide-y sm:flex-row sm:divide-x sm:divide-y-0">
           {moments.map(({ when, value, label, note }) => (
-            <div key={label} className="px-6 py-6">
+            <div key={label} className="flex-1 px-6 py-6">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">{when}</p>
               <p className="text-3xl font-bold tabular-nums text-primary">{value}</p>
               <p className="mt-1 text-sm font-medium text-foreground">{label}</p>
