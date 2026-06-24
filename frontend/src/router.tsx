@@ -55,6 +55,7 @@ import StaffLayout from '@/pages/staff/StaffLayout'
 import OverviewPage from '@/pages/staff/overview/OverviewPage'
 import QueuePage from '@/pages/staff/queue/QueuePage'
 import StaffProfilePage from '@/pages/staff/profile/ProfilePage'
+import NotificationsPage from '@/pages/staff/notifications/NotificationsPage'
 
 // Staff portal — prospects (Phase 1)
 import ProspectsPage from '@/pages/staff/prospects/ProspectsPage'
@@ -154,6 +155,7 @@ export const router = createHashRouter([
       { path: 'team/new', element: <TeamNewPage /> },
       { path: 'team/:id', element: <TeamDetailPage /> },
       { path: 'profile', element: <StaffProfilePage /> },
+      { path: 'notifications', element: <NotificationsPage /> },
     ],
   },
 ])
