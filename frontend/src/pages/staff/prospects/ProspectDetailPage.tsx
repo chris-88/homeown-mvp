@@ -569,15 +569,6 @@ export default function ProspectDetailPage() {
                 </div>
               </section>
 
-              {/* Signing pack — shown when eligible and no KFS sent yet */}
-              {client.lead_stage === 'eligible' && !(deliveries ?? []).some(d => d.document_type === 'kfs') && (
-                <ProspectSigningPackCard
-                  clientId={client.id}
-                  staffUserId={user?.id ?? ''}
-                  onSent={() => qc.invalidateQueries({ queryKey: ['prospect-deliveries', id] })}
-                />
-              )}
-
               {/* Assign to DAC */}
               {canAssign && client.lead_stage === 'eligible' && (
                 <section className="rounded-md border bg-card p-5 space-y-3">
@@ -1038,53 +1029,3 @@ function ProspectDeliveryLog({ deliveries, onSend }: { deliveries: DocumentDeliv
   )
 }
 
-// ── Signing pack card ─────────────────────────────────────────────────────────
-
-function ProspectSigningPackCard({ clientId, staffUserId, onSent }: { clientId: string; staffUserId: string; onSent: () => void }) {
-  const [sending, setSending] = useState(false)
-  const [err, setErr] = useState('')
-
-  const SIGNING_PACK_TYPES = ['kfs', 'privacy-notice', 'complaints-policy', 'hpa-guidance']
-
-  async function issue() {
-    setSending(true); setErr('')
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-      const issuedDate = new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })
-      const { data: clientRow } = await supabase.from('clients').select('first_name, last_name').eq('id', clientId).single()
-      const clientName = clientRow ? `${clientRow.first_name} ${clientRow.last_name}` : 'Client'
-
-      for (const docType of SIGNING_PACK_TYPES) {
-        await fetch(`${supabaseUrl}/functions/v1/deliver-document`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({
-            client_id: clientId,
-            document_type: docType,
-            variables: { clientName, issuedDate, version: docType === 'kfs' ? '0.2.2' : '0.1.0' },
-            channels: 'both',
-            delivered_by: staffUserId,
-            idempotency_key: `signing-pack-${docType}-${clientId}-${staffUserId}`,
-          }),
-        })
-      }
-      onSent()
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed')
-    } finally {
-      setSending(false)
-    }
-  }
-
-  return (
-    <div className="rounded-md border border-brand-green/30 bg-[#ECF2EE] p-4 space-y-2">
-      <p className="text-sm font-semibold text-brand-green">Signing pack</p>
-      <p className="text-xs text-muted-foreground">No signing pack delivered yet. Issue KFS, Privacy Notice, Complaints Policy, and HPA Guidance.</p>
-      {err && <p className="text-xs text-destructive">{err}</p>}
-      <Button size="sm" onClick={issue} disabled={sending} className="w-full bg-brand-green text-brand-cream hover:bg-brand-green-light">
-        {sending ? 'Sending…' : 'Issue signing pack'}
-      </Button>
-    </div>
-  )
-}
