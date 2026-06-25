@@ -8,6 +8,12 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Upload, Download, CheckCircle2, Trash2, Eye, X, FileText } from 'lucide-react'
 
+const MAX_FILE_MB = 10
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024
+const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic', 'image/heif', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+const ACCEPTED_EXTENSIONS = '.pdf,.jpg,.jpeg,.png,.heic,.heif,.doc,.docx'
+const ACCEPTED_LABEL = 'PDF, JPG, PNG, HEIC, DOC or DOCX — max 10 MB'
+
 const ALL_DOC_TYPES: DocType[] = [
   'photo_id', 'proof_of_address', 'payslip', 'bank_statement',
   'employer_letter', 'tax_document', 'self_employed_accounts',
@@ -28,6 +34,7 @@ export function StaffDocumentsSection({
   const [selected, setSelected] = useState<Set<DocType>>(new Set())
   const [requestLoading, setRequestLoading] = useState(false)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [viewingDoc, setViewingDoc] = useState<{ url: string; fileName: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -74,7 +81,20 @@ export function StaffDocumentsSection({
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !uploadingId) return
-    const path = `${clientId}/${uploadingId}/${file.name}`
+    setUploadError(null)
+    if (file.size > MAX_FILE_BYTES) {
+      setUploadError(`File is too large. Maximum size is ${MAX_FILE_MB} MB.`)
+      e.target.value = ''
+      setUploadingId(null)
+      return
+    }
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setUploadError('File type not accepted. Please upload a PDF, JPG, PNG, HEIC, DOC or DOCX.')
+      e.target.value = ''
+      setUploadingId(null)
+      return
+    }
+    const path = `clients/${clientId}/${uploadingId}/${file.name}`
     await supabase.storage.from('documents').upload(path, file, { upsert: true })
     await supabase.from('document_requests').update({
       file_path: path, file_name: file.name, status: 'needs_review', updated_at: new Date().toISOString(),
@@ -190,7 +210,9 @@ export function StaffDocumentsSection({
         </div>
       )}
 
-      <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
+      <input ref={fileRef} type="file" accept={ACCEPTED_EXTENSIONS} className="hidden" onChange={handleFileChange} />
+      {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+      <p className="text-xs text-muted-foreground">{ACCEPTED_LABEL}</p>
 
       {/* Document viewer modal */}
       {viewingDoc && (

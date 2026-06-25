@@ -12,6 +12,14 @@ import type { DocumentRequest, DocType, DocumentDelivery } from '@/types'
 import { Upload, CheckCircle2, AlertTriangle, FileText, Eye, Download, X } from 'lucide-react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
+// ── Upload constraints ────────────────────────────────────────────────────────
+
+const MAX_FILE_MB = 10
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024
+const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic', 'image/heif', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+const ACCEPTED_EXTENSIONS = '.pdf,.jpg,.jpeg,.png,.heic,.heif,.doc,.docx'
+const ACCEPTED_LABEL = 'PDF, JPG, PNG, HEIC, DOC or DOCX — max 10 MB'
+
 // ── Document metadata ─────────────────────────────────────────────────────────
 
 const DOC_META: Record<DocType, { description: string; accepted: string }> = {
@@ -80,8 +88,18 @@ function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(true)
     setUploadError(null)
+    if (file.size > MAX_FILE_BYTES) {
+      setUploadError(`File is too large. Maximum size is ${MAX_FILE_MB} MB.`)
+      e.target.value = ''
+      return
+    }
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setUploadError('File type not accepted. Please upload a PDF, JPG, PNG, HEIC, DOC or DOCX.')
+      e.target.value = ''
+      return
+    }
+    setUploading(true)
     const path = `clients/${clientId}/${doc.id}/${file.name}`
     const { error: storageError } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
     if (storageError) {
@@ -135,7 +153,7 @@ function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
             <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
               <Upload className="h-3.5 w-3.5 mr-1" /> {uploading ? 'Uploading…' : 'Upload'}
             </Button>
-            <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+            <input ref={fileRef} type="file" accept={ACCEPTED_EXTENSIONS} className="hidden" onChange={handleUpload} />
           </>
         )}
       </div>
@@ -373,7 +391,12 @@ export default function DocumentsPage() {
 
       {/* Documents we need from the client */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Required documents</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <CardTitle className="text-base">Required documents</CardTitle>
+            <p className="text-xs text-muted-foreground text-right shrink-0">{ACCEPTED_LABEL}</p>
+          </div>
+        </CardHeader>
         <CardContent>
           {docsLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
           {!docsLoading && (!docs || docs.length === 0) && (
