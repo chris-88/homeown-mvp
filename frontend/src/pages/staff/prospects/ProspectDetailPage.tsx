@@ -162,6 +162,132 @@ function DeleteClientModal({
   )
 }
 
+// ─── D-02 discovery summary dialog ───────────────────────────────────────────
+function D02SendDialog({
+  open, onClose, client, calcSnapshot, staffMember, onDone,
+}: {
+  open: boolean
+  onClose: () => void
+  client: Client
+  calcSnapshot: { property_price: number | null } | null
+  staffMember: { first_name: string; last_name: string; id: string } | null
+  onDone: () => void
+}) {
+  const { user } = useAuth()
+  const [propertyPrice, setPropertyPrice] = useState<number>(calcSnapshot?.property_price ?? 0)
+  const [discoveryDateStr, setDiscoveryDateStr] = useState<string>(() => {
+    const base = client.appointment_at ? new Date(client.appointment_at) : new Date()
+    return base.toISOString().split('T')[0]
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const price = Number(propertyPrice) || 0
+  const domiter    = Math.round((price * 0.082) / 12)
+  const entryStake = Math.round(price * 0.01)
+  const strikePrice = Math.round(price * 0.90)
+
+  function fmt(n: number) { return `€${n.toLocaleString('en-IE')}` }
+
+  function displayDate(str: string) {
+    if (!str) return ''
+    return new Date(`${str}T12:00:00`).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+
+  const staffName  = staffMember ? `${staffMember.first_name} ${staffMember.last_name}` : 'The Homeown Team'
+  const clientName = `${client.first_name} ${client.last_name}`
+
+  async function handleConfirm() {
+    if (!price) { setError('Please enter a target property price.'); return }
+    setLoading(true); setError('')
+
+    // Advance stage — DB trigger fires D-03 automatically
+    await supabase.from('clients').update({ lead_stage: 'pre_qual' }).eq('id', client.id)
+    await supabase.from('events').insert({
+      client_id: client.id, event_type: 'stage_changed', actor_id: user?.id ?? null,
+      payload: { from: client.lead_stage, to: 'pre_qual', note: 'D-02 sent; D-03 auto-queued' },
+      visibility: 'internal',
+    })
+
+    // Send D-02 discovery summary
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deliver-document`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+      body: JSON.stringify({
+        client_id: client.id,
+        document_type: 'd02-discovery-summary',
+        variables: {
+          clientName,
+          staffName,
+          discoveryDate: displayDate(discoveryDateStr),
+          targetPriceBand: fmt(price),
+          domiterExample: `${fmt(domiter)} per month`,
+          entryStakeExample: fmt(entryStake),
+          strikePriceExample: fmt(strikePrice),
+          nextStep: 'book-follow-up',
+        },
+        channels: 'both',
+        idempotency_key: `d02-${client.id}-${discoveryDateStr}`,
+      }),
+    })
+
+    if (!res.ok) {
+      const body = await res.text()
+      setError(`D-02 send failed: ${body.slice(0, 120)}`)
+      setLoading(false)
+      return
+    }
+
+    setLoading(false); onDone(); onClose()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Advance to Pre-Qualification</DialogTitle></DialogHeader>
+        <div className="space-y-4 text-sm">
+          <p className="text-muted-foreground">
+            Confirm the numbers below. A Discovery Summary (D-02) will be sent to the client and document collection (D-03) will start automatically.
+          </p>
+          <div>
+            <label className="text-sm font-medium">Target property price (€)</label>
+            <Input
+              type="number"
+              className="mt-1"
+              value={propertyPrice || ''}
+              onChange={e => setPropertyPrice(Number(e.target.value))}
+              placeholder="e.g. 350000"
+            />
+          </div>
+          {price > 0 && (
+            <div className="rounded-md border bg-muted/40 p-3 space-y-1.5">
+              <div className="flex justify-between"><span className="text-muted-foreground">Monthly service fee</span><span className="font-medium">{fmt(domiter)}/mo</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Entry Stake (once)</span><span className="font-medium">{fmt(entryStake)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Option price</span><span className="font-medium">{fmt(strikePrice)}</span></div>
+            </div>
+          )}
+          <div>
+            <label className="text-sm font-medium">Discovery date</label>
+            <Input type="date" className="mt-1" value={discoveryDateStr} onChange={e => setDiscoveryDateStr(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Conducted by</label>
+            <Input className="mt-1" value={staffName} readOnly />
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={loading || !price}>
+            {loading ? 'Sending…' : 'Send D-02 & advance'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function ProspectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -171,6 +297,7 @@ export default function ProspectDetailPage() {
   const [notEligOpen, setNotEligOpen] = useState(false)
   const [deferOpen, setDeferOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [d02DialogOpen, setD02DialogOpen] = useState(false)
   const [disableLoading, setDisableLoading] = useState(false)
   const [stageLoading, setStageLoading] = useState(false)
   const [stageClickPending, setStageClickPending] = useState<LeadStage | null>(null)
@@ -395,10 +522,14 @@ export default function ProspectDetailPage() {
                     <span className="text-muted-foreground">?</span>
                     <div className="ml-auto flex gap-2">
                       <Button size="sm" onClick={async () => {
-                        await handleStageChange(stageClickPending, '')
-                        setStageClickPending(null)
+                        if (stageClickPending === 'pre_qual') {
+                          setD02DialogOpen(true)
+                        } else {
+                          await handleStageChange(stageClickPending, '')
+                          setStageClickPending(null)
+                        }
                       }} disabled={stageLoading}>
-                        {stageLoading ? '…' : 'Confirm'}
+                        {stageLoading ? '…' : stageClickPending === 'pre_qual' ? 'Send D-02 & advance →' : 'Confirm'}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setStageClickPending(null)}>Cancel</Button>
                     </div>
@@ -538,6 +669,14 @@ export default function ProspectDetailPage() {
         <>
           <NotEligibleModal open={notEligOpen} onClose={() => setNotEligOpen(false)} client={client} onDone={refresh} />
           <DeferModal open={deferOpen} onClose={() => setDeferOpen(false)} client={client} onDone={refresh} />
+          <D02SendDialog
+            open={d02DialogOpen}
+            onClose={() => { setD02DialogOpen(false); setStageClickPending(null) }}
+            client={client}
+            calcSnapshot={calcSnapshot ?? null}
+            staffMember={staffMember ?? null}
+            onDone={() => { setStageClickPending(null); refresh() }}
+          />
           <DeleteClientModal open={deleteOpen} onClose={() => setDeleteOpen(false)} client={client}
             onDeleted={() => navigate('/app/staff/prospects', { replace: true })} />
           {sendDocOpen && (

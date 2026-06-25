@@ -187,7 +187,7 @@ export default function OverviewPage() {
           <StatCard
             label="Prospects"
             value={LEAD_STAGE_ORDER.reduce((s, k) => s + (stageCounts[k] ?? 0), 0) || '-'}
-            sub={stageCounts['eligible'] ? `${stageCounts['eligible']} eligible, awaiting DAC` : 'Phase 1 pipeline'}
+            sub={(metrics?.eligible_unassigned ?? 0) > 0 ? `${metrics!.eligible_unassigned} eligible, need DAC` : 'Phase 1 pipeline'}
             to="/app/staff/prospects"
             icon={UserSearch}
             accent="stone"
@@ -226,6 +226,19 @@ export default function OverviewPage() {
           />
         </div>
       </section>
+
+      {/* Eligible-unassigned callout */}
+      {(metrics?.eligible_unassigned ?? 0) > 0 && (
+        <div className="flex items-center gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800/40 dark:bg-amber-900/20">
+          <span className="font-semibold text-amber-800 dark:text-amber-300">{metrics!.eligible_unassigned}</span>
+          <span className="text-amber-700 dark:text-amber-400">
+            eligible {metrics!.eligible_unassigned === 1 ? 'client' : 'clients'} awaiting DAC assignment
+          </span>
+          <Link to="/app/staff/prospects" className="ml-auto text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-900 dark:text-amber-400">
+            Assign now →
+          </Link>
+        </div>
+      )}
 
       {/* Pipeline funnel */}
       <section className="space-y-4">

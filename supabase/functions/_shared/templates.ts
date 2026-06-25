@@ -123,6 +123,15 @@ ${sig()}`,
 ${sig()}`,
   }),
 
+  'in-review-notification': (m) => ({
+    subject: 'Your documents are with us — we\'re reviewing your application',
+    body: `<p>Hi ${s(m.first_name)},</p>
+<p>Thank you for submitting your documents. Our team is now completing your programme participation review and will be in touch within 3 business days with an update.</p>
+<p>In the meantime, you can log in to your portal to check the status of your documents at any time.</p>
+${btn('View your portal', `${SITE_URL}/#/app/client/documents`)}
+${sig()}`,
+  }),
+
   'dac-assigned-welcome': (m) => ({
     subject: "You've been matched. Your property search begins now.",
     body: `<p>Hi ${s(m.first_name)},</p>
