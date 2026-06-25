@@ -4,16 +4,19 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { canAdvancePhase2, canAdvancePhase3 } from '@/lib/rbac'
-import { PROGRAMME_STAGE_LABELS } from '@/types'
+import { PROGRAMME_STAGE_LABELS, PROPERTY_CASE_STATUS_LABELS, GONOGO_CHECK_LABELS } from '@/types'
 import { nextProgrammeStage } from '@/types'
-import type { Client, DocumentRequest, PropertyCase, Event, StaffMember, ProgrammeStage, DocumentDelivery } from '@/types'
+import type { Client, DocumentRequest, PropertyCase, GoNoGoChecks, GoNoGoResult, Event, StaffMember, ProgrammeStage, DocumentDelivery } from '@/types'
 import { PROGRAMME_STAGE_META } from '@/lib/stageMeta'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Home, Download, Send } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Home, Download, Send, ExternalLink, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertCircle, Clock } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 import { DetailHeader } from '@/components/shared/DetailHeader'
 import { StageTimeline } from '@/components/shared/StageTimeline'
 import { StaffDocumentsSection } from '@/components/shared/StaffDocumentsSection'
@@ -329,29 +332,20 @@ export default function StaffClientDetailPage() {
 
             {/* Property */}
             <TabsContent value="property" className="mt-4">
-              {propertyCases?.length === 0 ? (
+              {!propertyCases?.length ? (
                 <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
                   <Home className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                  <p>No property cases yet.</p>
+                  <p>No properties submitted yet.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {propertyCases?.map(p => (
-                    <div key={p.id} className="rounded-md border bg-card p-5 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold">{p.address_line_1}{p.address_line_2 ? `, ${p.address_line_2}` : ''}</p>
-                          <p className="text-sm text-muted-foreground">{p.city}, {p.county}{p.eircode ? ` ${p.eircode}` : ''}</p>
-                        </div>
-                        <Badge variant="secondary">{p.status}</Badge>
-                      </div>
-                      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                        <div><dt className="text-muted-foreground">Asking</dt><dd className="font-medium">€{p.asking_price.toLocaleString()}</dd></div>
-                        {p.agreed_price && <div><dt className="text-muted-foreground">Agreed</dt><dd className="font-medium">€{p.agreed_price.toLocaleString()}</dd></div>}
-                        {p.valuation_amount && <div><dt className="text-muted-foreground">Valuation</dt><dd className="font-medium">€{p.valuation_amount.toLocaleString()}</dd></div>}
-                      </dl>
-                      {p.notes && <p className="text-sm text-muted-foreground">{p.notes}</p>}
-                    </div>
+                  {propertyCases.map(p => (
+                    <PropertyReviewCard
+                      key={p.id}
+                      property={p}
+                      staffMemberId={staffMember?.id ?? null}
+                      onRefresh={() => qc.invalidateQueries({ queryKey: ['staff-client-properties', id] })}
+                    />
                   ))}
                 </div>
               )}
@@ -426,6 +420,229 @@ export default function StaffClientDetailPage() {
             qc.invalidateQueries({ queryKey: ['staff-client-deliveries', id] })
           }}
         />
+      )}
+    </div>
+  )
+}
+
+// ── Signing pack card ─────────────────────────────────────────────────────────
+
+// ── Property review card ──────────────────────────────────────────────────────
+
+const GONOGO_KEYS = Object.keys(GONOGO_CHECK_LABELS) as (keyof GoNoGoChecks)[]
+
+function ResultPill({ result, onChange }: { result: GoNoGoResult | null; onChange: (r: GoNoGoResult) => void }) {
+  const opts: { value: GoNoGoResult; label: string; cls: string }[] = [
+    { value: 'pass', label: 'Pass', cls: 'border-brand-green text-brand-green bg-brand-green/10' },
+    { value: 'flag', label: 'Flag', cls: 'border-amber-500 text-amber-600 bg-amber-50' },
+    { value: 'fail', label: 'Fail', cls: 'border-destructive text-destructive bg-destructive/10' },
+  ]
+  return (
+    <div className="flex gap-1">
+      {opts.map(o => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${result === o.value ? o.cls : 'border-border text-muted-foreground opacity-50 hover:opacity-80'}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function statusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (status === 'go' || status === 'accepted') return 'default'
+  if (status === 'no_go' || status === 'fallthrough') return 'destructive'
+  if (status === 'conditional_go' || status === 'offer_submitted') return 'outline'
+  return 'secondary'
+}
+
+function PropertyReviewCard({
+  property, staffMemberId, onRefresh,
+}: { property: PropertyCase; staffMemberId: string | null; onRefresh: () => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const [checks, setChecks] = useState<Partial<GoNoGoChecks>>(() => (property.gonogo_checks as Partial<GoNoGoChecks>) ?? {})
+  const [overallDecision, setOverallDecision] = useState<string>(property.gonogo_decision ?? '')
+  const [gonogo_notes, setGonogoNotes] = useState(property.gonogo_notes ?? '')
+  const [offerPrice, setOfferPrice] = useState(property.offer_price?.toString() ?? '')
+  const [bidStatus, setBidStatus] = useState(property.bid_status ?? '')
+  const [bidNotes, setBidNotes] = useState(property.bid_notes ?? '')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const label = PROPERTY_CASE_STATUS_LABELS[property.status as keyof typeof PROPERTY_CASE_STATUS_LABELS] ?? property.status
+
+  function setCheck(key: keyof GoNoGoChecks, field: 'result' | 'notes', value: string) {
+    setChecks(prev => ({
+      ...prev,
+      [key]: { ...(prev[key] ?? { result: null, notes: '' }), [field]: value },
+    }))
+  }
+
+  async function saveGoNoGo() {
+    if (!overallDecision) return
+    setSaving(true)
+    const newStatus = overallDecision === 'no_go' ? 'no_go'
+      : overallDecision === 'conditional_go' ? 'conditional_go'
+      : 'go'
+    await supabase.from('property_cases').update({
+      gonogo_decision:     overallDecision,
+      gonogo_checks:       checks,
+      gonogo_notes:        gonogo_notes || null,
+      gonogo_reviewed_by:  staffMemberId,
+      gonogo_reviewed_at:  new Date().toISOString(),
+      status:              newStatus,
+      updated_at:          new Date().toISOString(),
+    }).eq('id', property.id)
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
+    onRefresh()
+  }
+
+  async function saveBid() {
+    setSaving(true)
+    const newStatus = bidStatus === 'accepted' ? 'accepted'
+      : bidStatus === 'outbid' ? 'outbid'
+      : bidStatus === 'vendor_withdrawn' ? 'vendor_withdrawn'
+      : 'offer_submitted'
+    await supabase.from('property_cases').update({
+      offer_price:        offerPrice ? parseInt(offerPrice) : null,
+      offer_submitted_at: bidStatus === 'offer_submitted' ? new Date().toISOString() : property.offer_submitted_at,
+      bid_status:         bidStatus || null,
+      bid_notes:          bidNotes || null,
+      status:             newStatus,
+      updated_at:         new Date().toISOString(),
+    }).eq('id', property.id)
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
+    onRefresh()
+  }
+
+  const canReview = ['submitted', 'under_review', 'go', 'conditional_go', 'no_go'].includes(property.status)
+  const canBid    = ['go', 'conditional_go', 'offer_submitted', 'outbid'].includes(property.status)
+
+  return (
+    <div className="rounded-md border bg-card">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
+          <p className="font-semibold">{property.address_line_1}{property.address_line_2 ? `, ${property.address_line_2}` : ''}</p>
+          <p className="text-sm text-muted-foreground">{property.city}, {property.county}{property.eircode ? ` · ${property.eircode}` : ''}</p>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+            <span>Asking {formatCurrency(property.asking_price)}</span>
+            {property.property_type && <span className="capitalize">{property.property_type}</span>}
+            {property.bedrooms && <span>{property.bedrooms} bed</span>}
+            {property.ber_rating && <span>BER {property.ber_rating}</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {property.listing_url && (
+            <a href={property.listing_url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <ExternalLink className="h-3 w-3" />Listing
+            </a>
+          )}
+          <Badge variant={statusBadgeVariant(property.status)}>{label}</Badge>
+          <button onClick={() => setExpanded(e => !e)} className="text-muted-foreground hover:text-foreground">
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      {property.client_notes && (
+        <div className="border-t px-4 py-2 text-sm text-muted-foreground bg-muted/30">
+          <span className="font-medium text-foreground">Client note: </span>{property.client_notes}
+        </div>
+      )}
+
+      {expanded && (
+        <div className="border-t divide-y">
+          {/* Go/No-Go Review */}
+          {(canReview || property.gonogo_decision) && (
+            <div className="p-4 space-y-4">
+              <p className="text-sm font-semibold">Go / No-Go Review</p>
+              <div className="space-y-3">
+                {GONOGO_KEYS.map(key => (
+                  <div key={key} className="space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm">{GONOGO_CHECK_LABELS[key]}</span>
+                      <ResultPill
+                        result={checks[key]?.result ?? null}
+                        onChange={r => setCheck(key, 'result', r)}
+                      />
+                    </div>
+                    <Input
+                      className="h-7 text-xs"
+                      placeholder="Notes (optional)"
+                      value={checks[key]?.notes ?? ''}
+                      onChange={e => setCheck(key, 'notes', e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Overall decision</p>
+                <div className="flex gap-2">
+                  {(['go', 'conditional_go', 'no_go'] as const).map(d => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setOverallDecision(d)}
+                      className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+                        overallDecision === d
+                          ? d === 'go' ? 'bg-brand-green text-brand-cream border-brand-green'
+                            : d === 'conditional_go' ? 'bg-amber-100 text-amber-800 border-amber-400'
+                            : 'bg-destructive/10 text-destructive border-destructive'
+                          : 'border-border text-muted-foreground hover:border-foreground/40'
+                      }`}
+                    >
+                      {d === 'go' ? 'Go' : d === 'conditional_go' ? 'Conditional Go' : 'No-Go'}
+                    </button>
+                  ))}
+                </div>
+                <Textarea
+                  rows={2}
+                  placeholder="Notes sent to client with D-06 (optional)"
+                  value={gonogo_notes}
+                  onChange={e => setGonogoNotes(e.target.value)}
+                />
+                <Button size="sm" onClick={saveGoNoGo} disabled={saving || !overallDecision}>
+                  {saved ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />Saved</> : saving ? 'Saving…' : 'Save go/no-go'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Bid tracking */}
+          {(canBid || property.bid_status) && (
+            <div className="p-4 space-y-3">
+              <p className="text-sm font-semibold">Bid tracking</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Offer price (€)</label>
+                  <Input className="mt-1 h-8 text-sm" type="number" value={offerPrice} onChange={e => setOfferPrice(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Status</label>
+                  <Select value={bidStatus} onValueChange={setBidStatus}>
+                    <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="offer_submitted">Offer submitted</SelectItem>
+                      <SelectItem value="outbid">Outbid</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="vendor_withdrawn">Vendor withdrawn</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Input className="h-8 text-sm" placeholder="Notes (optional)" value={bidNotes} onChange={e => setBidNotes(e.target.value)} />
+              <Button size="sm" onClick={saveBid} disabled={saving || !bidStatus}>
+                {saved ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />Saved</> : saving ? 'Saving…' : 'Save bid'}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

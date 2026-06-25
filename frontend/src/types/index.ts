@@ -52,12 +52,15 @@ export type DocStatus = 'requested' | 'received' | 'needs_review' | 'approved' |
 
 export type PropertyCaseStatus =
   | 'submitted'
-  | 'valuation_scheduled'
-  | 'valuation_received'
-  | 'approved'
-  | 'rejected'
-  | 'conveyancing'
-  | 'purchased'
+  | 'under_review'
+  | 'go'
+  | 'conditional_go'
+  | 'no_go'
+  | 'offer_submitted'
+  | 'accepted'
+  | 'outbid'
+  | 'vendor_withdrawn'
+  | 'fallthrough'
 
 export type KycStatus = 'pending' | 'in_progress' | 'complete' | 'failed'
 
@@ -161,22 +164,70 @@ export interface DocumentDelivery {
   idempotency_key: string | null
 }
 
+export type GoNoGoResult = 'pass' | 'flag' | 'fail'
+
+export interface GoNoGoCheck {
+  result: GoNoGoResult | null
+  notes: string
+  value?: string
+}
+
+export interface GoNoGoChecks {
+  price_feasibility:      GoNoGoCheck
+  property_valuation:     GoNoGoCheck
+  ber_rating:             GoNoGoCheck
+  title_and_planning:     GoNoGoCheck
+  structural_condition:   GoNoGoCheck
+  insurance_insurability: GoNoGoCheck
+  occupancy_suitability:  GoNoGoCheck
+  conveyancing_readiness: GoNoGoCheck
+  management_company:     GoNoGoCheck
+}
+
 export interface PropertyCase {
   id: string
   created_at: string
   updated_at: string
   client_id: string
+  active: boolean
   status: PropertyCaseStatus
+
+  // Submission
   address_line_1: string
   address_line_2: string | null
   city: string
   county: string
   eircode: string | null
+  listing_url: string | null
+  property_type: string | null
+  bedrooms: number | null
+  ber_rating: string | null
   asking_price: number
+  client_notes: string | null
+
+  // Go/no-go
+  gonogo_decision: 'go' | 'conditional_go' | 'no_go' | null
+  gonogo_reviewed_by: string | null
+  gonogo_reviewed_at: string | null
+  gonogo_notes: string | null
+  gonogo_checks: Partial<GoNoGoChecks> | null
+
+  // Bid tracking
+  offer_price: number | null
+  offer_submitted_at: string | null
+  bid_status: 'offer_submitted' | 'accepted' | 'outbid' | 'vendor_withdrawn' | null
+  bid_notes: string | null
+
+  // Sale agreed
   agreed_price: number | null
+  vendor_name: string | null
+  vendor_solicitor: string | null
+  homeown_solicitor: string | null
+
+  // Legacy / misc
   valuation_amount: number | null
-  valuation_file_path: string | null
   notes: string | null
+  fallthrough_reason: string | null
 }
 
 export interface Event {
@@ -364,6 +415,31 @@ export const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, string> = {
   withdrawn: 'Withdrawn',
 }
 
+export const PROPERTY_CASE_STATUS_LABELS: Record<PropertyCaseStatus, string> = {
+  submitted:        'Submitted',
+  under_review:     'Under Review',
+  go:               'Go',
+  conditional_go:   'Conditional Go',
+  no_go:            'No-Go',
+  offer_submitted:  'Offer Submitted',
+  accepted:         'Offer Accepted',
+  outbid:           'Outbid',
+  vendor_withdrawn: 'Vendor Withdrawn',
+  fallthrough:      'Fell Through',
+}
+
+export const GONOGO_CHECK_LABELS: Record<keyof GoNoGoChecks, string> = {
+  price_feasibility:      'Price feasibility',
+  property_valuation:     'Property valuation',
+  ber_rating:             'BER / energy rating',
+  title_and_planning:     'Title and planning',
+  structural_condition:   'Structural condition',
+  insurance_insurability: 'Insurability',
+  occupancy_suitability:  'Occupancy suitability',
+  conveyancing_readiness: 'Conveyancing readiness',
+  management_company:     'Management company',
+}
+
 export const SENIOR_STAGE_LABELS: Record<SeniorStage, string> = {
   pre_market:     'Pre-market',
   indicative:     'Indicative Terms',
@@ -409,6 +485,11 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   valuation_uploaded: 'Valuation uploaded',
   reservation_payment_paid: 'Reservation payment received',
   domiter_received: 'Monthly service fee received',
+  property_submitted: 'You submitted a property',
+  property_fallthrough: 'Property did not proceed',
+  signing_walkthrough_completed: 'Signing walk-through completed',
+  contracts_signed: 'Contracts signed',
+  entry_stake_received: 'Entry Stake received',
   exit_initiated: 'Exit initiated',
   completed: 'Programme completed',
 }
