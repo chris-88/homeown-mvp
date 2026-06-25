@@ -73,17 +73,34 @@ function docStatusLabel(status: string) {
 function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const meta = DOC_META[doc.doc_type as DocType]
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setUploading(true)
+    setUploadError(null)
     const path = `clients/${clientId}/${doc.id}/${file.name}`
-    const { error: uploadError } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
-    if (uploadError) return
-    await supabase.from('document_requests').update({ file_path: path, file_name: file.name, status: 'needs_review', updated_at: new Date().toISOString() }).eq('id', doc.id)
-    await supabase.from('events').insert({ event_type: 'document_uploaded', client_id: clientId, visibility: 'internal' })
+    const { error: storageError } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
+    if (storageError) {
+      setUploadError('Upload failed — please try again.')
+      setUploading(false)
+      return
+    }
+    const { error: dbError } = await supabase
+      .from('document_requests')
+      .update({ file_path: path, file_name: file.name, status: 'needs_review', updated_at: new Date().toISOString() })
+      .eq('id', doc.id)
+    if (dbError) {
+      setUploadError('File saved but status could not be updated — please contact support.')
+      setUploading(false)
+      return
+    }
+    await supabase.from('events').insert({ event_type: 'document_uploaded', client_id: clientId, visibility: 'client' })
     qc.invalidateQueries({ queryKey: ['documents', clientId] })
+    setUploading(false)
   }
 
   return (
@@ -109,13 +126,14 @@ function DocRow({ doc, clientId }: { doc: DocumentRequest; clientId: string }) {
         {doc.file_name && doc.status !== 'requested' && (
           <p className="text-xs text-muted-foreground pt-0.5">Uploaded: {doc.file_name}</p>
         )}
+        {uploadError && <p className="text-xs text-destructive pt-0.5">{uploadError}</p>}
       </div>
       <div className="flex flex-col items-end gap-2 shrink-0 pt-0.5">
         <Badge variant={docStatusVariant(doc.status) as Parameters<typeof Badge>[0]['variant']}>{docStatusLabel(doc.status)}</Badge>
         {(doc.status === 'requested' || doc.status === 'rejected') && (
           <>
-            <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
-              <Upload className="h-3.5 w-3.5 mr-1" /> Upload
+            <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              <Upload className="h-3.5 w-3.5 mr-1" /> {uploading ? 'Uploading…' : 'Upload'}
             </Button>
             <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
           </>
