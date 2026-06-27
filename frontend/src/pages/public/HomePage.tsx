@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Lock, Shield, Home, CheckCircle2, Info } from 'lucide-react'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
-import { DualComparisonWidget } from '@/components/shared/DualComparisonWidget'
+import { DualComparisonWidget, lastWidgetState } from '@/components/shared/DualComparisonWidget'
 import { CookieBanner } from '@/components/shared/CookieBanner'
 import { Button } from '@/components/ui/button'
 import { track, buildCalcUrl } from '@/lib/analytics'
@@ -38,47 +38,14 @@ const RECOGNITION = [
   'I have been searching for years. I am further away now than when I started.',
 ]
 
-function RecognitionCarousel() {
-  const [active, setActive] = useState(0)
-  const [paused, setPaused] = useState(false)
-
-  useEffect(() => {
-    if (paused) return
-    const timer = setInterval(() => {
-      setActive(i => (i + 1) % RECOGNITION.length)
-    }, 3500)
-    return () => clearInterval(timer)
-  }, [paused])
-
+function RecognitionStack() {
   return (
-    <div
-      className="text-center"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      <div className="min-h-[9rem] flex items-center justify-center px-4">
-        <p
-          key={active}
-          className="text-2xl font-medium leading-snug md:text-3xl animate-in fade-in duration-500"
-        >
-          {RECOGNITION[active]}
+    <div className="space-y-8">
+      {RECOGNITION.map(text => (
+        <p key={text} className="text-xl font-medium leading-snug md:text-2xl text-brand-ink">
+          {text}
         </p>
-      </div>
-      <div className="flex justify-center gap-2 mt-6">
-        {RECOGNITION.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => { setActive(i); setPaused(true) }}
-            aria-label={`Statement ${i + 1}`}
-            className={cn(
-              'rounded-full transition-all duration-300',
-              i === active
-                ? 'w-6 h-2 bg-brand-green'
-                : 'w-2 h-2 bg-border hover:bg-muted-foreground'
-            )}
-          />
-        ))}
-      </div>
+      ))}
     </div>
   )
 }
@@ -236,11 +203,11 @@ export default function HomePage() {
 
   const calcUrl = buildCalcUrl()
 
-  function handleHeroCtaClick(state: { propertyPrice: number; housingCost: number; depositSaving: number }) {
+  function handleHeroCtaClick() {
     track('hero_cta_click', {
-      property_price: state.propertyPrice,
-      housing_cost: state.housingCost,
-      deposit_saving: state.depositSaving,
+      property_price: lastWidgetState.propertyPrice,
+      housing_cost: lastWidgetState.housingCost,
+      deposit_saving: lastWidgetState.depositSaving,
     })
   }
 
@@ -251,17 +218,28 @@ export default function HomePage() {
       <main>
         {/* ── Section 1: Hero ───────────────────────────────────────── */}
         <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
-          <div className="mx-auto w-full max-w-6xl px-6 py-16 md:py-0 grid gap-12 md:grid-cols-2 md:items-center">
-            <div>
+          <div className="mx-auto w-full max-w-6xl px-6 py-16 md:py-0 grid gap-12 md:grid-cols-2 md:items-start">
+            <div className="md:pt-8">
+              <p className="text-xs font-medium tracking-widest text-brand-taupe uppercase mb-5">Homeown</p>
               <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] max-w-xl">
                 {headline}
               </h1>
-              <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-md">
-                The monthly cost of home ownership isn't the problem. Saving the deposit is what's out of reach. Move in straight away, pay your monthly service fee, and in 5 years you have the option to buy at a price frozen from the start.
+              <p className="mt-6 text-base text-brand-taupe leading-relaxed max-w-md">
+                Homeown is a 60-month structured pathway to homeownership. You move in, pay a monthly service fee, and hold a contractual right to purchase the property at a price fixed from the day of acquisition.
               </p>
+              <div className="mt-8">
+                <Link
+                  to={calcUrl}
+                  onClick={handleHeroCtaClick}
+                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-primary px-6 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Check your numbers
+                </Link>
+                <p className="mt-2 text-xs text-brand-taupe">Two minutes. No account required.</p>
+              </div>
             </div>
             <div>
-              <DualComparisonWidget showCta={true} onCtaClick={handleHeroCtaClick} />
+              <DualComparisonWidget showCta={true} />
             </div>
           </div>
           <div id="nav-sentinel" />
@@ -269,19 +247,19 @@ export default function HomePage() {
 
         {/* ── Section 2: Recognition ────────────────────────────────── */}
         <section className="border-b py-20 md:py-28">
-          <div className="mx-auto max-w-2xl px-6 text-center">
+          <div className="mx-auto max-w-2xl px-6">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-10">
               The Problem
             </p>
-            <RecognitionCarousel />
+            <RecognitionStack />
             <p className="mt-10 text-muted-foreground">
               If any of these are true, the Homeown pathway may apply to you.
             </p>
             <Link
-              to="/calc"
+              to={calcUrl}
               className="mt-4 inline-block text-sm font-medium text-brand-green underline underline-offset-4 hover:text-brand-green-light transition-colors"
             >
-              Check whether you qualify
+              Check if the pathway fits
             </Link>
           </div>
         </section>
@@ -293,7 +271,7 @@ export default function HomePage() {
               What would it actually cost?
             </h2>
             <p className="text-muted-foreground mb-10">
-              Enter your property target and current monthly outgoings. The comparison shows what Homeown costs alongside what you are already spending.
+              Enter your property target and current monthly outgoings. The comparison updates live.
             </p>
             <DualComparisonWidget showCta={true} />
           </div>
