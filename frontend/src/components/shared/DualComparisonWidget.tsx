@@ -1,26 +1,34 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Info } from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
 import { track, buildCalcUrl } from '@/lib/analytics'
 
 function InfoTip({ content }: { content: string }) {
-  const [open, setOpen] = useState(false)
   return (
-    <span className="relative inline-block">
-      <button
-        type="button"
-        onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
-        className="text-brand-taupe/50 hover:text-brand-taupe transition-colors ml-1 align-middle"
-        aria-label="More information"
-      >
-        <Info className="h-3.5 w-3.5 inline" />
-      </button>
-      {open && (
-        <span className="absolute left-0 top-full mt-1.5 w-64 rounded-lg bg-foreground px-3 py-2.5 text-xs text-background shadow-lg z-50 block leading-relaxed">
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          className="text-brand-taupe/50 hover:text-brand-taupe transition-colors ml-1.5 align-middle inline-flex items-center"
+          aria-label="More information"
+        >
+          <Info className="h-3.5 w-3.5" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          avoidCollisions
+          collisionPadding={16}
+          className="w-64 rounded-lg bg-foreground px-3 py-2.5 text-xs text-background shadow-lg leading-relaxed z-50 animate-in fade-in-0 zoom-in-95"
+        >
           {content}
-        </span>
-      )}
-    </span>
+          <Popover.Arrow className="fill-foreground" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 
