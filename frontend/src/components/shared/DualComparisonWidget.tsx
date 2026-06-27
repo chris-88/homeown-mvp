@@ -160,92 +160,86 @@ export function DualComparisonWidget({ showCta = true }: { showCta?: boolean }) 
       </div>
 
       {/* Comparison table */}
-      <div className="w-full border border-brand-cream rounded-xl overflow-hidden bg-white mt-4">
-        <table className="w-full table-fixed text-sm">
-          <colgroup>
-            <col className="w-[26%]" />
-            <col className="w-[37%]" />
-            <col className="w-[37%]" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th className="px-3 py-3" />
-              <th className="px-3 py-3 text-center text-xs font-semibold tracking-widest text-white uppercase bg-brand-green">
-                Homeown
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-semibold tracking-widest text-brand-taupe uppercase">
-                Traditional Route
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Row 1 — To get started */}
-            <tr className="border-t border-brand-cream">
-              <td className="px-3 py-4 text-sm text-brand-taupe align-top">To get started</td>
-              <td className="px-3 py-4 text-center font-semibold text-brand-ink align-top">
-                {fmt(entryStake)}
-                <span className="block text-xs text-brand-taupe mt-0.5">Entry Stake</span>
-              </td>
-              <td className="px-3 py-4 text-center text-brand-ink align-top">
-                {fmt(traditionalDeposit)}
-                <span className="block text-xs text-brand-taupe mt-0.5">deposit required</span>
-              </td>
-            </tr>
+      <div className="w-full border border-brand-cream rounded-xl overflow-hidden bg-white mt-4 px-4 pt-4">
+        {/* Column identifiers */}
+        <div className="flex justify-between mb-3">
+          <span className="text-[10px] font-semibold tracking-widest text-brand-green uppercase">Homeown</span>
+          <span className="text-[10px] font-semibold tracking-widest text-brand-taupe uppercase">Traditional Route</span>
+        </div>
 
-            {/* Row 2 — When you move in */}
-            <tr className="border-t border-brand-cream">
-              <td className="px-3 py-4 text-sm text-brand-taupe align-top">When you move in</td>
-              <td className="px-3 py-4 text-center font-semibold text-brand-ink align-top">
-                This year
-              </td>
-              <td className="px-3 py-4 text-center text-brand-ink align-top">
-                {fmtTimeline(yearsToSave)}
-                {yearsToSave && (
-                  <span className="block text-xs text-brand-taupe mt-0.5">to save the deposit</span>
-                )}
-              </td>
-            </tr>
+        {/* Row 1 — To get started */}
+        <div className="border-t border-brand-cream pt-4 pb-4">
+          <p className="text-[10px] font-semibold tracking-widest text-brand-taupe uppercase mb-2">To get started</p>
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1">
+              <p className="text-2xl font-bold text-brand-ink leading-tight">{fmt(entryStake)}</p>
+              <p className="text-xs text-brand-taupe mt-0.5">Entry Stake</p>
+            </div>
+            <div className="flex-1 text-right">
+              <p className="text-base font-normal text-brand-taupe leading-tight">{fmt(traditionalDeposit)}</p>
+              <p className="text-[11px] text-brand-taupe/70 mt-0.5">deposit required</p>
+            </div>
+          </div>
+        </div>
 
-            {/* Row 3 — You buy at */}
-            <tr className="border-t border-brand-cream">
-              <td className="px-3 py-4 text-sm text-brand-taupe align-top">You buy at</td>
-              <td className="px-3 py-4 text-center font-semibold text-brand-ink align-top">
-                {fmt(strikePrice)}
-                <span className="block text-xs text-brand-taupe mt-0.5">fixed from day one</span>
-              </td>
-              <td className="px-3 py-4 text-center text-brand-ink align-top">
+        {/* Row 2 — When you move in */}
+        <div className="border-t border-brand-cream pt-4 pb-4">
+          <p className="text-[10px] font-semibold tracking-widest text-brand-taupe uppercase mb-2">When you move in</p>
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1">
+              <p className="text-2xl font-bold text-brand-ink leading-tight">This year</p>
+            </div>
+            <div className="flex-1 text-right">
+              <p className="text-base font-normal text-brand-taupe leading-tight">{fmtTimeline(yearsToSave)}</p>
+              {yearsToSave && (
+                <p className="text-[11px] text-brand-taupe/70 mt-0.5">to save the deposit</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3 — You buy at */}
+        <div className="border-t border-brand-cream pt-4 pb-4">
+          <p className="text-[10px] font-semibold tracking-widest text-brand-taupe uppercase mb-2">You buy at</p>
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1">
+              <p className="text-2xl font-bold text-brand-ink leading-tight">{fmt(strikePrice)}</p>
+              <p className="text-xs text-brand-taupe mt-0.5">fixed from day one</p>
+            </div>
+            <div className="flex-1 text-right">
+              <p className="text-base font-normal text-brand-taupe leading-tight">
                 {tradBuyPrice !== null ? fmt(tradBuyPrice) : 'Rising market price'}
-                <span className="block text-xs text-brand-taupe mt-0.5">
-                  {tradBuyPrice !== null && yearsToSave
-                    ? `in ${yearsToSave.years} yr${yearsToSave.years !== 1 ? 's' : ''} (5% appreciation assumed)`
-                    : 'no fixed date'}
-                </span>
-              </td>
-            </tr>
+              </p>
+              <p className="text-[11px] text-brand-taupe/70 mt-0.5">
+                {tradBuyPrice !== null && yearsToSave
+                  ? `in ${yearsToSave.years} yr${yearsToSave.years !== 1 ? 's' : ''} (5% appreciation assumed)`
+                  : 'no fixed date'}
+              </p>
+            </div>
+          </div>
+        </div>
 
-            {/* Row 4 — Monthly (last, where Homeown may cost more) */}
-            <tr className="border-t border-brand-cream">
-              <td className="px-3 py-4 text-sm text-brand-taupe align-top">Monthly</td>
-              <td className="px-3 py-4 text-center font-semibold text-brand-ink align-top">
-                {fmt(domiter)}/mo
-                <span className="block text-xs text-brand-taupe mt-0.5">monthly service fee</span>
-              </td>
-              <td className="px-3 py-4 text-center text-brand-ink align-top">
-                {fmt(currentCombined)}/mo
-                <span className="block text-xs text-brand-taupe mt-0.5">housing cost + saving combined</span>
-              </td>
-            </tr>
-            {monthlyGap !== 0 && (
-              <tr>
-                <td colSpan={3} className={`px-4 pb-3 text-xs ${monthlyGap > 0 ? 'text-brand-green' : 'text-brand-taupe'}`}>
-                  {monthlyGap > 0
-                    ? `${fmt(monthlyGap)} less per month with Homeown.`
-                    : `${fmt(Math.abs(monthlyGap))} more per month — for a property at a price locked today.`}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {/* Row 4 — Monthly (last, where Homeown may cost more) */}
+        <div className="border-t border-brand-cream pt-4 pb-4">
+          <p className="text-[10px] font-semibold tracking-widest text-brand-taupe uppercase mb-2">Monthly</p>
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1">
+              <p className="text-2xl font-bold text-brand-ink leading-tight">{fmt(domiter)}/mo</p>
+              <p className="text-xs text-brand-taupe mt-0.5">monthly service fee</p>
+            </div>
+            <div className="flex-1 text-right">
+              <p className="text-base font-normal text-brand-taupe leading-tight">{fmt(currentCombined)}/mo</p>
+              <p className="text-[11px] text-brand-taupe/70 mt-0.5">housing cost + saving combined</p>
+            </div>
+          </div>
+          {monthlyGap !== 0 && (
+            <p className={`mt-3 text-xs ${monthlyGap > 0 ? 'text-brand-green' : 'text-brand-taupe'}`}>
+              {monthlyGap > 0
+                ? `${fmt(monthlyGap)} less per month with Homeown.`
+                : `${fmt(Math.abs(monthlyGap))} more per month — for a property at a price locked today.`}
+            </p>
+          )}
+        </div>
       </div>
 
       <p className="mt-4 text-xs text-brand-taupe leading-relaxed">
