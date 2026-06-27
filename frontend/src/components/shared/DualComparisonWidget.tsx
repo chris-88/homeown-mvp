@@ -1,6 +1,28 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Info } from 'lucide-react'
 import { track, buildCalcUrl } from '@/lib/analytics'
+
+function InfoTip({ content }: { content: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
+        className="text-brand-taupe/50 hover:text-brand-taupe transition-colors ml-1 align-middle"
+        aria-label="More information"
+      >
+        <Info className="h-3.5 w-3.5 inline" />
+      </button>
+      {open && (
+        <span className="absolute left-0 top-full mt-1.5 w-64 rounded-lg bg-foreground px-3 py-2.5 text-xs text-background shadow-lg z-50 block leading-relaxed">
+          {content}
+        </span>
+      )}
+    </span>
+  )
+}
 
 let widgetInteractionFired = false
 
@@ -54,11 +76,14 @@ export function DualComparisonWidget({ showCta = true }: { showCta?: boolean }) 
     <div>
       {/* YOUR SITUATION card */}
       <div className="border border-brand-cream rounded-xl bg-white p-5 space-y-5">
-        <p className="text-xs font-medium tracking-widest text-brand-taupe uppercase">Your situation</p>
+        <p className="text-xs font-medium tracking-widest text-brand-taupe uppercase">Your current situation</p>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-medium">Property target</label>
+            <label className="text-sm font-medium flex items-center gap-0">
+              Target Purchase Price
+              <InfoTip content="The price of the property you want to buy. Homeown uses this to calculate your Entry Stake (1% of purchase price), your monthly service fee, and your fixed purchase option price (90% of purchase price)." />
+            </label>
             <span className="text-sm font-semibold tabular-nums">{fmt(propertyPrice)}</span>
           </div>
           <input
@@ -79,7 +104,10 @@ export function DualComparisonWidget({ showCta = true }: { showCta?: boolean }) 
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-medium">Monthly housing cost</label>
+            <label className="text-sm font-medium flex items-center gap-0">
+              Monthly housing (rent/other) cost
+              <InfoTip content="What you currently pay each month for where you live — typically rent, but could be a mortgage payment or any other regular housing cost. We compare your total monthly outgoing (this plus your deposit saving) against the Homeown monthly service fee." />
+            </label>
             <span className="text-sm font-semibold tabular-nums">{fmt(housingCost)}</span>
           </div>
           <input
@@ -100,7 +128,10 @@ export function DualComparisonWidget({ showCta = true }: { showCta?: boolean }) 
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-medium">Monthly toward deposit</label>
+            <label className="text-sm font-medium flex items-center gap-0">
+              Monthly deposit savings
+              <InfoTip content="How much you're currently setting aside each month toward saving a traditional 10% deposit. Combined with your housing cost, this is your total monthly outgoing that we compare against the Homeown service fee." />
+            </label>
             <span className="text-sm font-semibold tabular-nums">{fmt(depositSaving)}</span>
           </div>
           <input
