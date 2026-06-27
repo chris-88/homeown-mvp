@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { track } from '@/lib/analytics'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -100,11 +101,19 @@ export default function SavePage() {
   })
 
   async function onSubmit({ first_name, last_name, email }: FormValues) {
+    const leadStage = variant === 'mover' ? 'deferred' : 'new_lead'
+    track('calc_save_submit', { lead_stage: leadStage })
+
     const { error } = await submitCalcResults(first_name, last_name, email, activeState)
     if (error) {
       form.setError('root', { message: 'Something went wrong. Please try again.' })
       return
     }
+
+    track('calc_save_success', {
+      lead_stage: leadStage,
+      snapshot_id: sessionStorage.getItem('snapshot_id') ?? null,
+    })
     setSavedName(first_name)
   }
 

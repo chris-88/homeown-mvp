@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Lock, Shield, Home, CheckCircle2, Info } from 'lucide-react'
 import { PublicNav } from '@/components/shared/PublicNav'
@@ -6,6 +6,7 @@ import { PublicFooter } from '@/components/shared/PublicFooter'
 import { DualComparisonWidget } from '@/components/shared/DualComparisonWidget'
 import { CookieBanner } from '@/components/shared/CookieBanner'
 import { Button } from '@/components/ui/button'
+import { track, buildCalcUrl } from '@/lib/analytics'
 import {
   Accordion,
   AccordionItem,
@@ -21,6 +22,14 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+
+const HOOK_HEADLINES: Record<string, string> = {
+  default:    "You can afford the home. The deposit is what's stopping you.",
+  'rent-trap': 'Your monthly payment leaves. Every month. None of it goes toward the home.',
+  'twin-cost': 'You pay for housing. You save for a deposit. One Homeown payment can replace both.',
+  fairness:   'You built this without help. Homeown is built for that.',
+  futility:   'The deposit target keeps moving. Homeown fixes the price from today.',
+}
 
 const RECOGNITION = [
   'I can afford the monthly cost. I cannot save the upfront amount.',
@@ -181,24 +190,78 @@ function StageCard({ stage, small = false }: { stage: typeof STAGES[0]; small?: 
 }
 
 export default function HomePage() {
+  const [headline, setHeadline] = useState(HOOK_HEADLINES.default)
+  const heroRef = useRef<HTMLElement>(null)
+  const heroViewFired = useRef(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+
+    const knownHooks = ['rent-trap', 'twin-cost', 'fairness', 'futility']
+    const hookParam = params.get('hook') ?? ''
+    const resolvedHook = knownHooks.includes(hookParam) ? hookParam : 'default'
+    sessionStorage.setItem('homeown_hook', resolvedHook)
+    setHeadline(HOOK_HEADLINES[resolvedHook])
+
+    const utm: Record<string, string> = {}
+    ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(key => {
+      const val = params.get(key)
+      if (val) utm[key] = val
+    })
+    if (Object.keys(utm).length) {
+      sessionStorage.setItem('homeown_utm', JSON.stringify(utm))
+    }
+
+    if (!sessionStorage.getItem('homeown_session_id')) {
+      sessionStorage.setItem('homeown_session_id', crypto.randomUUID())
+    }
+  }, [])
+
+  useEffect(() => {
+    const el = heroRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !heroViewFired.current) {
+          heroViewFired.current = true
+          track('homepage_hero_view')
+          obs.disconnect()
+        }
+      },
+      { threshold: 0.5 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  const calcUrl = buildCalcUrl()
+
+  function handleHeroCtaClick(state: { propertyPrice: number; housingCost: number; depositSaving: number }) {
+    track('hero_cta_click', {
+      property_price: state.propertyPrice,
+      housing_cost: state.housingCost,
+      deposit_saving: state.depositSaving,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
       <main>
         {/* ── Section 1: Hero ───────────────────────────────────────── */}
-        <section className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
+        <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
           <div className="mx-auto w-full max-w-6xl px-6 py-16 md:py-0 grid gap-12 md:grid-cols-2 md:items-center">
             <div>
               <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] max-w-xl">
-                You can afford the home. The deposit is what's stopping you.
+                {headline}
               </h1>
               <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-md">
                 The monthly cost of home ownership isn't the problem. Saving the deposit is what's out of reach. Move in straight away, pay your monthly service fee, and in 5 years you have the option to buy at a price frozen from the start.
               </p>
             </div>
             <div>
-              <DualComparisonWidget showCta={true} />
+              <DualComparisonWidget showCta={true} onCtaClick={handleHeroCtaClick} />
             </div>
           </div>
           <div id="nav-sentinel" />
@@ -220,6 +283,19 @@ export default function HomePage() {
             >
               Check whether you qualify
             </Link>
+          </div>
+        </section>
+
+        {/* ── Section 3: Twin-cost widget ──────────────────────────── */}
+        <section className="border-b py-20 md:py-28">
+          <div className="mx-auto max-w-3xl px-6">
+            <h2 className="text-3xl font-normal md:text-4xl mb-4">
+              What would it actually cost?
+            </h2>
+            <p className="text-muted-foreground mb-10">
+              Enter your property target and current monthly outgoings. The comparison shows what Homeown costs alongside what you are already spending.
+            </p>
+            <DualComparisonWidget showCta={true} />
           </div>
         </section>
 
@@ -331,7 +407,7 @@ export default function HomePage() {
               size="lg"
               className="mt-10 bg-primary-foreground text-primary hover:bg-primary-foreground/90 h-auto px-8 py-4 text-base"
             >
-              <Link to="/calc">Check your numbers</Link>
+              <Link to={calcUrl}>Check your numbers</Link>
             </Button>
           </div>
         </section>

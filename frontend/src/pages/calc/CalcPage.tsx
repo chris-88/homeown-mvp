@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { track } from '@/lib/analytics'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -374,6 +375,13 @@ function Step4({ onBack }: { onBack: () => void }) {
     const eligible = variant === 'eligible'
     update({ variant, eligible })
 
+    track('calc_step4_submit', {
+      household_type: state.householdType,
+      is_ftb: state.isFtb,
+      eligible,
+      variant,
+    })
+
     const anonId = sessionStorage.getItem('anon_id') ?? crypto.randomUUID()
     sessionStorage.setItem('anon_id', anonId)
 
@@ -534,7 +542,31 @@ function Step4({ onBack }: { onBack: () => void }) {
 export default function CalcPage() {
   const [step, setStep] = useState(1)
 
-  useEffect(() => { window.scrollTo(0, 0) }, [step])
+  useEffect(() => {
+    // Capture UTM from hash route search params (e.g. /#/calc?utm_source=meta)
+    const hash = window.location.hash
+    const qIdx = hash.indexOf('?')
+    if (qIdx >= 0) {
+      const hashParams = new URLSearchParams(hash.slice(qIdx + 1))
+      const utm: Record<string, string> = {}
+      ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(key => {
+        const val = hashParams.get(key)
+        if (val) utm[key] = val
+      })
+      if (Object.keys(utm).length) {
+        sessionStorage.setItem('homeown_utm', JSON.stringify(utm))
+      }
+    }
+    if (!sessionStorage.getItem('homeown_session_id')) {
+      sessionStorage.setItem('homeown_session_id', crypto.randomUUID())
+    }
+  }, [])
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (step === 1) track('calc_step1_view')
+    if (step === 3) track('calc_step3_view')
+  }, [step])
 
   // Step 2 is full-width — it controls its own layout and progress bar
   if (step === 2) {

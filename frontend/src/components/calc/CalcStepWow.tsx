@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { useCalcWizard } from '@/lib/calcWizard'
 import { formatCurrency } from '@/lib/utils'
+import { track } from '@/lib/analytics'
 import { Button } from '@/components/ui/button'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
 import { LineChart, Line, XAxis, YAxis, ComposedChart, Area } from 'recharts'
@@ -484,6 +486,16 @@ export default function CalcStepWow({ onNext, onBack }: { onNext: () => void; on
     if (crossoverYears > 5)                  return 'too_slow'
     return 'close_race'
   })()
+
+  useEffect(() => {
+    track('calc_step2_view', {
+      bucket,
+      property_price: propertyPrice,
+      monthly_savings: monthlySavings,
+      current_savings: currentSavings,
+      ghi,
+    })
+  }, [])
 
   return (
     <div className="w-full">
