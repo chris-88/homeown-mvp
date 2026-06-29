@@ -252,7 +252,7 @@ export function DualComparisonWidget({ showCta = true }: { showCta?: boolean }) 
             to={calcUrl}
             className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            Check your full numbers →
+            Check your numbers
           </Link>
           <p className="mt-2 text-xs text-brand-taupe text-center">Two minutes. No account required.</p>
         </div>

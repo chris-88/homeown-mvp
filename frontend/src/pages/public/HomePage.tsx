@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Lock, Shield, Home, CheckCircle2, Info } from 'lucide-react'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
-import { DualComparisonWidget, lastWidgetState } from '@/components/shared/DualComparisonWidget'
+import { DualComparisonWidget } from '@/components/shared/DualComparisonWidget'
 import { CookieBanner } from '@/components/shared/CookieBanner'
 import { Button } from '@/components/ui/button'
 import { track, buildCalcUrl } from '@/lib/analytics'
@@ -56,31 +56,31 @@ const STAGES = [
   {
     n: 1,
     heading: 'Check your fit',
-    body: 'The calculator checks one thing: whether the property price you are targeting is within range for a regulated mortgage at the end of the 60-month term. It uses standard Irish mortgage lending parameters. It is not a credit assessment. It does not determine whether you can afford the monthly service fee, which is your decision.',
+    body: 'Whether the price you are targeting is within range for a regulated mortgage at the end of the term. Not a credit assessment.',
     info: null as string | null,
   },
   {
     n: 2,
     heading: 'A conversation about fit',
-    body: 'If the calculator shows programme fit, a 20-minute discovery call follows. This is a structured conversation to confirm the programme is right for your situation. It is not a sales call. After the call, you submit a standard set of documents to verify income and confirm payment operability. No credit check is run.',
+    body: 'A 20-minute call to confirm programme fit. You submit standard income documents. No credit check.',
     info: STAGE_INFO,
   },
   {
     n: 3,
     heading: 'The property search',
-    body: "Ireland's property market is supply-constrained. Finding the right property takes time. Once accepted, a Homeown purchasing agent works with you on the search. Most participants search for several months before identifying a suitable property. When a property passes the go/no-go review, Homeown acquires it through a ring-fenced DAC. You pay your Entry Stake at sale agreed stage, establishing your beneficial interest.",
+    body: 'A purchasing agent works with you on the search. When a property passes review, Homeown acquires it. You pay your Entry Stake at sale agreed.',
     info: null as string | null,
   },
   {
     n: 4,
     heading: 'Move in and the 60-month pathway',
-    body: 'On completion, you move in. Your monthly service fee (Domiter) begins on the first day of the following month. Your option price was fixed on the day of acquisition, set at 10% below what Homeown paid. It does not change over the 60-month term regardless of what happens to property values in the market.',
+    body: 'You move in. Monthly service fee begins. Your purchase option price was fixed at acquisition — it does not change.',
     info: null as string | null,
   },
   {
     n: 5,
     heading: 'Your option window',
-    body: 'In the final 30 days of the term, your option window opens. You can exercise your option to purchase at the fixed price by arranging a regulated mortgage through an independent lender. Or you can choose not to exercise your option and exit. 30 days notice. No debt owed to Homeown. Your Entry Stake is equity at risk.',
+    body: 'Exercise your option to purchase at the fixed price via a regulated mortgage. Or exit with 30 days notice. No debt owed to Homeown.',
     info: null as string | null,
   },
 ]
@@ -89,22 +89,22 @@ const PROTECTION_CARDS = [
   {
     Icon: Lock,
     heading: 'Your option price is fixed in writing on the day of acquisition',
-    body: "The purchase option price is set at the moment Homeown acquires the property and written into your pathway agreement before you move in. It is 10% below what Homeown paid. It does not move with the market over the 60-month term.",
+    body: "Set at acquisition and written into your agreement before you move in. 10% below what Homeown paid. Fixed for the full 60-month term.",
   },
   {
     Icon: Shield,
     heading: 'The property is legally ring-fenced',
-    body: "Legal title to the property is held by a Designated Activity Company (DAC) set up specifically for your property cohort. Homeown Limited does not hold legal title and cannot deal with the property outside the programme governance. The DAC's sole purpose is to hold the asset and discharge its obligations under the pathway agreements.",
+    body: "Legal title is held by a ring-fenced DAC set up for your cohort only. Homeown does not hold legal title and cannot deal with the property outside the programme.",
   },
   {
     Icon: Home,
     heading: 'You hold a beneficial interest from day one',
-    body: "From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property. This is not a tenancy. There is no landlord-tenant relationship between you and Homeown. Your beneficial interest and your option to purchase are governed by a legally binding agreement.",
+    body: "From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property. Not a tenancy. Governed by a legally binding agreement.",
   },
   {
     Icon: CheckCircle2,
     heading: 'No debt between you and Homeown',
-    body: "You owe nothing to Homeown at any point in the programme. There is no amortisation schedule and no interest charge. The monthly service fee is a service fee, not a credit repayment. If you exit, you leave with no obligation to Homeown.",
+    body: "Nothing owed to Homeown at any point. No amortisation, no interest. If you exit, you leave with no obligation.",
   },
 ]
 
@@ -204,11 +204,7 @@ export default function HomePage() {
   const calcUrl = buildCalcUrl()
 
   function handleHeroCtaClick() {
-    track('hero_cta_click', {
-      property_price: lastWidgetState.propertyPrice,
-      housing_cost: lastWidgetState.housingCost,
-      deposit_saving: lastWidgetState.depositSaving,
-    })
+    track('hero_cta_click', {})
   }
 
   return (
@@ -218,28 +214,23 @@ export default function HomePage() {
       <main>
         {/* ── Section 1: Hero ───────────────────────────────────────── */}
         <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
-          <div className="mx-auto w-full max-w-6xl px-6 py-16 md:py-0 grid gap-12 md:grid-cols-2 md:items-start">
-            <div className="md:pt-8">
-              <p className="text-xs font-medium tracking-widest text-brand-taupe uppercase mb-5">Homeown</p>
-              <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] max-w-xl">
-                {headline}
-              </h1>
-              <p className="mt-6 text-base text-brand-taupe leading-relaxed max-w-md">
-                Homeown is a 60-month structured pathway to homeownership. You move in, pay a monthly service fee, and hold a contractual right to purchase the property at a price fixed from the day of acquisition.
-              </p>
-              <div className="mt-8">
-                <Link
-                  to={calcUrl}
-                  onClick={handleHeroCtaClick}
-                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-primary px-6 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  Check your numbers
-                </Link>
-                <p className="mt-2 text-xs text-brand-taupe">Two minutes. No account required.</p>
-              </div>
-            </div>
-            <div>
-              <DualComparisonWidget showCta={true} />
+          <div className="mx-auto w-full max-w-3xl px-6 py-16 text-center">
+            <p className="text-xs font-medium tracking-widest text-brand-taupe uppercase mb-6">Homeown</p>
+            <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06]">
+              {headline}
+            </h1>
+            <p className="mt-6 text-base text-brand-taupe leading-relaxed max-w-xl mx-auto">
+              Move in, pay a monthly service fee, and hold the right to buy at a price fixed from day one.
+            </p>
+            <div className="mt-10">
+              <Link
+                to={calcUrl}
+                onClick={handleHeroCtaClick}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-4 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Check your numbers
+              </Link>
+              <p className="mt-3 text-xs text-brand-taupe">Two minutes. No account required.</p>
             </div>
           </div>
           <div id="nav-sentinel" />
@@ -252,27 +243,15 @@ export default function HomePage() {
               The Problem
             </p>
             <RecognitionStack />
-            <p className="mt-10 text-muted-foreground">
-              If any of these are true, the Homeown pathway may apply to you.
-            </p>
-            <Link
-              to={calcUrl}
-              className="mt-4 inline-block text-sm font-medium text-brand-green underline underline-offset-4 hover:text-brand-green-light transition-colors"
-            >
-              Check if the pathway fits
-            </Link>
           </div>
         </section>
 
         {/* ── Section 3: Twin-cost widget ──────────────────────────── */}
         <section className="border-b py-20 md:py-28">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-3xl font-normal md:text-4xl mb-4">
+            <h2 className="text-3xl font-normal md:text-4xl mb-10">
               What would it actually cost?
             </h2>
-            <p className="text-muted-foreground mb-10">
-              Enter your property target and current monthly outgoings. The comparison updates live.
-            </p>
             <DualComparisonWidget showCta={true} />
           </div>
         </section>
@@ -364,9 +343,12 @@ export default function HomePage() {
               ))}
             </Accordion>
             <div className="mt-8">
-              <Button asChild variant="secondary">
-                <Link to="/faq">All questions</Link>
-              </Button>
+              <Link
+                to="/faq"
+                className="text-sm font-medium text-brand-green underline underline-offset-4 hover:text-brand-green-light transition-colors"
+              >
+                All questions
+              </Link>
             </div>
           </div>
         </section>
