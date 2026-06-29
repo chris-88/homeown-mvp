@@ -33,8 +33,9 @@ jobs:
       - name: Call scheduled-jobs Edge Function
         run: |
           curl -s -X POST \
-            "${{ secrets.SUPABASE_URL }}/functions/v1/scheduled-jobs" \
+            "${{ secrets.VITE_SUPABASE_URL }}/functions/v1/scheduled-jobs" \
             -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -d '{"job_type":"${{ steps.job_type.outputs.type }}"}' \
             --fail-with-body
