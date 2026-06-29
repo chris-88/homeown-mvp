@@ -5,7 +5,7 @@ import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
 import { TheTurnSection } from '@/components/shared/TheTurnSection'
 import { CookieBanner } from '@/components/shared/CookieBanner'
-import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/shared/Logo'
 import { track, buildCalcUrl } from '@/lib/analytics'
 import {
   Accordion,
@@ -23,6 +23,11 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
+// Shared style tokens
+const EYEBROW = 'text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-taupe mb-3'
+const SECTION_HEAD = 'text-3xl font-normal tracking-tight md:text-[2.5rem]'
+const CTA_BTN = 'inline-flex items-center justify-center rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors'
+
 const HOOK_HEADLINES: Record<string, string> = {
   default:    "You can afford the home. The deposit is what's stopping you.",
   'rent-trap': 'Your monthly payment leaves. Every month. None of it goes toward the home.',
@@ -38,14 +43,46 @@ const RECOGNITION = [
   'I have been searching for years. I am further away now than when I started.',
 ]
 
-function RecognitionStack() {
+function RecognitionCarousel() {
+  const [current, setCurrent] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrent(i => (i + 1) % RECOGNITION.length), 4500)
+    return () => clearInterval(timer)
+  }, [])
+
   return (
-    <div className="space-y-8">
-      {RECOGNITION.map(text => (
-        <p key={text} className="text-xl font-medium leading-snug md:text-2xl text-brand-ink">
-          {text}
-        </p>
-      ))}
+    <div>
+      {/* All statements stacked in the same grid cell; only one is visible */}
+      <div className="grid">
+        {RECOGNITION.map((text, i) => (
+          <p
+            key={i}
+            style={{ gridColumn: '1', gridRow: '1' }}
+            className={cn(
+              'text-xl font-medium leading-snug md:text-2xl text-brand-ink',
+              'transition-opacity duration-700 ease-in-out',
+              i === current ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'
+            )}
+          >
+            {text}
+          </p>
+        ))}
+      </div>
+      {/* Progress dots */}
+      <div className="flex gap-2 mt-10">
+        {RECOGNITION.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            aria-label={`Statement ${i + 1}`}
+            className={cn(
+              'h-[3px] rounded-full bg-brand-ink transition-all duration-500 cursor-pointer',
+              i === current ? 'w-8 opacity-100' : 'w-3 opacity-20'
+            )}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -89,22 +126,22 @@ const PROTECTION_CARDS = [
   {
     Icon: Lock,
     heading: 'Your option price is fixed in writing on the day of acquisition',
-    body: "Set at acquisition and written into your agreement before you move in. 10% below what Homeown paid. Fixed for the full 60-month term.",
+    body: 'Set at acquisition and written into your agreement before you move in. 10% below what Homeown paid. Fixed for the full 60-month term.',
   },
   {
     Icon: Shield,
     heading: 'The property is legally ring-fenced',
-    body: "Legal title is held by a ring-fenced DAC set up for your cohort only. Homeown does not hold legal title and cannot deal with the property outside the programme.",
+    body: 'Legal title is held by a ring-fenced DAC set up for your cohort only. Homeown does not hold legal title and cannot deal with the property outside the programme.',
   },
   {
     Icon: Home,
     heading: 'You hold a beneficial interest from day one',
-    body: "From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property. Not a tenancy. Governed by a legally binding agreement.",
+    body: 'From the moment you complete your Entry Stake, you hold a 1% beneficial interest in the property. Not a tenancy. Governed by a legally binding agreement.',
   },
   {
     Icon: CheckCircle2,
     heading: 'No debt between you and Homeown',
-    body: "Nothing owed to Homeown at any point. No amortisation, no interest. If you exit, you leave with no obligation.",
+    body: 'Nothing owed to Homeown at any point. No amortisation, no interest. If you exit, you leave with no obligation.',
   },
 ]
 
@@ -135,24 +172,10 @@ function StageInfoDialog({ text }: { text: string }) {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Programme participation criteria</DialogTitle>
-          <DialogDescription className="leading-relaxed pt-2">
-            {text}
-          </DialogDescription>
+          <DialogDescription className="leading-relaxed pt-2">{text}</DialogDescription>
         </DialogHeader>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function StageCard({ stage, small = false }: { stage: typeof STAGES[0]; small?: boolean }) {
-  return (
-    <div>
-      <h3 className={cn('font-semibold mb-2', small ? 'text-sm' : '')}>{stage.heading}</h3>
-      <p className={cn('text-muted-foreground leading-relaxed', small ? 'text-xs' : 'text-sm')}>
-        {stage.body}
-      </p>
-      {stage.info && <StageInfoDialog text={stage.info} />}
-    </div>
   )
 }
 
@@ -163,7 +186,6 @@ export default function HomePage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-
     const knownHooks = ['rent-trap', 'twin-cost', 'fairness', 'futility']
     const hookParam = params.get('hook') ?? ''
     const resolvedHook = knownHooks.includes(hookParam) ? hookParam : 'default'
@@ -175,13 +197,9 @@ export default function HomePage() {
       const val = params.get(key)
       if (val) utm[key] = val
     })
-    if (Object.keys(utm).length) {
-      sessionStorage.setItem('homeown_utm', JSON.stringify(utm))
-    }
-
-    if (!sessionStorage.getItem('homeown_session_id')) {
+    if (Object.keys(utm).length) sessionStorage.setItem('homeown_utm', JSON.stringify(utm))
+    if (!sessionStorage.getItem('homeown_session_id'))
       sessionStorage.setItem('homeown_session_id', crypto.randomUUID())
-    }
   }, [])
 
   useEffect(() => {
@@ -203,19 +221,17 @@ export default function HomePage() {
 
   const calcUrl = buildCalcUrl()
 
-  function handleHeroCtaClick() {
-    track('hero_cta_click', {})
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
       <main>
-        {/* ── Section 1: Hero ───────────────────────────────────────── */}
+        {/* ── 1. Belief ─────────────────────────────────────────────── */}
         <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
           <div className="mx-auto w-full max-w-3xl px-6 py-16 text-center">
-            <p className="text-xs font-medium tracking-widest text-brand-taupe uppercase mb-6">Homeown</p>
+            <div className="flex justify-center mb-10">
+              <Logo className="h-7 w-auto text-brand-ink" />
+            </div>
             <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06]">
               {headline}
             </h1>
@@ -223,11 +239,7 @@ export default function HomePage() {
               Move in, pay a monthly service fee, and hold the right to buy at a price fixed from day one.
             </p>
             <div className="mt-10">
-              <Link
-                to={calcUrl}
-                onClick={handleHeroCtaClick}
-                className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-4 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
+              <Link to={calcUrl} onClick={() => track('hero_cta_click', {})} className={CTA_BTN}>
                 Check your numbers
               </Link>
               <p className="mt-3 text-xs text-brand-taupe">Two minutes. No account required.</p>
@@ -236,59 +248,37 @@ export default function HomePage() {
           <div id="nav-sentinel" />
         </section>
 
-        {/* ── Section 2: Recognition ────────────────────────────────── */}
+        {/* ── 2. Problem, felt ──────────────────────────────────────── */}
         <section className="border-b py-20 md:py-28">
           <div className="mx-auto max-w-2xl px-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-10">
-              The Problem
-            </p>
-            <RecognitionStack />
+            <p className={EYEBROW}>The problem</p>
+            <RecognitionCarousel />
           </div>
         </section>
 
-        {/* ── Section 3: The Turn ──────────────────────────────────── */}
+        {/* ── 3. The turn ───────────────────────────────────────────── */}
         <TheTurnSection calcUrl={calcUrl} />
 
-        {/* ── Section 4: Pathway (5 stages) ────────────────────────── */}
+        {/* ── 4. What actually happens ──────────────────────────────── */}
         <section className="border-b py-20 md:py-28">
-          <div className="mx-auto max-w-6xl px-6">
-            <h2 className="text-3xl font-normal md:text-4xl mb-2">
-              What actually happens
-            </h2>
-            <p className="text-muted-foreground mb-14">
-              Five stages, over five years. Buying a home is not simple. We do not pretend otherwise.
-            </p>
-
-            {/* Desktop: 5-column grid */}
-            <div className="hidden md:grid md:grid-cols-5 md:gap-5">
-              {STAGES.map((stage, i) => (
-                <div key={stage.n}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-primary text-xs font-bold text-primary">
-                      {stage.n}
-                    </span>
-                    {i < STAGES.length - 1 && <div className="flex-1 h-px bg-border" />}
-                  </div>
-                  <StageCard stage={stage} small />
-                </div>
-              ))}
-            </div>
-
-            {/* Mobile: vertical stack */}
-            <div className="space-y-10 md:hidden">
+          <div className="mx-auto max-w-3xl px-6">
+            <p className={EYEBROW}>The pathway</p>
+            <h2 className={cn(SECTION_HEAD, 'mb-12')}>What actually happens</h2>
+            <div className="space-y-10">
               {STAGES.map(stage => (
-                <div key={stage.n} className="flex gap-5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-primary text-sm font-bold text-primary">
+                <div key={stage.n} className="flex gap-6">
+                  <span className="flex-none flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary text-xs font-bold text-primary">
                     {stage.n}
                   </span>
-                  <div className="flex-1">
-                    <StageCard stage={stage} />
+                  <div className="flex-1 pt-0.5">
+                    <h3 className="font-semibold mb-1.5">{stage.heading}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{stage.body}</p>
+                    {stage.info && <StageInfoDialog text={stage.info} />}
                   </div>
                 </div>
               ))}
             </div>
-
-            <div className="mt-12">
+            <div className="mt-12 pl-14">
               <Link
                 to="/how-it-works"
                 className="text-sm font-medium text-brand-green underline underline-offset-4 hover:text-brand-green-light transition-colors"
@@ -299,17 +289,16 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Section 5: Protection ────────────────────────────────── */}
+        {/* ── 5. Why it's safe ──────────────────────────────────────── */}
         <section className="border-b py-20 md:py-28 bg-muted/20">
-          <div className="mx-auto max-w-5xl px-6">
-            <h2 className="text-3xl font-normal md:text-4xl mb-12">
-              The structure is designed to protect you.
-            </h2>
+          <div className="mx-auto max-w-3xl px-6">
+            <p className={EYEBROW}>How you're protected</p>
+            <h2 className={cn(SECTION_HEAD, 'mb-12')}>The structure is designed to protect you.</h2>
             <div className="grid gap-5 sm:grid-cols-2">
               {PROTECTION_CARDS.map(({ Icon, heading, body }) => (
-                <div key={heading} className="rounded-md border bg-card p-6">
+                <div key={heading} className="rounded-lg border bg-card p-6">
                   <Icon className="h-5 w-5 text-brand-green mb-4" />
-                  <h3 className="font-semibold mb-2">{heading}</h3>
+                  <h3 className="font-semibold mb-2 text-[15px] leading-snug">{heading}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
                 </div>
               ))}
@@ -317,12 +306,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Section 6: FAQ Preview ───────────────────────────────── */}
+        {/* ── 6. Residual questions ─────────────────────────────────── */}
         <section className="border-b py-20 md:py-28">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-3xl font-normal md:text-4xl mb-10">
-              The questions people ask first.
-            </h2>
+            <p className={EYEBROW}>Questions</p>
+            <h2 className={cn(SECTION_HEAD, 'mb-10')}>The questions people ask first.</h2>
             <Accordion type="single" collapsible className="divide-y border-y">
               {FAQ_ITEMS.map(item => (
                 <AccordionItem key={item.q} value={item.q} className="border-none">
@@ -346,22 +334,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Section 7: Final CTA ─────────────────────────────────── */}
+        {/* ── 7. The ask ────────────────────────────────────────────── */}
         <section className="bg-primary py-24 md:py-32">
           <div className="mx-auto max-w-2xl px-6 text-center">
-            <h2 className="text-4xl font-normal text-primary-foreground md:text-5xl leading-tight">
+            <h2 className="text-4xl font-normal tracking-tight text-primary-foreground md:text-5xl leading-tight">
               Ready to see if the programme fits?
             </h2>
-            <p className="mt-5 text-primary-foreground/70 text-lg">
-              The calculator takes two minutes. No account. No commitment.
+            <p className="mt-5 text-primary-foreground/70">
+              Two minutes. No account. No commitment.
             </p>
-            <Button
-              asChild
-              size="lg"
-              className="mt-10 bg-primary-foreground text-primary hover:bg-primary-foreground/90 h-auto px-8 py-4 text-base"
-            >
-              <Link to={calcUrl}>Check your numbers</Link>
-            </Button>
+            <div className="mt-10">
+              <Link
+                to={calcUrl}
+                className="inline-flex items-center justify-center rounded-lg bg-primary-foreground px-8 py-3.5 text-[15px] font-medium text-primary hover:bg-primary-foreground/90 transition-colors"
+              >
+                Check your numbers
+              </Link>
+            </div>
           </div>
         </section>
       </main>

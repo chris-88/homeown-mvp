@@ -32,8 +32,10 @@ export function PublicNav() {
 
   return (
     <header className={cn(
-      'sticky top-0 z-40 transition-all duration-200',
-      pastHero ? 'bg-card shadow-sm border-b' : 'bg-transparent'
+      'sticky top-0 z-40 transition-all duration-300',
+      pastHero
+        ? 'opacity-100 bg-card shadow-sm border-b'
+        : 'opacity-0 pointer-events-none bg-transparent'
     )}>
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center">
