@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Lock, Shield, Home, CheckCircle2, Info } from 'lucide-react'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
-import { DualComparisonWidget } from '@/components/shared/DualComparisonWidget'
+import { TheTurnSection } from '@/components/shared/TheTurnSection'
 import { CookieBanner } from '@/components/shared/CookieBanner'
 import { Button } from '@/components/ui/button'
 import { track, buildCalcUrl } from '@/lib/analytics'
@@ -246,15 +246,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Section 3: Twin-cost widget ──────────────────────────── */}
-        <section className="border-b py-20 md:py-28">
-          <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-3xl font-normal md:text-4xl mb-10">
-              What would it actually cost?
-            </h2>
-            <DualComparisonWidget showCta={true} />
-          </div>
-        </section>
+        {/* ── Section 3: The Turn ──────────────────────────────────── */}
+        <TheTurnSection calcUrl={calcUrl} />
 
         {/* ── Section 4: Pathway (5 stages) ────────────────────────── */}
         <section className="border-b py-20 md:py-28">
