@@ -439,8 +439,6 @@ function Step4({ price, monthly, onBack }: {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  const ghiPct = `${Math.max(0, Math.min(100, ((ghi - 45000) / (180000 - 45000)) * 100))}%`
-
   async function handleSubmit() {
     const errs: Record<string, string> = {}
     if (!county) errs.county = 'Please select a county'
