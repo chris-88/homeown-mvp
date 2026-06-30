@@ -5,7 +5,6 @@ import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
 import { TheTurnSection } from '@/components/shared/TheTurnSection'
 import { CookieBanner } from '@/components/shared/CookieBanner'
-import { Logo } from '@/components/shared/Logo'
 import { track, buildCalcUrl } from '@/lib/analytics'
 import {
   Accordion,
@@ -64,13 +63,6 @@ const EYEBROW = 'text-[11px] font-semibold tracking-[0.14em] uppercase text-bran
 const SECTION_HEAD = 'text-3xl font-normal tracking-tight md:text-[2.5rem]'
 const CTA_BTN = 'inline-flex items-center justify-center rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors'
 
-const HOOK_HEADLINES: Record<string, string> = {
-  default:    "You can afford the home. The deposit is what's stopping you.",
-  'rent-trap': 'Your monthly payment leaves. Every month. None of it goes toward the home.',
-  'twin-cost': 'You pay for housing. You save for a deposit. One Homeown payment can replace both.',
-  fairness:   'You built this without help. Homeown is built for that.',
-  futility:   'The deposit target keeps moving. Homeown fixes the price from today.',
-}
 
 const RECOGNITION = [
   'I can afford the monthly cost. I cannot save the upfront amount.',
@@ -216,7 +208,6 @@ function StageInfoDialog({ text }: { text: string }) {
 }
 
 export default function HomePage() {
-  const [headline, setHeadline] = useState(HOOK_HEADLINES.default)
   const heroRef = useRef<HTMLElement>(null)
   const heroViewFired = useRef(false)
   const stagesRef = useStaggerReveal(70)
@@ -228,7 +219,6 @@ export default function HomePage() {
     const hookParam = params.get('hook') ?? ''
     const resolvedHook = knownHooks.includes(hookParam) ? hookParam : 'default'
     sessionStorage.setItem('homeown_hook', resolvedHook)
-    setHeadline(HOOK_HEADLINES[resolvedHook])
 
     const utm: Record<string, string> = {}
     ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(key => {
@@ -266,23 +256,33 @@ export default function HomePage() {
       <main>
         {/* ── 1. Belief ─────────────────────────────────────────────── */}
         <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
-          <div className="mx-auto w-full max-w-3xl px-6 py-16 text-center">
-            <div className="flex justify-center mb-10 animate-hero-enter" style={{ animationDelay: '80ms' }}>
-              <Logo className="h-7 w-auto text-brand-ink" />
+          <div className="mx-auto w-full max-w-2xl px-6 py-16 text-center">
+            <div className="flex justify-center mb-12 animate-hero-enter" style={{ animationDelay: '80ms' }}>
+              <svg className="h-28 w-auto text-brand-green" viewBox="0 0 56 66" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1,32 28,3 55,32" />
+                <polyline points="10,32 10,64 46,64 46,32" />
+              </svg>
             </div>
-            <h1
-              className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] animate-hero-enter"
+            <p
+              className="text-base text-brand-taupe leading-relaxed animate-hero-enter"
               style={{ animationDelay: '160ms' }}
             >
-              {headline}
+              You're not failing. The target moved.
+            </p>
+            <h1
+              className="mt-3 text-5xl font-bold tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] animate-hero-enter"
+              style={{ animationDelay: '240ms' }}
+            >
+              Stop chasing the deposit.
             </h1>
             <p
-              className="mt-6 text-base text-brand-taupe leading-relaxed max-w-xl mx-auto animate-hero-enter"
-              style={{ animationDelay: '260ms' }}
+              className="mt-6 text-base text-brand-taupe leading-relaxed max-w-lg mx-auto animate-hero-enter"
+              style={{ animationDelay: '320ms' }}
             >
-              Move in, pay a monthly service fee, and hold the right to buy at a price fixed from day one.
+              Move in now. Pay one monthly pathway fee. Buy later through a standard mortgage at a price fixed from day one.
             </p>
-            <div className="mt-10 animate-hero-enter" style={{ animationDelay: '360ms' }}>
+            <div className="mt-10 animate-hero-enter" style={{ animationDelay: '400ms' }}>
               <Link
                 to={calcUrl}
                 onClick={() => track('hero_cta_click', {})}
