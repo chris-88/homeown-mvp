@@ -276,15 +276,12 @@ function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
     )
   }
 
-  const monthsRounded = Math.round(crossingMonths)
-
   return (
     <div>
       <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground mb-2.5">
         Your starting point
       </p>
-      <h2 className="text-[clamp(28px,5vw,48px)] leading-[1.08] tracking-tight mb-8"
-        style={{ ...SERIF, fontWeight: 340 }}>
+      <h2 className="text-[clamp(28px,5vw,48px)] font-bold leading-[1.08] tracking-tight mb-8">
         A 1% entry stake.
       </h2>
 
@@ -320,19 +317,6 @@ function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
           x={ML + PW + 8} y={(savYEnd + 4).toFixed(1)}>Saved</text>
         {crossingMark}
       </svg>
-
-      <p className="mt-5 text-[15px] text-muted-foreground leading-relaxed">
-        {ready
-          ? <>You already have enough for the entry stake of{' '}
-              <strong className="text-foreground">{fmt(entryStake)}</strong>. You can start today.</>
-          : <>The bar drops to{' '}
-              <strong className="text-foreground">{fmt(entryStake)}</strong>.{' '}
-              At your pace, about{' '}
-              <strong className="text-foreground">
-                {monthsRounded} {monthsRounded === 1 ? 'month' : 'months'}
-              </strong>.</>
-        }
-      </p>
 
       <div className="mt-8 pt-6 border-t border-brand-cream">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
