@@ -104,6 +104,69 @@
   --ring:                 #2A6B4D;
 }
 
+/* ── Motion system ────────────────────────────────────────────── */
+/*
+ * Duration scale
+ *   instant   80ms  — state feedback (press, select)
+ *   quick    200ms  — hover colour/shadow transitions
+ *   standard 380ms  — entrances, panel reveals
+ *   deliberate700ms — chart draws, number payoffs
+ *
+ * Easing vocabulary
+ *   ease-out    cubic-bezier(0.16,1,0.3,1)     — entrances: fast start, gentle land
+ *   ease-in     cubic-bezier(0.4,0,1,1)         — exits
+ *   ease-settle cubic-bezier(0.34,1.56,0.64,1)  — spring; earned moments only
+ */
+:root {
+  --dur-instant:    80ms;
+  --dur-quick:      200ms;
+  --dur-standard:   380ms;
+  --dur-deliberate: 700ms;
+
+  --ease-out:    cubic-bezier(0.16, 1,    0.3,  1);
+  --ease-in:     cubic-bezier(0.4,  0,    1,    1);
+  --ease-settle: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Reduced-motion: all CSS animation/transition collapses to instant */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Keyframes ────────────────────────────────────────────────── */
+@keyframes hero-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes step-enter {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Animation utility classes ────────────────────────────────── */
+.animate-hero-enter {
+  animation: hero-enter var(--dur-standard) var(--ease-out) both;
+}
+
+.animate-step-enter {
+  animation: step-enter 280ms var(--ease-out) both;
+}
+
+.animate-fade-up {
+  animation: fade-up var(--dur-standard) var(--ease-out) both;
+}
+
 /* ── Range slider — styled to match brand ── */
 input[type="range"].slider-range {
   -webkit-appearance: none;
@@ -143,6 +206,7 @@ input[type="range"].slider-range::-webkit-slider-thumb {
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   margin-top: -10.5px; /* center on 3px track: -(24-3)/2 */
+  transition: transform var(--dur-instant), box-shadow var(--dur-instant);
 }
 input[type="range"].slider-range::-moz-range-thumb {
   width: 24px;
@@ -152,6 +216,16 @@ input[type="range"].slider-range::-moz-range-thumb {
   border: 2px solid var(--color-primary);
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: transform var(--dur-instant), box-shadow var(--dur-instant);
+}
+input[type="range"].slider-range:active::-webkit-slider-thumb,
+input[type="range"].slider-range:focus::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(18, 58, 40, 0.25);
+}
+input[type="range"].slider-range:active::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(18, 58, 40, 0.25);
 }
 input[type="range"].slider-range:focus-visible::-webkit-slider-thumb {
   outline: 2px solid var(--color-ring);

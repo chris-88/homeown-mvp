@@ -81,10 +81,14 @@ function Pills({ options, value, onChange }: {
     <div className="flex flex-wrap gap-2">
       {options.map(o => (
         <button key={o.value} type="button" onClick={() => onChange(o.value)}
-          className={cn('rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
+          className={cn(
+            'rounded-full border px-4 py-1.5 text-sm font-medium',
+            'transition-[background-color,color,border-color,transform] duration-[80ms]',
+            'active:scale-[0.94]',
             value === o.value
               ? 'bg-primary text-primary-foreground border-primary'
-              : 'border-input bg-background text-foreground hover:bg-accent')}>
+              : 'border-input bg-background text-foreground hover:bg-accent'
+          )}>
           {o.label}
         </button>
       ))}
@@ -98,11 +102,11 @@ function NavRow({ onBack, onNext, nextLabel, disabled }: {
   return (
     <div className="flex gap-3 mt-10">
       <button onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-colors">
+        className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-[background-color,transform] active:scale-[0.97]">
         <ArrowLeft className="h-4 w-4" />Back
       </button>
       <button onClick={onNext} disabled={disabled}
-        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors disabled:opacity-60">
+        className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97] disabled:opacity-60">
         {nextLabel}<ArrowRight className="h-4 w-4" />
       </button>
     </div>
@@ -204,7 +208,7 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
 
       <div className="mt-12">
         <button onClick={onNext}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors">
+          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97]">
           See what Homeown changes <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -329,11 +333,11 @@ function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
 
       <div className="mt-10 flex gap-3">
         <button onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-colors">
+          className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-[background-color,transform] active:scale-[0.97]">
           <ArrowLeft className="h-4 w-4" />Back
         </button>
         <button onClick={() => onNext(savedSoFar, housingCost)}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors">
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97]">
           See it grow for you <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -560,10 +564,13 @@ function Step4({ price, monthly, housingCost, onBack }: {
           {ROI_COUNTIES.map(c => (
             <button key={c} type="button"
               onClick={() => { setCounty(c); if (c !== 'Dublin') setDublinPostcode(null) }}
-              className={cn('rounded-full border px-2 py-1 text-xs font-medium text-center transition-colors',
+              className={cn(
+                'rounded-full border px-2 py-1 text-xs font-medium text-center',
+                'transition-[background-color,color,border-color,transform] duration-[80ms] active:scale-[0.94]',
                 county === c
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-input bg-background text-foreground hover:bg-accent')}>
+                  : 'border-input bg-background text-foreground hover:bg-accent'
+              )}>
               {c}
             </button>
           ))}
@@ -623,11 +630,11 @@ function Step4({ price, monthly, housingCost, onBack }: {
 
       <div className="flex gap-3 pt-2">
         <button onClick={onBack} disabled={submitting}
-          className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-colors disabled:opacity-60">
+          className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-[background-color,transform] active:scale-[0.97] disabled:opacity-60">
           <ArrowLeft className="h-4 w-4" />Back
         </button>
         <button onClick={handleSubmit} disabled={submitting}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors disabled:opacity-60">
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97] disabled:opacity-60">
           {submitting ? 'Saving…' : 'See my results'}{!submitting && <ArrowRight className="h-4 w-4" />}
         </button>
       </div>
@@ -653,25 +660,28 @@ export default function Calc2Page() {
       <PublicNav />
       <main className="mx-auto max-w-3xl px-6 py-12">
         <Progress step={step} />
-        {step === 1 && (
-          <Step1 price={price} monthly={monthly}
-            setPrice={setPrice} setMonthly={setMonthly}
-            onNext={() => setStep(2)} />
-        )}
-        {step === 2 && (
-          <Step2 price={price} monthly={monthly}
-            initSaved={savedSoFar} initHousing={housingCost}
-            onNext={(sf, hc) => { setSavedSoFar(sf); setHousingCost(hc); setStep(3) }}
-            onBack={() => setStep(1)} />
-        )}
-        {step === 3 && (
-          <Step3 price={price}
-            monthsToStart={Math.max(0, (Math.round(price * 0.01) - savedSoFar) / monthly)}
-            onNext={() => setStep(4)} onBack={() => setStep(2)} />
-        )}
-        {step === 4 && (
-          <Step4 price={price} monthly={monthly} housingCost={housingCost} onBack={() => setStep(3)} />
-        )}
+        {/* key={step} forces remount on step change so animate-step-enter always plays */}
+        <div key={step} className="animate-step-enter">
+          {step === 1 && (
+            <Step1 price={price} monthly={monthly}
+              setPrice={setPrice} setMonthly={setMonthly}
+              onNext={() => setStep(2)} />
+          )}
+          {step === 2 && (
+            <Step2 price={price} monthly={monthly}
+              initSaved={savedSoFar} initHousing={housingCost}
+              onNext={(sf, hc) => { setSavedSoFar(sf); setHousingCost(hc); setStep(3) }}
+              onBack={() => setStep(1)} />
+          )}
+          {step === 3 && (
+            <Step3 price={price}
+              monthsToStart={Math.max(0, (Math.round(price * 0.01) - savedSoFar) / monthly)}
+              onNext={() => setStep(4)} onBack={() => setStep(2)} />
+          )}
+          {step === 4 && (
+            <Step4 price={price} monthly={monthly} housingCost={housingCost} onBack={() => setStep(3)} />
+          )}
+        </div>
       </main>
     </div>
   )

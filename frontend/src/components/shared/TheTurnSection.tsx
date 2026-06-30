@@ -1,7 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import * as Popover from '@radix-ui/react-popover'
 import { track } from '@/lib/analytics'
+
+// Lerps the displayed label toward the slider's actual value each RAF frame.
+// Only the text readout trails; the chart uses the real value for instant response.
+function useLerpDisplay(target: number): number {
+  const current = useRef(target)
+  const [displayed, setDisplayed] = useState(target)
+  const raf = useRef(0)
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayed(target)
+      return
+    }
+    cancelAnimationFrame(raf.current)
+    const animate = () => {
+      const diff = target - current.current
+      if (Math.abs(diff) < 100) {
+        current.current = target
+        setDisplayed(target)
+        return
+      }
+      current.current += diff * 0.28
+      setDisplayed(Math.round(current.current))
+      raf.current = requestAnimationFrame(animate)
+    }
+    raf.current = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(raf.current)
+  }, [target])
+
+  return displayed
+}
 
 const GROWTH = 0.05
 const DEPOSIT_PCT = 0.10
@@ -86,6 +117,74 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
   const [price, setPrice] = useState(580000)
   const [monthly, setMonthly] = useState(1000)
 
+  // Draw-on refs
+  const sectionRef = useRef<HTMLElement>(null)
+  const depositRef  = useRef<SVGPolylineElement>(null)
+  const savingsRef  = useRef<SVGLineElement>(null)
+  const animatedOnce = useRef(false)
+  const timeoutRef  = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // Crossing marker: hidden until lines have drawn in
+  const [crossingVisible, setCrossingVisible] = useState(false)
+
+  // Lerped display values for the slider readouts (signature detail)
+  const lerpedPrice   = useLerpDisplay(price)
+  const lerpedMonthly = useLerpDisplay(monthly)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    const deposit = depositRef.current
+    const savings = savingsRef.current
+    if (!section || !deposit || !savings) return
+    if (animatedOnce.current) return
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      setCrossingVisible(true)
+      return
+    }
+
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      obs.disconnect()
+      animatedOnce.current = true
+
+      // Deposit polyline: stroke draw-on via dashoffset
+      const dLen = deposit.getTotalLength()
+      const dAnim = deposit.animate(
+        [
+          { strokeDasharray: `${dLen} ${dLen}`, strokeDashoffset: dLen },
+          { strokeDasharray: `${dLen} ${dLen}`, strokeDashoffset: 0 },
+        ],
+        { duration: 900, fill: 'both', easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+      )
+      dAnim.onfinish = () => {
+        deposit.style.strokeDasharray = ''
+        deposit.style.strokeDashoffset = ''
+        dAnim.cancel()
+      }
+
+      // Savings line: fade in (preserves its dashed style)
+      const sAnim = savings.animate(
+        [{ opacity: 0 }, { opacity: 1 }],
+        { duration: 550, delay: 250, fill: 'both', easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+      )
+      sAnim.onfinish = () => {
+        savings.style.opacity = ''
+        sAnim.cancel()
+      }
+
+      // Crossing marker: controlled via React state, timed after lines establish
+      timeoutRef.current = setTimeout(() => setCrossingVisible(true), 960)
+    }, { threshold: 0.2 })
+
+    obs.observe(section)
+    return () => {
+      obs.disconnect()
+      clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
   const maxVal = Math.max(depositAt(price, YEARS), savingsAt(monthly, YEARS))
   const niceMax = Math.max(10000, Math.ceil(maxVal * 1.05 / 10000) * 10000)
 
@@ -163,7 +262,7 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
   return (
     <>
       {/* ── Chart + sliders — light background ─────────────────────── */}
-      <section className="border-b py-20 md:py-28">
+      <section ref={sectionRef} className="border-b py-20 md:py-28">
         <div className="mx-auto max-w-3xl px-6">
           <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-taupe mb-2.5">
             The Traditional Route
@@ -199,11 +298,11 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
               </text>
             ))}
 
-            <line stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
+            <line ref={savingsRef} stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
               x1={xPix(0).toFixed(1)} y1={yPix(0).toFixed(1)}
               x2={xPix(YEARS).toFixed(1)} y2={savingsEndY.toFixed(1)} />
 
-            <polyline fill="none" stroke="#123A28" strokeWidth="2.5" points={depositPts} />
+            <polyline ref={depositRef} fill="none" stroke="#123A28" strokeWidth="2.5" points={depositPts} />
 
             <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
               x={ML + PW + 8} y={(yPix(depositAt(price, YEARS)) + 4).toFixed(1)}>
@@ -214,7 +313,12 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
               Saved
             </text>
 
-            {crossingMark}
+            <g style={{
+              opacity: crossingVisible ? 1 : 0,
+              transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+            }}>
+              {crossingMark}
+            </g>
           </svg>
 
           {captionNode}
@@ -229,7 +333,7 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
                   <label htmlFor="turn-price" className="text-[11px] tracking-[0.09em] uppercase text-brand-taupe">
                     Target price
                   </label>
-                  <span className="text-sm font-semibold text-brand-green tabular-nums">{fmtEuro(price)}</span>
+                  <span className="text-sm font-semibold text-brand-green tabular-nums">{fmtEuro(lerpedPrice)}</span>
                 </div>
                 <input
                   id="turn-price" type="range" min={250000} max={900000} step={10000} value={price}
@@ -247,7 +351,7 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
                   <label htmlFor="turn-monthly" className="text-[11px] tracking-[0.09em] uppercase text-brand-taupe">
                     Saving / month
                   </label>
-                  <span className="text-sm font-semibold text-brand-green tabular-nums">{fmtEuro(monthly)}</span>
+                  <span className="text-sm font-semibold text-brand-green tabular-nums">{fmtEuro(lerpedMonthly)}</span>
                 </div>
                 <input
                   id="turn-monthly" type="range" min={100} max={3000} step={50} value={monthly}

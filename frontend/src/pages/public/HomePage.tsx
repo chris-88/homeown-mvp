@@ -23,6 +23,42 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
+// Staggered scroll-reveal: hides children, reveals them in sequence when container enters view.
+// Direct DOM manipulation keeps React out of the animation path.
+function useStaggerReveal(staggerMs = 80) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const children = Array.from(el.children) as HTMLElement[]
+    children.forEach(child => {
+      child.style.opacity = '0'
+      child.style.transform = 'translateY(16px)'
+    })
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        obs.disconnect()
+        children.forEach((child, i) => {
+          const delay = `${i * staggerMs}ms`
+          child.style.transition = `opacity var(--dur-standard) var(--ease-out) ${delay}, transform var(--dur-standard) var(--ease-out) ${delay}`
+          child.style.opacity = '1'
+          child.style.transform = 'translateY(0)'
+        })
+      },
+      { threshold: 0.1 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [staggerMs])
+
+  return containerRef
+}
+
 // Shared style tokens
 const EYEBROW = 'text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-taupe mb-3'
 const SECTION_HEAD = 'text-3xl font-normal tracking-tight md:text-[2.5rem]'
@@ -183,6 +219,8 @@ export default function HomePage() {
   const [headline, setHeadline] = useState(HOOK_HEADLINES.default)
   const heroRef = useRef<HTMLElement>(null)
   const heroViewFired = useRef(false)
+  const stagesRef = useStaggerReveal(70)
+  const cardsRef = useStaggerReveal(80)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -229,17 +267,27 @@ export default function HomePage() {
         {/* ── 1. Belief ─────────────────────────────────────────────── */}
         <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
           <div className="mx-auto w-full max-w-3xl px-6 py-16 text-center">
-            <div className="flex justify-center mb-10">
+            <div className="flex justify-center mb-10 animate-hero-enter" style={{ animationDelay: '80ms' }}>
               <Logo className="h-7 w-auto text-brand-ink" />
             </div>
-            <h1 className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06]">
+            <h1
+              className="text-5xl font-normal tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] animate-hero-enter"
+              style={{ animationDelay: '160ms' }}
+            >
               {headline}
             </h1>
-            <p className="mt-6 text-base text-brand-taupe leading-relaxed max-w-xl mx-auto">
+            <p
+              className="mt-6 text-base text-brand-taupe leading-relaxed max-w-xl mx-auto animate-hero-enter"
+              style={{ animationDelay: '260ms' }}
+            >
               Move in, pay a monthly service fee, and hold the right to buy at a price fixed from day one.
             </p>
-            <div className="mt-10">
-              <Link to={calcUrl} onClick={() => track('hero_cta_click', {})} className={CTA_BTN}>
+            <div className="mt-10 animate-hero-enter" style={{ animationDelay: '360ms' }}>
+              <Link
+                to={calcUrl}
+                onClick={() => track('hero_cta_click', {})}
+                className={CTA_BTN + ' active:scale-[0.97] transition-transform'}
+              >
                 Check your numbers
               </Link>
               <p className="mt-3 text-xs text-brand-taupe">Two minutes. No account required.</p>
@@ -264,7 +312,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-3xl px-6">
             <p className={EYEBROW}>The pathway</p>
             <h2 className={cn(SECTION_HEAD, 'mb-12')}>What actually happens</h2>
-            <div className="space-y-10">
+            <div ref={stagesRef} className="space-y-10">
               {STAGES.map(stage => (
                 <div key={stage.n} className="flex gap-6">
                   <span className="flex-none flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary text-xs font-bold text-primary">
@@ -294,9 +342,12 @@ export default function HomePage() {
           <div className="mx-auto max-w-3xl px-6">
             <p className={EYEBROW}>How you're protected</p>
             <h2 className={cn(SECTION_HEAD, 'mb-12')}>The structure is designed to protect you.</h2>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div ref={cardsRef} className="grid gap-5 sm:grid-cols-2">
               {PROTECTION_CARDS.map(({ Icon, heading, body }) => (
-                <div key={heading} className="rounded-lg border bg-card p-6">
+                <div
+                  key={heading}
+                  className="rounded-lg border bg-card p-6 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+                >
                   <Icon className="h-5 w-5 text-brand-green mb-4" />
                   <h3 className="font-semibold mb-2 text-[15px] leading-snug">{heading}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
@@ -346,7 +397,7 @@ export default function HomePage() {
             <div className="mt-10">
               <Link
                 to={calcUrl}
-                className="inline-flex items-center justify-center rounded-lg bg-primary-foreground px-8 py-3.5 text-[15px] font-medium text-primary hover:bg-primary-foreground/90 transition-colors"
+                className="inline-flex items-center justify-center rounded-lg bg-primary-foreground px-8 py-3.5 text-[15px] font-medium text-primary hover:bg-primary-foreground/90 transition-[background-color,transform] active:scale-[0.97]"
               >
                 Check your numbers
               </Link>

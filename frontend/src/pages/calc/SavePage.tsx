@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { track } from '@/lib/analytics'
 import { useForm } from 'react-hook-form'
@@ -14,6 +14,66 @@ import { useAuth } from '@/lib/auth'
 import { useCalcWizard } from '@/lib/calcWizard'
 import { formatCurrency } from '@/lib/utils'
 import { CheckCircle2 } from 'lucide-react'
+
+// Counts a number from 0 to `target` using an ease-out curve.
+// Respects prefers-reduced-motion (snaps immediately).
+function useCountUp(target: number, duration: number, delay: number) {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setValue(target)
+      return
+    }
+    let timer: ReturnType<typeof setTimeout>
+    let raf: number
+    timer = setTimeout(() => {
+      const start = performance.now()
+      const tick = (now: number) => {
+        const elapsed = now - start
+        const t = Math.min(elapsed / duration, 1)
+        const eased = 1 - Math.pow(1 - t, 3)  // ease-out cubic
+        setValue(Math.round(target * eased))
+        if (t < 1) raf = requestAnimationFrame(tick)
+      }
+      raf = requestAnimationFrame(tick)
+    }, delay)
+    return () => { clearTimeout(timer); cancelAnimationFrame(raf) }
+  }, [target, duration, delay])
+  return value
+}
+
+// Renders a single benefit stat. Currency and % values count up; text values fade in.
+function AnimatedStat({ stat, label, index }: { stat: string; label: string; index: number }) {
+  const delay = 120 + index * 110
+
+  // Extract numeric value if stat is currency or percentage
+  const isCurrency = stat.startsWith('€')
+  const isPct = stat.endsWith('%') && !stat.includes(' ')
+  const rawNum = isCurrency
+    ? parseInt(stat.replace(/[€,]/g, ''), 10)
+    : isPct
+    ? parseInt(stat, 10)
+    : 0
+  const shouldCount = (isCurrency || isPct) && !isNaN(rawNum)
+
+  const counted = useCountUp(shouldCount ? rawNum : 0, 720, delay)
+
+  const displayStat = shouldCount
+    ? isCurrency
+      ? '€' + counted.toLocaleString('en-IE')
+      : counted + '%'
+    : stat
+
+  return (
+    <div
+      className="animate-fade-up"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <p className="text-2xl font-bold tabular-nums text-primary">{displayStat}</p>
+      <p className="mt-0.5 text-sm text-muted-foreground leading-snug">{label}</p>
+    </div>
+  )
+}
 
 const schema = z.object({
   first_name: z.string().min(1, 'Required'),
@@ -224,8 +284,7 @@ export default function SavePage() {
                     key={i}
                     className={lastIsOrphan && i === benefits.length - 1 ? 'col-span-2 border-t pt-4' : ''}
                   >
-                    <p className="text-2xl font-bold tabular-nums text-primary">{b.stat}</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground leading-snug">{b.label}</p>
+                    <AnimatedStat stat={b.stat} label={b.label} index={i} />
                   </div>
                 ))}
               </div>
