@@ -257,7 +257,7 @@ export default function HomePage() {
       <main>
         {/* ── 1. Belief ─────────────────────────────────────────────── */}
         <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
-          <div className="mx-auto w-full max-w-2xl px-6 py-16 text-center">
+          <div className="mx-auto w-full max-w-3xl px-6 py-16 text-center">
             <div className="flex justify-center mb-12 animate-hero-enter" style={{ animationDelay: '80ms' }}>
               <AnimatedEmblem className="h-28 w-auto" />
             </div>
@@ -268,7 +268,7 @@ export default function HomePage() {
               You're not failing. The target moved.
             </p>
             <h1
-              className="mt-3 text-5xl font-bold tracking-tight sm:text-6xl lg:text-[4rem] leading-[1.06] animate-hero-enter"
+              className="mt-3 text-5xl font-normal tracking-tight leading-[1.06] animate-hero-enter"
               style={{ animationDelay: '240ms' }}
             >
               Stop chasing the deposit.
