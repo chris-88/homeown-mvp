@@ -367,8 +367,8 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
 }
 
 // ── Step 2 — controlled props so parent chart updates in real-time ─
-function Step2({ price, monthly, savedSoFar, setSavedSoFar, housingCost, setHousingCost, onNext, onBack }: {
-  price: number; monthly: number
+function Step2({ price, savedSoFar, setSavedSoFar, housingCost, setHousingCost, onNext, onBack }: {
+  price: number
   savedSoFar: number; setSavedSoFar: (v: number) => void
   housingCost: number; setHousingCost: (v: number) => void
   onNext: () => void; onBack: () => void
@@ -631,7 +631,7 @@ export default function Calc2Page() {
               onNext={() => setStep(2)} />
           )}
           {step === 2 && (
-            <Step2 price={price} monthly={monthly}
+            <Step2 price={price}
               savedSoFar={savedSoFar} setSavedSoFar={setSavedSoFar}
               housingCost={housingCost} setHousingCost={setHousingCost}
               onNext={() => setStep(3)}
