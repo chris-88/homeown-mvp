@@ -41,7 +41,6 @@ function yearsLabel(t: number) {
 }
 
 // ── Shared primitives ──────────────────────────────────────────
-const SERIF: React.CSSProperties = { fontFamily: "'Fraunces', Georgia, serif" }
 
 function Progress({ step }: { step: number }) {
   return (
