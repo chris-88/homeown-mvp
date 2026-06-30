@@ -256,7 +256,7 @@ export default function HomePage() {
 
       <main>
         {/* ── 1. Belief ─────────────────────────────────────────────── */}
-        <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
+        <section ref={heroRef} className="-mt-16 min-h-screen flex flex-col justify-center border-b">
           <div className="mx-auto w-full max-w-3xl px-6 py-16 text-center">
             <div className="flex justify-center mb-12 animate-hero-enter" style={{ animationDelay: '80ms' }}>
               <AnimatedEmblem className="h-28 w-auto" />
