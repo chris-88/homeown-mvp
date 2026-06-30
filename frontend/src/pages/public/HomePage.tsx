@@ -335,18 +335,21 @@ export default function HomePage() {
         </section>
 
         {/* ── 7. The ask ────────────────────────────────────────────── */}
-        <section className="bg-primary py-24 md:py-32">
-          <div className="mx-auto max-w-2xl px-6 text-center">
-            <h2 className="text-4xl font-normal tracking-tight text-primary-foreground md:text-5xl leading-tight">
+        <section className="bg-primary min-h-screen flex items-center justify-center">
+          <div className="mx-auto max-w-2xl px-8 py-20 text-center">
+            <h2
+              className="text-[clamp(36px,6vw,64px)] leading-[1.08] tracking-tight text-primary-foreground"
+              style={{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 340 }}
+            >
               Ready to see if the programme fits?
             </h2>
-            <p className="mt-5 text-primary-foreground/70">
+            <p className="mt-6 text-primary-foreground/60 text-lg">
               Two minutes. No account. No commitment.
             </p>
-            <div className="mt-10">
+            <div className="mt-12">
               <Link
                 to={calcUrl}
-                className="inline-flex items-center justify-center rounded-lg bg-primary-foreground px-8 py-3.5 text-[15px] font-medium text-primary hover:bg-primary-foreground/90 transition-colors"
+                className="inline-flex items-center justify-center rounded-lg bg-primary-foreground px-10 py-4 text-[15px] font-medium text-primary hover:bg-primary-foreground/90 transition-colors"
               >
                 Check your numbers
               </Link>
