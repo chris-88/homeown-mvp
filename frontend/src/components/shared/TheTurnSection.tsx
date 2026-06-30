@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import * as Popover from '@radix-ui/react-popover'
 import { track } from '@/lib/analytics'
 
 const GROWTH = 0.05
 const DEPOSIT_PCT = 0.10
-const STAKE_PCT = 0.01
-const DISCOUNT = 0.10
 const YEARS = 10
 
 // SVG viewport constants
@@ -45,12 +44,48 @@ function yearsLabel(t: number) {
 
 const DISPLAY: React.CSSProperties = { fontFamily: "'Fraunces', Georgia, serif" }
 
+const GROWTH_NOTE = `The 5% annual appreciation assumption is benchmarked against the CSO Residential Property Price Index, the official measure of Irish residential property price trends. Over the five complete years from 2021 to 2025, national residential property prices increased at an average annual rate of approximately 8.5%, based on CSO December year-on-year RPPI releases. The model applies a more conservative long-term assumption of 5.0% p.a.`
+
+function GrowthNotePopover() {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          className="underline underline-offset-2 decoration-brand-taupe/40 hover:decoration-brand-taupe transition-colors cursor-pointer bg-transparent"
+        >
+          Assumes 5% yearly price growth.
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="top"
+          align="center"
+          avoidCollisions
+          collisionPadding={16}
+          className="w-80 rounded-lg bg-foreground px-4 py-3 text-xs text-background shadow-lg leading-relaxed z-50 animate-in fade-in-0 zoom-in-95"
+        >
+          <p>{GROWTH_NOTE}</p>
+          <a
+            href="https://www.cso.ie/en/statistics/prices/residentialpropertypricesindex/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-block underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
+          >
+            CSO Residential Property Price Index →
+          </a>
+          <Popover.Arrow className="fill-foreground" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
 let interactionFired = false
 
 export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
   const [price, setPrice] = useState(580000)
   const [monthly, setMonthly] = useState(1000)
-  const [proofOpen, setProofOpen] = useState(false)
 
   const maxVal = Math.max(depositAt(price, YEARS), savingsAt(monthly, YEARS))
   const niceMax = Math.max(10000, Math.ceil(maxVal * 1.05 / 10000) * 10000)
@@ -68,9 +103,6 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
   const savingsEndY = Math.max(yPix(savingsAt(monthly, YEARS)), MT)
 
   const crossing = findCrossing(price, monthly)
-  const futurePrice = crossing !== null
-    ? price * Math.pow(1.05, crossing)
-    : price * Math.pow(1.05, YEARS)
 
   // Y-axis grid at 0, 25%, 50%, 75%, 100% of niceMax
   const gridLines = [0, 1, 2, 3, 4].map(i => ({
@@ -244,77 +276,39 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
           </div>
         </div>
 
-        {/* Pivot — With Homeown */}
+        {/* Pivot — The Homeown pathway */}
         <div className="text-center pt-[90px]">
-          <p className="text-[13px] font-semibold tracking-[0.12em] uppercase text-brand-taupe mb-4">
-            With Homeown
+          <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-taupe mb-4">
+            The Homeown pathway
           </p>
           <h2
-            className="text-[clamp(28px,4.6vw,42px)] leading-[1.16] text-brand-ink max-w-[18ch] mx-auto"
+            className="text-[clamp(28px,4.6vw,42px)] leading-[1.16] tracking-tight text-brand-ink max-w-[20ch] mx-auto"
             style={{ ...DISPLAY, fontWeight: 420 }}
           >
-            You stop chasing it. You're home{' '}
-            <span className="text-brand-green">this year</span>.
+            Stop chasing the deposit.
           </h2>
-          <p className="text-base text-brand-taupe mt-5 max-w-[42ch] mx-auto leading-relaxed">
-            A price fixed today. No deposit to outrun. A way in that asks only that you start.
+          <p className="text-base text-brand-taupe mt-5 max-w-[44ch] mx-auto leading-relaxed">
+            Choose the home. Fix the price. Follow a clear pathway to buying it through a standard mortgage.
           </p>
         </div>
-
-        {/* Expandable proof */}
-        <div className="text-center mt-14">
-          <button
-            onClick={() => setProofOpen(o => !o)}
-            aria-expanded={proofOpen}
-            className="text-sm text-brand-green border-b border-brand-cream hover:border-brand-taupe/60 transition-colors pb-0.5 bg-transparent cursor-pointer"
-          >
-            {proofOpen ? 'Hide the full numbers' : 'See the full numbers'}
-          </button>
-        </div>
-
-        {proofOpen && (
-          <div className="max-w-[520px] mx-auto mt-7">
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 items-baseline py-4 border-b border-brand-cream text-left">
-              <span className="text-sm text-brand-taupe">To get in the door</span>
-              <span className="text-[17px] font-semibold text-brand-green tabular-nums">
-                {fmtEuro(Math.round(price * STAKE_PCT / 100) * 100)}
-              </span>
-              <span className="text-sm text-brand-taupe tabular-nums min-w-[9ch] text-right">
-                <s style={{ textDecorationColor: 'rgba(133,120,97,0.5)' }}>
-                  {fmtEuro(Math.round(price * DEPOSIT_PCT / 500) * 500)}
-                </s>
-              </span>
-            </div>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 items-baseline py-4 border-b border-brand-cream text-left">
-              <span className="text-sm text-brand-taupe">The price you buy at</span>
-              <span className="text-[17px] font-semibold text-brand-green tabular-nums">
-                {fmtEuro(Math.round(price * (1 - DISCOUNT) / 1000) * 1000)}
-              </span>
-              <span className="text-sm text-brand-taupe tabular-nums min-w-[9ch] text-right">
-                <s style={{ textDecorationColor: 'rgba(133,120,97,0.5)' }}>
-                  {fmtEuro(Math.round(futurePrice / 5000) * 5000)}
-                </s>
-              </span>
-            </div>
-          </div>
-        )}
 
         {/* CTA */}
         <div className="text-center mt-14">
           <Link
             to={calcUrl}
             onClick={() => track('turn_cta_click', { price, monthly })}
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-8 py-4 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors"
           >
-            Check your numbers
+            See your numbers
           </Link>
           <p className="mt-3 text-sm text-brand-taupe">Two minutes. No account required.</p>
         </div>
 
         {/* Fine print */}
         <p className="mt-14 text-xs text-brand-taupe text-center leading-relaxed max-w-[560px] mx-auto">
-          Illustrative only. Assumes 5% yearly price growth. The entry stake is not a deposit and
-          the purchase right is contractual, not guaranteed.
+          Illustrative only.{' '}
+          <GrowthNotePopover />{' '}
+          The entry stake is not a deposit and the purchase right is contractual, not guaranteed.
         </p>
       </div>
     </section>
