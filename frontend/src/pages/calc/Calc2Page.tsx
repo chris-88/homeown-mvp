@@ -134,7 +134,6 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
   const gridLines = [0, 1, 2, 3, 4].map(i => ({ v: niceMax * i / 4, y: yPix(niceMax * i / 4) }))
 
   let crossingMark: React.ReactNode = null
-  let caption: React.ReactNode = null
 
   if (crossing !== null) {
     const vc = depositAt(price, crossing)
@@ -155,22 +154,6 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
           x={bx + 14} y={by + 37}>at {fmt(vc)}</text>
       </>
     )
-    caption = (
-      <p className="mt-5 text-[15px] text-muted-foreground leading-relaxed">
-        You start <strong className="text-foreground">{fmt(price * DEPOSIT_PCT)}</strong> behind.
-        {' '}You finally catch the deposit in{' '}
-        <strong className="text-foreground">{yearsLabel(crossing)}</strong>.
-        {' '}By then it has climbed to{' '}
-        <strong className="text-foreground">{fmt(vc)}</strong>.
-      </p>
-    )
-  } else {
-    caption = (
-      <p className="mt-5 text-[15px] text-muted-foreground leading-relaxed">
-        At <strong className="text-foreground">{fmt(monthly)}</strong> a month,
-        {' '}you never reach the deposit within ten years. It rises faster than you save.
-      </p>
-    )
   }
 
   return (
@@ -178,8 +161,7 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
       <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground mb-2.5">
         The traditional route
       </p>
-      <h2 className="text-[clamp(34px,6vw,52px)] leading-[1.02] tracking-tight mb-8"
-        style={{ ...SERIF, fontWeight: 340 }}>
+      <h2 className="text-[clamp(34px,6vw,52px)] font-bold leading-[1.02] tracking-tight mb-8">
         The deposit keeps moving.
       </h2>
 
@@ -195,7 +177,7 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
         {Array.from({ length: YEARS + 1 }, (_, k) => (
           <text key={k} fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
             textAnchor="middle" x={xPix(k).toFixed(1)} y={MT + PH + 24}>
-            {k === 0 ? 'Now' : k}
+            {k === 0 ? 'Start' : k}
           </text>
         ))}
         <line stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
@@ -209,11 +191,9 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
         {crossingMark}
       </svg>
 
-      {caption}
-
       <div className="mt-8 pt-6 border-t border-brand-cream">
         <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground mb-5">
-          Dublin's average three-bed. Adjust for your own.
+          Adjust for your own.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <ChartSlider label="Target price" value={price} display={fmt(price)}
@@ -225,7 +205,7 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
 
       <div className="mt-12">
         <button onClick={onNext}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors">
+          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors">
           See what Homeown changes <ArrowRight className="h-4 w-4" />
         </button>
       </div>
