@@ -5,6 +5,7 @@ import { PublicNav } from '@/components/shared/PublicNav'
 import { PublicFooter } from '@/components/shared/PublicFooter'
 import { TheTurnSection } from '@/components/shared/TheTurnSection'
 import { CookieBanner } from '@/components/shared/CookieBanner'
+import { AnimatedEmblem } from '@/components/shared/AnimatedEmblem'
 import { track, buildCalcUrl } from '@/lib/analytics'
 import {
   Accordion,
@@ -258,11 +259,7 @@ export default function HomePage() {
         <section ref={heroRef} className="min-h-[85vh] md:min-h-screen flex flex-col justify-center border-b">
           <div className="mx-auto w-full max-w-2xl px-6 py-16 text-center">
             <div className="flex justify-center mb-12 animate-hero-enter" style={{ animationDelay: '80ms' }}>
-              <svg className="h-28 w-auto text-brand-green" viewBox="0 0 56 66" fill="none"
-                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="1,32 28,3 55,32" />
-                <polyline points="10,32 10,64 46,64 46,32" />
-              </svg>
+              <AnimatedEmblem className="h-28 w-auto" />
             </div>
             <p
               className="text-base text-brand-taupe leading-relaxed animate-hero-enter"
