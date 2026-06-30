@@ -8,6 +8,7 @@ import FaqPage from '@/pages/public/FaqPage'
 
 // Calc
 import CalcPage from '@/pages/calc/CalcPage'
+import Calc2Page from '@/pages/calc/Calc2Page'
 import ResultsPage from '@/pages/calc/ResultsPage'
 import SavePage from '@/pages/calc/SavePage'
 
@@ -99,6 +100,7 @@ export const router = createHashRouter([
       { path: 'save', element: <SavePage /> },
     ],
   },
+  { path: '/calc2', element: <Calc2Page /> },
   { path: '/auth/login', element: <LoginPage /> },
   { path: '/auth/forgot', element: <ForgotPage /> },
   { path: '/auth/logout', element: <LogoutPage /> },
