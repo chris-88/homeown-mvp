@@ -473,7 +473,10 @@ function Step4({ price, monthly, housingCost, onBack }: {
   price: number; monthly: number; housingCost: number; onBack: () => void
 }) {
   const navigate = useNavigate()
-  const [ghi, setGhi] = useState(79000)
+  // Minimum income needed: mortgage (90% of price) / 4x LTI rule, rounded to nearest 1k
+  const minIncome = Math.round(price * 0.225 / 1000) * 1000
+  const sliderMax = Math.max(200000, Math.round(minIncome * 2 / 10000) * 10000)
+  const [ghi, setGhi] = useState(minIncome)
   const [county, setCounty] = useState('')
   const [dublinPostcode, setDublinPostcode] = useState<string | null>(null)
   const [householdType, setHouseholdType] = useState<'solo' | 'couple' | null>(null)
@@ -484,6 +487,7 @@ function Step4({ price, monthly, housingCost, onBack }: {
 
   async function handleSubmit() {
     const errs: Record<string, string> = {}
+    if (ghi < minIncome) errs.ghi = `At least ${fmt(minIncome)} household income is needed for this purchase price`
     if (!county) errs.county = 'Please select a county'
     if (county === 'Dublin' && !dublinPostcode) errs.dublinPostcode = 'Please select a postcode'
     if (!householdType) errs.householdType = 'Please select an option'
@@ -526,11 +530,11 @@ function Step4({ price, monthly, housingCost, onBack }: {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl tracking-tight" style={{ ...SERIF, fontWeight: 420 }}>
-          Almost there.
+        <h2 className="text-2xl font-bold tracking-tight">
+          Personal information
         </h2>
         <p className="mt-2 text-muted-foreground">
-          A few details so your adviser can personalise your pathway numbers.
+          A few details so we can personalise your pathway numbers.
         </p>
       </div>
 
@@ -538,10 +542,16 @@ function Step4({ price, monthly, housingCost, onBack }: {
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Income</p>
         <ChartSlider label="Gross household income" value={ghi} display={fmt(ghi)}
-          min={45000} max={180000} step={1000} onChange={setGhi} />
+          min={45000} max={sliderMax} step={1000} onChange={setGhi} />
         <div className="flex justify-between mt-1.5 text-xs text-muted-foreground">
-          <span>€45k</span><span>€180k</span>
+          <span>€45k</span><span>{fmtK(sliderMax)}</span>
         </div>
+        {ghi < minIncome && (
+          <p className="mt-2 text-sm text-destructive">
+            At least {fmt(minIncome)} is typically needed to qualify for a mortgage on this property.
+          </p>
+        )}
+        {errors.ghi && <p className="mt-1 text-sm text-destructive">{errors.ghi}</p>}
       </div>
 
       {/* Location */}
@@ -639,13 +649,10 @@ export default function Calc2Page() {
     track(`calc2_step${step}_view`, {})
   }, [step])
 
-  // All chart steps (1, 2, 3) use wider container; step 4 form is narrower
-  const wide = step !== 4
-
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
-      <main className={cn('mx-auto px-6 py-12 transition-all duration-300', wide ? 'max-w-3xl' : 'max-w-lg')}>
+      <main className="mx-auto max-w-3xl px-6 py-12">
         <Progress step={step} />
         {step === 1 && (
           <Step1 price={price} monthly={monthly}
