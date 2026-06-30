@@ -233,15 +233,70 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
   )
 }
 
-// ── Step 2 — Entry stake comparison ───────────────────────────
-function Step2({ price, monthly, onNext, onBack }: {
-  price: number; monthly: number; onNext: () => void; onBack: () => void
+// ── Step 2 — Entry stake chart (months) ───────────────────────
+function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
+  price: number; monthly: number
+  initSaved: number; initHousing: number
+  onNext: (savedSoFar: number, housingCost: number) => void
+  onBack: () => void
 }) {
-  const stake = Math.round(price * 0.01)
-  const deposit = Math.round(price * 0.10)
-  const strike = Math.round(price * 0.90)
-  const crossing = findCrossing(price, monthly)
-  const depositThen = crossing !== null ? depositAt(price, crossing) : null
+  const [savedSoFar, setSavedSoFar] = useState(initSaved)
+  const [housingCost, setHousingCost] = useState(initHousing)
+
+  const VH = 300, PH = VH - MT - MB
+  const entryStake = Math.round(price * 0.01)
+  const ready = savedSoFar >= entryStake
+
+  // Crossing in months (using the step-1 monthly saving rate)
+  const crossingMonths = ready ? 0 : (entryStake - savedSoFar) / monthly
+
+  // Dynamic X range: snap up to nearest 6-month boundary, min 18
+  const maxMonths = ready
+    ? 18
+    : Math.min(48, Math.ceil(Math.max(18, crossingMonths * 2) / 6) * 6)
+
+  const finalSavings = savedSoFar + monthly * maxMonths
+  const niceMax = Math.ceil(Math.max(entryStake * 1.3, finalSavings * 1.05) / 1000) * 1000
+
+  const xPix = (m: number) => ML + (m / maxMonths) * PW
+  const yPix = (v: number) => MT + PH - (v / niceMax) * PH
+
+  const entryY = yPix(entryStake)
+  const savY0 = yPix(savedSoFar)
+  const savYEnd = Math.max(yPix(finalSavings), MT)
+
+  // Y grid ticks
+  const yTicks = [0, 1, 2, 3].map(i => ({
+    v: (niceMax * i) / 3, y: yPix((niceMax * i) / 3),
+  }))
+
+  // X tick marks every 6 months
+  const xTicks = Array.from({ length: maxMonths / 6 + 1 }, (_, i) => i * 6)
+
+  // Crossing marker
+  let crossingMark: React.ReactNode = null
+  if (!ready && crossingMonths <= maxMonths) {
+    const xc = xPix(crossingMonths)
+    const yc = entryY   // savings line meets entry stake at entryY
+    const bw = 148, bh = 44
+    let bx = xc + 12; if (bx + bw > ML + PW) bx = xc - 12 - bw
+    let by = yc - bh - 10; if (by < MT) by = yc + 12
+    crossingMark = (
+      <>
+        <line stroke="rgba(18,58,40,0.22)" strokeWidth="1" strokeDasharray="3 3"
+          x1={xc.toFixed(1)} y1={MT} x2={xc.toFixed(1)} y2={MT + PH} />
+        <circle fill="#123A28" cx={xc.toFixed(1)} cy={yc.toFixed(1)} r="4.5" />
+        <rect fill="#FAF6F0" stroke="rgba(18,58,40,0.14)" strokeWidth="1"
+          x={bx.toFixed(1)} y={by.toFixed(1)} width={bw} height={bh} rx="7" />
+        <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#101211"
+          x={bx + 14} y={by + 18}>{Math.round(crossingMonths)} months</text>
+        <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#857861"
+          x={bx + 14} y={by + 34}>to get started</text>
+      </>
+    )
+  }
+
+  const monthsRounded = Math.round(crossingMonths)
 
   return (
     <div>
@@ -250,62 +305,75 @@ function Step2({ price, monthly, onNext, onBack }: {
       </p>
       <h2 className="text-[clamp(28px,5vw,48px)] leading-[1.08] tracking-tight mb-8"
         style={{ ...SERIF, fontWeight: 340 }}>
-        One percent gets you in the door.
+        A 1% entry stake.
       </h2>
 
-      {/* Side-by-side comparison */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full h-auto overflow-visible" role="img"
+        aria-label="Chart showing how quickly savings reach the 1% entry stake">
+        {/* Y grid */}
+        {yTicks.map(({ v, y }) => (
+          <g key={v}>
+            <line stroke="rgba(18,58,40,0.12)" strokeWidth="1" x1={ML} y1={y.toFixed(1)} x2={ML + PW} y2={y.toFixed(1)} />
+            <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
+              textAnchor="end" x={ML - 12} y={(y + 4).toFixed(1)}>{fmtK(v)}</text>
+          </g>
+        ))}
+        {/* X labels */}
+        {xTicks.map(m => (
+          <text key={m} fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
+            textAnchor="middle" x={xPix(m).toFixed(1)} y={MT + PH + 24}>
+            {m === 0 ? '0m' : `${m}m`}
+          </text>
+        ))}
+        {/* Savings line — rising dashed gray */}
+        <line stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
+          x1={xPix(0).toFixed(1)} y1={savY0.toFixed(1)}
+          x2={xPix(maxMonths).toFixed(1)} y2={savYEnd.toFixed(1)} />
+        {/* Entry stake — flat solid green */}
+        <line stroke="#123A28" strokeWidth="2.5"
+          x1={xPix(0).toFixed(1)} y1={entryY.toFixed(1)}
+          x2={xPix(maxMonths).toFixed(1)} y2={entryY.toFixed(1)} />
+        {/* Labels */}
+        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
+          x={ML + PW + 8} y={(entryY + 4).toFixed(1)}>Entry</text>
+        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
+          x={ML + PW + 8} y={(savYEnd + 4).toFixed(1)}>Saved</text>
+        {crossingMark}
+      </svg>
 
-        {/* Homeown */}
-        <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-6">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-primary mb-5">
-            With Homeown
-          </p>
-          <p className="text-[clamp(36px,6vw,52px)] font-bold tabular-nums text-primary leading-none mb-1"
-            style={{ ...SERIF, fontWeight: 560 }}>
-            {fmt(stake)}
-          </p>
-          <p className="text-sm text-muted-foreground mb-6">Entry Stake — 1% of {fmt(price)}</p>
-          <div className="pt-4 border-t border-primary/20 space-y-1">
-            <p className="text-sm font-semibold text-foreground">Move in this year</p>
-            <p className="text-xs text-muted-foreground">Option price fixed at {fmt(strike)}</p>
-          </div>
-        </div>
+      <p className="mt-5 text-[15px] text-muted-foreground leading-relaxed">
+        {ready
+          ? <>You already have enough for the entry stake of{' '}
+              <strong className="text-foreground">{fmt(entryStake)}</strong>. You can start today.</>
+          : <>The bar drops to{' '}
+              <strong className="text-foreground">{fmt(entryStake)}</strong>.{' '}
+              At your pace, about{' '}
+              <strong className="text-foreground">
+                {monthsRounded} {monthsRounded === 1 ? 'month' : 'months'}
+              </strong>.</>
+        }
+      </p>
 
-        {/* Traditional */}
-        <div className="rounded-xl border border-muted bg-muted/10 p-6">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-5">
-            Traditional route
-          </p>
-          <p className="text-[clamp(36px,6vw,52px)] font-bold tabular-nums text-muted-foreground leading-none mb-1"
-            style={{ ...SERIF, fontWeight: 560 }}>
-            {fmt(deposit)}
-          </p>
-          <p className="text-sm text-muted-foreground mb-6">Deposit needed — 10%, and rising</p>
-          <div className="pt-4 border-t border-muted space-y-1">
-            <p className="text-sm font-semibold text-muted-foreground">
-              {crossing !== null ? `${yearsLabel(crossing)} to save` : 'More than 10 years'}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {depositThen !== null
-                ? `by then it costs ${fmt(depositThen)}`
-                : 'deposit keeps outpacing savings'}
-            </p>
-          </div>
+      <div className="mt-8 pt-6 border-t border-brand-cream">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <ChartSlider label="Saved so far" value={savedSoFar} display={fmt(savedSoFar)}
+            min={0} max={Math.max(100, entryStake - 100)} step={100}
+            onChange={v => setSavedSoFar(Math.min(v, entryStake))} />
+          <ChartSlider label="Housing cost each month" value={housingCost} display={fmt(housingCost)}
+            min={500} max={5000} step={50} onChange={setHousingCost} />
         </div>
       </div>
 
-      <p className="mt-6 text-[15px] text-muted-foreground leading-relaxed">
-        {crossing !== null
-          ? <>Instead of waiting <strong className="text-foreground">{yearsLabel(crossing)}</strong> for a deposit that keeps growing,
-              you put in <strong className="text-foreground">{fmt(stake)}</strong> today.
-              Your option to buy is fixed at <strong className="text-foreground">{fmt(strike)}</strong> — it doesn't move.</>
-          : <>The traditional deposit is currently out of reach at your saving rate.
-              With Homeown you put in <strong className="text-foreground">{fmt(stake)}</strong> today,
-              and your option to buy is fixed at <strong className="text-foreground">{fmt(strike)}</strong>.</>}
-      </p>
-
-      <NavRow onBack={onBack} onNext={onNext} nextLabel="See how your value grows" />
+      <div className="mt-10 flex gap-3">
+        <button onClick={onBack}
+          className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-colors">
+          <ArrowLeft className="h-4 w-4" />Back
+        </button>
+        <button onClick={() => onNext(savedSoFar, housingCost)}
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors">
+          See it grow for you <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -426,8 +494,8 @@ function Step3({ price, onNext, onBack }: {
 }
 
 // ── Step 4 — Details form ──────────────────────────────────────
-function Step4({ price, monthly, onBack }: {
-  price: number; monthly: number; onBack: () => void
+function Step4({ price, monthly, housingCost, onBack }: {
+  price: number; monthly: number; housingCost: number; onBack: () => void
 }) {
   const navigate = useNavigate()
   const [ghi, setGhi] = useState(79000)
@@ -471,6 +539,7 @@ function Step4({ price, monthly, onBack }: {
       eligible,
       saved: false,
       monthly_savings: monthly,
+      current_housing_cost: housingCost > 0 ? housingCost : null,
     })
 
     sessionStorage.setItem('snapshot_id', snapshotId)
@@ -587,14 +656,16 @@ export default function Calc2Page() {
   const [step, setStep] = useState(1)
   const [price, setPrice] = useState(580000)
   const [monthly, setMonthly] = useState(1000)
+  const [savedSoFar, setSavedSoFar] = useState(0)
+  const [housingCost, setHousingCost] = useState(1800)
 
   useEffect(() => {
     window.scrollTo(0, 0)
     track(`calc2_step${step}_view`, {})
   }, [step])
 
-  // Steps 1 + 3 have charts → wider container; steps 2 + 4 are forms → narrower
-  const wide = step === 1 || step === 3
+  // All chart steps (1, 2, 3) use wider container; step 4 form is narrower
+  const wide = step !== 4
 
   return (
     <div className="min-h-screen bg-background">
@@ -608,13 +679,15 @@ export default function Calc2Page() {
         )}
         {step === 2 && (
           <Step2 price={price} monthly={monthly}
-            onNext={() => setStep(3)} onBack={() => setStep(1)} />
+            initSaved={savedSoFar} initHousing={housingCost}
+            onNext={(sf, hc) => { setSavedSoFar(sf); setHousingCost(hc); setStep(3) }}
+            onBack={() => setStep(1)} />
         )}
         {step === 3 && (
           <Step3 price={price} onNext={() => setStep(4)} onBack={() => setStep(2)} />
         )}
         {step === 4 && (
-          <Step4 price={price} monthly={monthly} onBack={() => setStep(3)} />
+          <Step4 price={price} monthly={monthly} housingCost={housingCost} onBack={() => setStep(3)} />
         )}
       </main>
     </div>
