@@ -11,8 +11,6 @@ import { ROI_COUNTIES, DUBLIN_POSTCODES } from '@/lib/calcWizard'
 // ── Constants ──────────────────────────────────────────────────
 const GROWTH = 0.05
 const DEPOSIT_PCT = 0.10
-
-// SVG viewport
 const VW = 720
 const ML = 58, MR = 74, MT = 18, MB = 40
 const PW = VW - ML - MR    // 588
@@ -41,7 +39,6 @@ function yearsLabel(t: number) {
 }
 
 // ── Shared primitives ──────────────────────────────────────────
-
 function Progress({ step }: { step: number }) {
   return (
     <div className="mb-10">
@@ -113,52 +110,231 @@ function NavRow({ onBack, onNext, nextLabel, disabled }: {
   )
 }
 
-// ── Step 1 — The problem chart ─────────────────────────────────
+// ── SharedChart — persists across steps 1–3, animates between scenes ──
+// CSS `transition: d` interpolates path coordinates between scenes.
+// All three scenes use 51-point paths (1 M + 50 L) so the structure is identical.
+function SharedChart({ scene, price, monthly, savedSoFar }: {
+  scene: 1 | 2 | 3
+  price: number; monthly: number; savedSoFar: number
+}) {
+  const VH = 320, PH = VH - MT - MB
+  const YEARS = 10
+
+  const entryStake = Math.round(price * 0.01)
+  const strike = Math.round(price * 0.90)
+  const startT = Math.max(0, (entryStake - savedSoFar) / monthly) / 12
+  const endT = Math.min(startT + 5, YEARS)
+  const mktAtEnd = price * Math.pow(1 + GROWTH, 5)
+
+  // Y domain per scene — scene 3 zooms into the equity region
+  let yMin: number, yMax: number
+  if (scene === 1) {
+    const maxVal = Math.max(depositAt(price, YEARS), savingsAt(monthly, YEARS))
+    yMin = 0
+    yMax = Math.max(10000, Math.ceil(maxVal * 1.1 / 10000) * 10000)
+  } else if (scene === 2) {
+    yMin = 0
+    yMax = entryStake * 5
+  } else {
+    yMin = strike * 0.90
+    yMax = mktAtEnd * 1.06
+  }
+
+  const xPix = (t: number) => ML + (t / YEARS) * PW
+  const yPix = (v: number) => {
+    const raw = MT + PH - ((v - yMin) / (yMax - yMin)) * PH
+    return Math.max(MT - 12, Math.min(MT + PH + 12, raw))
+  }
+
+  // Build 51-point SVG path — identical structure across all scenes enables CSS d-transition
+  const buildD = (getY: (t: number) => number) =>
+    Array.from({ length: 51 }, (_, i) => {
+      const t = (i / 50) * YEARS
+      return `${i === 0 ? 'M' : 'L'} ${xPix(t).toFixed(1)} ${yPix(getY(t)).toFixed(1)}`
+    }).join(' ')
+
+  // Line 1 (green solid): deposit curve → entry stake flat → market value rising
+  const d1 = buildD(t => {
+    if (scene === 1) return depositAt(price, t)
+    if (scene === 2) return entryStake
+    if (t <= startT) return price
+    if (t <= endT) return price * Math.pow(1 + GROWTH, t - startT)
+    return mktAtEnd
+  })
+
+  // Line 2 (taupe dashed): savings line → savings toward entry → option price flat
+  const d2 = buildD(t => {
+    if (scene === 1) return savingsAt(monthly, t)
+    if (scene === 2) return savedSoFar + monthly * 12 * t
+    if (t <= startT) return price   // before lock-in: tracks market (same start point as line 1)
+    return strike                   // after lock-in: flat option price
+  })
+
+  // Y grid — 5 evenly-spaced ticks
+  const yTicks = [0, 1, 2, 3, 4].map(i => {
+    const v = yMin + (yMax - yMin) * i / 4
+    return { v, y: yPix(v) }
+  })
+
+  // Scene 1 crossing: where savings finally catch the growing deposit
+  const cross1 = scene === 1 ? findCrossing(price, monthly) : null
+
+  // Scene 2 crossing: when savings reach entry stake
+  const cross2Months = scene === 2 && savedSoFar < entryStake && monthly > 0
+    ? (entryStake - savedSoFar) / monthly : null
+  const cross2T = cross2Months !== null ? cross2Months / 12 : null
+
+  // Scene 3 equity fill polygon (between market value curve and option price flat line)
+  const fillD = scene === 3
+    ? [
+        `M ${xPix(startT).toFixed(1)} ${yPix(strike).toFixed(1)}`,
+        ...Array.from({ length: 51 }, (_, i) => {
+          const t = startT + (i / 50) * 5
+          return `L ${xPix(Math.min(t, endT)).toFixed(1)} ${yPix(price * Math.pow(1 + GROWTH, i / 50 * 5)).toFixed(1)}`
+        }),
+        `L ${xPix(endT).toFixed(1)} ${yPix(strike).toFixed(1)} Z`,
+      ].join(' ')
+    : null
+
+  const midT = (startT + endT) / 2
+  const mktMidY = yPix(price * Math.pow(1 + GROWTH, 2.5))
+  const optY = yPix(strike)
+  const yMidFill = (mktMidY + optY) / 2
+
+  // Right-edge labels for scenes 1 and 2
+  const label1y = scene === 1 ? yPix(depositAt(price, YEARS)) : yPix(entryStake)
+  const label2y = scene === 1
+    ? yPix(savingsAt(monthly, YEARS))
+    : yPix(Math.min(savedSoFar + monthly * 12 * YEARS, yMax))
+
+  return (
+    <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full h-auto overflow-visible mb-6" role="img"
+      aria-label="Pathway comparison chart">
+
+      {/* Y grid */}
+      {yTicks.map(({ v, y }) => (
+        <g key={v}>
+          <line stroke="rgba(18,58,40,0.10)" strokeWidth="1"
+            x1={ML} y1={y.toFixed(1)} x2={ML + PW} y2={y.toFixed(1)} />
+          <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
+            textAnchor="end" x={ML - 8} y={(y + 4).toFixed(1)}>{fmtK(v)}</text>
+        </g>
+      ))}
+
+      {/* X axis labels — even years */}
+      {[0, 2, 4, 6, 8, 10].map(k => (
+        <text key={k} fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
+          textAnchor="middle" x={xPix(k).toFixed(1)} y={MT + PH + 24}>
+          {k === 0 ? 'Now' : `Yr ${k}`}
+        </text>
+      ))}
+
+      {/* Scene 3 equity fill */}
+      {fillD && <path d={fillD} fill="rgba(18,58,40,0.08)" />}
+
+      {/* Line 2 — taupe dashed — CSS d-transition animates between scenes */}
+      <path d={d2} fill="none" stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
+        style={{ transition: 'd 0.6s ease-in-out' } as React.CSSProperties} />
+
+      {/* Line 1 — green solid — CSS d-transition animates between scenes */}
+      <path d={d1} fill="none" stroke="#123A28" strokeWidth="2.5"
+        style={{ transition: 'd 0.6s ease-in-out' } as React.CSSProperties} />
+
+      {/* Scene 1: crossing callout — where deposit catches up to savings */}
+      {cross1 !== null && (() => {
+        const xc = xPix(cross1)
+        const yc = yPix(depositAt(price, cross1))
+        const bw = 160, bh = 46
+        let bx = xc + 12; if (bx + bw > ML + PW) bx = xc - 12 - bw
+        let by = yc - bh - 10; if (by < MT) by = yc + 12
+        return (
+          <>
+            <line stroke="rgba(18,58,40,0.22)" strokeWidth="1" strokeDasharray="3 3"
+              x1={xc.toFixed(1)} y1={MT} x2={xc.toFixed(1)} y2={MT + PH} />
+            <circle fill="#123A28" cx={xc.toFixed(1)} cy={yc.toFixed(1)} r="4.5" />
+            <rect fill="#FAF6F0" stroke="rgba(18,58,40,0.14)" strokeWidth="1"
+              x={bx.toFixed(1)} y={by.toFixed(1)} width={bw} height={bh} rx="7" />
+            <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#101211"
+              x={bx + 14} y={by + 20}>{yearsLabel(cross1)} to catch it</text>
+            <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#857861"
+              x={bx + 14} y={by + 37}>at {fmt(depositAt(price, cross1))}</text>
+          </>
+        )
+      })()}
+
+      {/* Scene 2: entry crossing callout */}
+      {cross2T !== null && cross2T <= YEARS && (() => {
+        const xc = xPix(cross2T)
+        const yc = yPix(entryStake)
+        const bw = 148, bh = 44
+        let bx = xc + 12; if (bx + bw > ML + PW) bx = xc - 12 - bw
+        let by = yc - bh - 10; if (by < MT) by = yc + 12
+        return (
+          <>
+            <line stroke="rgba(18,58,40,0.22)" strokeWidth="1" strokeDasharray="3 3"
+              x1={xc.toFixed(1)} y1={MT} x2={xc.toFixed(1)} y2={MT + PH} />
+            <circle fill="#123A28" cx={xc.toFixed(1)} cy={yc.toFixed(1)} r="4.5" />
+            <rect fill="#FAF6F0" stroke="rgba(18,58,40,0.14)" strokeWidth="1"
+              x={bx.toFixed(1)} y={by.toFixed(1)} width={bw} height={bh} rx="7" />
+            <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#101211"
+              x={bx + 14} y={by + 18}>{Math.round(cross2Months!)} months</text>
+            <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#857861"
+              x={bx + 14} y={by + 34}>to get started</text>
+          </>
+        )
+      })()}
+
+      {/* Scene 3: start/end markers, end-line value labels, equity callout */}
+      {scene === 3 && (
+        <>
+          {startT > 0.05 && (
+            <>
+              <line stroke="rgba(18,58,40,0.25)" strokeWidth="1" strokeDasharray="4 3"
+                x1={xPix(startT).toFixed(1)} y1={MT} x2={xPix(startT).toFixed(1)} y2={MT + PH} />
+              <text fontFamily="Montserrat,sans-serif" fontSize="11" fontWeight="500" fill="#857861"
+                textAnchor="middle" x={xPix(startT).toFixed(1)} y={MT - 6}>Start</text>
+            </>
+          )}
+          <line stroke="rgba(18,58,40,0.25)" strokeWidth="1" strokeDasharray="4 3"
+            x1={xPix(endT).toFixed(1)} y1={MT} x2={xPix(endT).toFixed(1)} y2={MT + PH} />
+          <text fontFamily="Montserrat,sans-serif" fontSize="11" fontWeight="500" fill="#857861"
+            textAnchor="middle" x={xPix(endT).toFixed(1)} y={MT - 6}>End</text>
+          <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
+            x={(xPix(endT) + 8).toFixed(1)} y={(yPix(mktAtEnd) + 4).toFixed(1)}>~{fmtK(mktAtEnd)}</text>
+          <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
+            x={(xPix(endT) + 8).toFixed(1)} y={(optY + 4).toFixed(1)}>{fmtK(strike)}</text>
+          <text fontFamily="Montserrat,sans-serif" fontSize="13" fontWeight="600" fill="#101211"
+            textAnchor="middle" x={xPix(midT).toFixed(1)} y={(yMidFill - 6).toFixed(1)}>
+            + {fmt(mktAtEnd - strike)}
+          </text>
+          <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="rgba(18,58,40,0.45)"
+            textAnchor="middle" x={xPix(midT).toFixed(1)} y={(yMidFill + 10).toFixed(1)}>
+            growing equity
+          </text>
+        </>
+      )}
+
+      {/* Scenes 1 + 2: right-edge line labels */}
+      {scene !== 3 && (
+        <>
+          <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
+            x={ML + PW + 8} y={(label1y + 4).toFixed(1)}>
+            {scene === 1 ? 'Deposit' : 'Entry'}
+          </text>
+          <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
+            x={ML + PW + 8} y={(label2y + 4).toFixed(1)}>Saved</text>
+        </>
+      )}
+    </svg>
+  )
+}
+
+// ── Step 1 — text + sliders (chart lives in parent) ────────────
 function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
   price: number; monthly: number
   setPrice: (v: number) => void; setMonthly: (v: number) => void
   onNext: () => void
 }) {
-  const VH = 380, PH = VH - MT - MB
-  const YEARS = 10
-
-  const maxVal = Math.max(depositAt(price, YEARS), savingsAt(monthly, YEARS))
-  const niceMax = Math.max(10000, Math.ceil(maxVal * 1.05 / 10000) * 10000)
-  const xPix = (t: number) => ML + (t / YEARS) * PW
-  const yPix = (v: number) => MT + PH - (v / niceMax) * PH
-
-  const depositPts = Array.from({ length: 51 }, (_, i) => {
-    const t = (i / 50) * YEARS
-    return `${xPix(t).toFixed(1)},${yPix(depositAt(price, t)).toFixed(1)}`
-  }).join(' ')
-  const savY0 = yPix(0)
-  const savYEnd = Math.max(yPix(savingsAt(monthly, YEARS)), MT)
-  const crossing = findCrossing(price, monthly)
-  const gridLines = [0, 1, 2, 3, 4].map(i => ({ v: niceMax * i / 4, y: yPix(niceMax * i / 4) }))
-
-  let crossingMark: React.ReactNode = null
-
-  if (crossing !== null) {
-    const vc = depositAt(price, crossing)
-    const xc = xPix(crossing), yc = yPix(vc)
-    const bw = 160, bh = 46
-    let bx = xc + 12; if (bx + bw > ML + PW) bx = xc - 12 - bw
-    let by = yc - bh - 10; if (by < MT) by = yc + 12
-    crossingMark = (
-      <>
-        <line stroke="rgba(18,58,40,0.22)" strokeWidth="1" strokeDasharray="3 3"
-          x1={xc.toFixed(1)} y1={MT} x2={xc.toFixed(1)} y2={MT + PH} />
-        <circle fill="#123A28" cx={xc.toFixed(1)} cy={yc.toFixed(1)} r="4.5" />
-        <rect fill="#FAF6F0" stroke="rgba(18,58,40,0.14)" strokeWidth="1"
-          x={bx.toFixed(1)} y={by.toFixed(1)} width={bw} height={bh} rx="7" />
-        <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#101211"
-          x={bx + 14} y={by + 20}>{yearsLabel(crossing)} to catch it</text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#857861"
-          x={bx + 14} y={by + 37}>at {fmt(vc)}</text>
-      </>
-    )
-  }
-
   return (
     <div>
       <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground mb-2.5">
@@ -168,33 +344,7 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
         The deposit keeps moving.
       </h2>
 
-      <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full h-auto overflow-visible" role="img"
-        aria-label="Chart comparing deposit required against savings over ten years">
-        {gridLines.map(({ v, y }) => (
-          <g key={v}>
-            <line stroke="rgba(18,58,40,0.14)" strokeWidth="1" x1={ML} y1={y.toFixed(1)} x2={ML + PW} y2={y.toFixed(1)} />
-            <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
-              textAnchor="end" x={ML - 12} y={(y + 4).toFixed(1)}>{fmtK(v)}</text>
-          </g>
-        ))}
-        {Array.from({ length: YEARS + 1 }, (_, k) => (
-          <text key={k} fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
-            textAnchor="middle" x={xPix(k).toFixed(1)} y={MT + PH + 24}>
-            {k === 0 ? 'Start' : k}
-          </text>
-        ))}
-        <line stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
-          x1={xPix(0).toFixed(1)} y1={savY0.toFixed(1)}
-          x2={xPix(YEARS).toFixed(1)} y2={savYEnd.toFixed(1)} />
-        <polyline fill="none" stroke="#123A28" strokeWidth="2.5" points={depositPts} />
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
-          x={ML + PW + 8} y={(yPix(depositAt(price, YEARS)) + 4).toFixed(1)}>Deposit</text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
-          x={ML + PW + 8} y={(savYEnd + 4).toFixed(1)}>Saved</text>
-        {crossingMark}
-      </svg>
-
-      <div className="mt-8 pt-6 border-t border-brand-cream">
+      <div className="pt-2 pb-4 border-t border-brand-cream">
         <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground mb-5">
           Adjust for your own.
         </p>
@@ -206,7 +356,7 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
         </div>
       </div>
 
-      <div className="mt-12">
+      <div className="mt-8">
         <button onClick={onNext}
           className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97]">
           See what Homeown changes <ArrowRight className="h-4 w-4" />
@@ -216,68 +366,14 @@ function Step1({ price, monthly, setPrice, setMonthly, onNext }: {
   )
 }
 
-// ── Step 2 — Entry stake chart (months) ───────────────────────
-function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
+// ── Step 2 — controlled props so parent chart updates in real-time ─
+function Step2({ price, monthly, savedSoFar, setSavedSoFar, housingCost, setHousingCost, onNext, onBack }: {
   price: number; monthly: number
-  initSaved: number; initHousing: number
-  onNext: (savedSoFar: number, housingCost: number) => void
-  onBack: () => void
+  savedSoFar: number; setSavedSoFar: (v: number) => void
+  housingCost: number; setHousingCost: (v: number) => void
+  onNext: () => void; onBack: () => void
 }) {
-  const [savedSoFar, setSavedSoFar] = useState(initSaved)
-  const [housingCost, setHousingCost] = useState(initHousing)
-
-  const VH = 300, PH = VH - MT - MB
   const entryStake = Math.round(price * 0.01)
-  const ready = savedSoFar >= entryStake
-
-  // Crossing in months (using the step-1 monthly saving rate)
-  const crossingMonths = ready ? 0 : (entryStake - savedSoFar) / monthly
-
-  // Dynamic X range: snap up to nearest 6-month boundary, min 18
-  const maxMonths = ready
-    ? 18
-    : Math.min(48, Math.ceil(Math.max(18, crossingMonths * 2) / 6) * 6)
-
-  const finalSavings = savedSoFar + monthly * maxMonths
-  const niceMax = Math.ceil(Math.max(entryStake * 1.3, finalSavings * 1.05) / 1000) * 1000
-
-  const xPix = (m: number) => ML + (m / maxMonths) * PW
-  const yPix = (v: number) => MT + PH - (v / niceMax) * PH
-
-  const entryY = yPix(entryStake)
-  const savY0 = yPix(savedSoFar)
-  const savYEnd = Math.max(yPix(finalSavings), MT)
-
-  // Y grid ticks
-  const yTicks = [0, 1, 2, 3].map(i => ({
-    v: (niceMax * i) / 3, y: yPix((niceMax * i) / 3),
-  }))
-
-  // X tick marks every 6 months
-  const xTicks = Array.from({ length: maxMonths / 6 + 1 }, (_, i) => i * 6)
-
-  // Crossing marker
-  let crossingMark: React.ReactNode = null
-  if (!ready && crossingMonths <= maxMonths) {
-    const xc = xPix(crossingMonths)
-    const yc = entryY   // savings line meets entry stake at entryY
-    const bw = 148, bh = 44
-    let bx = xc + 12; if (bx + bw > ML + PW) bx = xc - 12 - bw
-    let by = yc - bh - 10; if (by < MT) by = yc + 12
-    crossingMark = (
-      <>
-        <line stroke="rgba(18,58,40,0.22)" strokeWidth="1" strokeDasharray="3 3"
-          x1={xc.toFixed(1)} y1={MT} x2={xc.toFixed(1)} y2={MT + PH} />
-        <circle fill="#123A28" cx={xc.toFixed(1)} cy={yc.toFixed(1)} r="4.5" />
-        <rect fill="#FAF6F0" stroke="rgba(18,58,40,0.14)" strokeWidth="1"
-          x={bx.toFixed(1)} y={by.toFixed(1)} width={bw} height={bh} rx="7" />
-        <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#101211"
-          x={bx + 14} y={by + 18}>{Math.round(crossingMonths)} months</text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="12.5" fill="#857861"
-          x={bx + 14} y={by + 34}>to get started</text>
-      </>
-    )
-  }
 
   return (
     <div>
@@ -288,40 +384,7 @@ function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
         A 1% entry stake.
       </h2>
 
-      <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full h-auto overflow-visible" role="img"
-        aria-label="Chart showing how quickly savings reach the 1% entry stake">
-        {/* Y grid */}
-        {yTicks.map(({ v, y }) => (
-          <g key={v}>
-            <line stroke="rgba(18,58,40,0.12)" strokeWidth="1" x1={ML} y1={y.toFixed(1)} x2={ML + PW} y2={y.toFixed(1)} />
-            <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
-              textAnchor="end" x={ML - 12} y={(y + 4).toFixed(1)}>{fmtK(v)}</text>
-          </g>
-        ))}
-        {/* X labels */}
-        {xTicks.map(m => (
-          <text key={m} fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
-            textAnchor="middle" x={xPix(m).toFixed(1)} y={MT + PH + 24}>
-            {m === 0 ? '0m' : `${m}m`}
-          </text>
-        ))}
-        {/* Savings line — rising dashed gray */}
-        <line stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
-          x1={xPix(0).toFixed(1)} y1={savY0.toFixed(1)}
-          x2={xPix(maxMonths).toFixed(1)} y2={savYEnd.toFixed(1)} />
-        {/* Entry stake — flat solid green */}
-        <line stroke="#123A28" strokeWidth="2.5"
-          x1={xPix(0).toFixed(1)} y1={entryY.toFixed(1)}
-          x2={xPix(maxMonths).toFixed(1)} y2={entryY.toFixed(1)} />
-        {/* Labels */}
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
-          x={ML + PW + 8} y={(entryY + 4).toFixed(1)}>Entry</text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
-          x={ML + PW + 8} y={(savYEnd + 4).toFixed(1)}>Saved</text>
-        {crossingMark}
-      </svg>
-
-      <div className="mt-8 pt-6 border-t border-brand-cream">
+      <div className="pt-2 pb-4 border-t border-brand-cream">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <ChartSlider label="Saved so far" value={savedSoFar} display={fmt(savedSoFar)}
             min={0} max={Math.max(100, entryStake - 100)} step={100}
@@ -331,12 +394,12 @@ function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
         </div>
       </div>
 
-      <div className="mt-10 flex gap-3">
+      <div className="mt-8 flex gap-3">
         <button onClick={onBack}
           className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-[background-color,transform] active:scale-[0.97]">
           <ArrowLeft className="h-4 w-4" />Back
         </button>
-        <button onClick={() => onNext(savedSoFar, housingCost)}
+        <button onClick={onNext}
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97]">
           See it grow for you <ArrowRight className="h-4 w-4" />
         </button>
@@ -345,51 +408,8 @@ function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
   )
 }
 
-// ── Step 3 — Equity / appreciation chart ──────────────────────
-function Step3({ price, monthsToStart, onNext, onBack }: {
-  price: number; monthsToStart: number; onNext: () => void; onBack: () => void
-}) {
-  const VH = 320, PH = VH - MT - MB
-
-  const strike = Math.round(price * 0.90)
-  const startT = monthsToStart / 12                            // years until move-in
-  const TOTAL_YEARS = Math.max(6, Math.ceil(startT + 5.5))   // always space after End
-  const endT = startT + 5                                      // 60-month Homeown term
-
-  const mktAtEnd = price * Math.pow(1 + GROWTH, 5)
-  const equityAtEnd = mktAtEnd - strike
-
-  const yMin = strike * 0.90
-  const yMax = mktAtEnd * 1.06
-  const yRange = yMax - yMin
-
-  const xPix = (t: number) => ML + (t / TOTAL_YEARS) * PW
-  const yPix = (v: number) => MT + PH - ((v - yMin) / yRange) * PH
-
-  const optY = yPix(strike)
-  const mktStartY = yPix(price)
-
-  // Market value curve: startT → endT (0 → 5 years of appreciation)
-  const mktPts = Array.from({ length: 51 }, (_, i) => {
-    const years = (i / 50) * 5
-    return `${xPix(startT + years).toFixed(1)},${yPix(price * Math.pow(1 + GROWTH, years)).toFixed(1)}`
-  }).join(' ')
-
-  // Fill polygon
-  const fillPts = [
-    `${xPix(startT).toFixed(1)},${optY.toFixed(1)}`,
-    ...Array.from({ length: 51 }, (_, i) => {
-      const years = (i / 50) * 5
-      return `${xPix(startT + years).toFixed(1)},${yPix(price * Math.pow(1 + GROWTH, years)).toFixed(1)}`
-    }),
-    `${xPix(endT).toFixed(1)},${optY.toFixed(1)}`,
-  ].join(' ')
-
-  // Equity callout at midpoint of the Homeown term
-  const midT = startT + 2.5
-  const mktMidY = yPix(price * Math.pow(1 + GROWTH, 2.5))
-  const yMidFill = (mktMidY + optY) / 2
-
+// ── Step 3 — text + CTA (chart lives in parent) ────────────────
+function Step3({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   return (
     <div>
       <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground mb-2.5">
@@ -398,74 +418,6 @@ function Step3({ price, monthsToStart, onNext, onBack }: {
       <h2 className="text-[clamp(28px,5vw,48px)] font-bold leading-[1.08] tracking-tight mb-8">
         The price is locked. The value isn't.
       </h2>
-
-      <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full h-auto overflow-visible" role="img"
-        aria-label="Chart showing fixed option price against rising market value over five years">
-
-        {/* Y reference lines at starting values */}
-        <line stroke="rgba(18,58,40,0.10)" strokeWidth="1"
-          x1={ML} y1={optY.toFixed(1)} x2={ML + PW} y2={optY.toFixed(1)} />
-        <line stroke="rgba(18,58,40,0.10)" strokeWidth="1"
-          x1={ML} y1={mktStartY.toFixed(1)} x2={ML + PW} y2={mktStartY.toFixed(1)} />
-
-        {/* Y axis labels: strike (option start) and price (market start) */}
-        <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861" textAnchor="end"
-          x={ML - 12} y={(optY + 4).toFixed(1)}>{fmtK(strike)}</text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861" textAnchor="end"
-          x={ML - 12} y={(mktStartY + 4).toFixed(1)}>{fmtK(price)}</text>
-
-        {/* X axis labels: Now, Yr 1, ..., Yr {TOTAL_YEARS} */}
-        {Array.from({ length: TOTAL_YEARS + 1 }, (_, k) => (
-          <text key={k} fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
-            textAnchor="middle" x={xPix(k).toFixed(1)} y={MT + PH + 24}>
-            {k === 0 ? 'Now' : `Yr ${k}`}
-          </text>
-        ))}
-
-        {/* Equity fill */}
-        <polygon points={fillPts} fill="rgba(18,58,40,0.08)" />
-
-        {/* Option price — flat dashed, startT → endT */}
-        <line stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
-          x1={xPix(startT).toFixed(1)} y1={optY.toFixed(1)}
-          x2={xPix(endT).toFixed(1)} y2={optY.toFixed(1)} />
-
-        {/* Market value — rising solid, startT → endT */}
-        <polyline fill="none" stroke="#123A28" strokeWidth="2.5" points={mktPts} />
-
-        {/* "Start" dashed vertical line + label (only if not immediate) */}
-        {startT > 0.05 && (
-          <>
-            <line stroke="rgba(18,58,40,0.25)" strokeWidth="1" strokeDasharray="4 3"
-              x1={xPix(startT).toFixed(1)} y1={MT} x2={xPix(startT).toFixed(1)} y2={MT + PH} />
-            <text fontFamily="Montserrat,sans-serif" fontSize="11" fontWeight="500" fill="#857861"
-              textAnchor="middle" x={xPix(startT).toFixed(1)} y={MT - 6}>Start</text>
-          </>
-        )}
-
-        {/* "End" dashed vertical line + label */}
-        <line stroke="rgba(18,58,40,0.25)" strokeWidth="1" strokeDasharray="4 3"
-          x1={xPix(endT).toFixed(1)} y1={MT} x2={xPix(endT).toFixed(1)} y2={MT + PH} />
-        <text fontFamily="Montserrat,sans-serif" fontSize="11" fontWeight="500" fill="#857861"
-          textAnchor="middle" x={xPix(endT).toFixed(1)} y={MT - 6}>End</text>
-
-        {/* Abbreviated values at End line */}
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
-          x={(xPix(endT) + 8).toFixed(1)} y={(yPix(mktAtEnd) + 4).toFixed(1)}>~{fmtK(mktAtEnd)}</text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
-          x={(xPix(endT) + 8).toFixed(1)} y={(optY + 4).toFixed(1)}>{fmtK(strike)}</text>
-
-        {/* Equity callout inside fill area */}
-        <text fontFamily="Montserrat,sans-serif" fontSize="13" fontWeight="600" fill="#101211"
-          textAnchor="middle" x={xPix(midT).toFixed(1)} y={(yMidFill - 6).toFixed(1)}>
-          + {fmt(equityAtEnd)}
-        </text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="rgba(18,58,40,0.45)"
-          textAnchor="middle" x={xPix(midT).toFixed(1)} y={(yMidFill + 10).toFixed(1)}>
-          growing equity
-        </text>
-      </svg>
-
       <NavRow onBack={onBack} onNext={onNext} nextLabel="Calculate my full numbers" />
     </div>
   )
@@ -660,7 +612,18 @@ export default function Calc2Page() {
       <PublicNav />
       <main className="mx-auto max-w-3xl px-6 py-12">
         <Progress step={step} />
-        {/* key={step} forces remount on step change so animate-step-enter always plays */}
+
+        {/* SharedChart persists outside the keyed div so CSS d-transitions fire on scene change */}
+        {step <= 3 && (
+          <SharedChart
+            scene={step as 1 | 2 | 3}
+            price={price}
+            monthly={monthly}
+            savedSoFar={savedSoFar}
+          />
+        )}
+
+        {/* key={step} remounts step content for slide-in animation without affecting SharedChart */}
         <div key={step} className="animate-step-enter">
           {step === 1 && (
             <Step1 price={price} monthly={monthly}
@@ -669,14 +632,13 @@ export default function Calc2Page() {
           )}
           {step === 2 && (
             <Step2 price={price} monthly={monthly}
-              initSaved={savedSoFar} initHousing={housingCost}
-              onNext={(sf, hc) => { setSavedSoFar(sf); setHousingCost(hc); setStep(3) }}
+              savedSoFar={savedSoFar} setSavedSoFar={setSavedSoFar}
+              housingCost={housingCost} setHousingCost={setHousingCost}
+              onNext={() => setStep(3)}
               onBack={() => setStep(1)} />
           )}
           {step === 3 && (
-            <Step3 price={price}
-              monthsToStart={Math.max(0, (Math.round(price * 0.01) - savedSoFar) / monthly)}
-              onNext={() => setStep(4)} onBack={() => setStep(2)} />
+            <Step3 onNext={() => setStep(4)} onBack={() => setStep(2)} />
           )}
           {step === 4 && (
             <Step4 price={price} monthly={monthly} housingCost={housingCost} onBack={() => setStep(3)} />
