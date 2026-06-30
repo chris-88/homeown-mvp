@@ -343,73 +343,76 @@ function Step2({ price, monthly, initSaved, initHousing, onNext, onBack }: {
 }
 
 // ── Step 3 — Equity / appreciation chart ──────────────────────
-function Step3({ price, onNext, onBack }: {
-  price: number; onNext: () => void; onBack: () => void
+function Step3({ price, monthsToStart, onNext, onBack }: {
+  price: number; monthsToStart: number; onNext: () => void; onBack: () => void
 }) {
-  const CHART_YEARS = 5
   const VH = 320, PH = VH - MT - MB
 
   const strike = Math.round(price * 0.90)
-  const mktAtY5 = price * Math.pow(1 + GROWTH, CHART_YEARS)
-  const equityAtY5 = mktAtY5 - strike
+  const startT = monthsToStart / 12                            // years until move-in
+  const TOTAL_YEARS = Math.max(6, Math.ceil(startT + 5.5))   // always space after End
+  const endT = startT + 5                                      // 60-month Homeown term
 
-  // Y scale: from a bit below strike to a bit above year-5 market
-  const yMin = strike * 0.96
-  const yMax = mktAtY5 * 1.04
+  const mktAtEnd = price * Math.pow(1 + GROWTH, 5)
+  const equityAtEnd = mktAtEnd - strike
+
+  const yMin = strike * 0.90
+  const yMax = mktAtEnd * 1.06
   const yRange = yMax - yMin
 
-  const xPix = (t: number) => ML + (t / CHART_YEARS) * PW
+  const xPix = (t: number) => ML + (t / TOTAL_YEARS) * PW
   const yPix = (v: number) => MT + PH - ((v - yMin) / yRange) * PH
 
-  // Market value curve points (51 samples)
+  const optY = yPix(strike)
+  const mktStartY = yPix(price)
+
+  // Market value curve: startT → endT (0 → 5 years of appreciation)
   const mktPts = Array.from({ length: 51 }, (_, i) => {
-    const t = (i / 50) * CHART_YEARS
-    return `${xPix(t).toFixed(1)},${yPix(price * Math.pow(1 + GROWTH, t)).toFixed(1)}`
+    const years = (i / 50) * 5
+    return `${xPix(startT + years).toFixed(1)},${yPix(price * Math.pow(1 + GROWTH, years)).toFixed(1)}`
   }).join(' ')
 
-  // Fill polygon: option price baseline → market curve → close back
-  const optY = yPix(strike)
+  // Fill polygon
   const fillPts = [
-    `${xPix(0).toFixed(1)},${optY.toFixed(1)}`,
+    `${xPix(startT).toFixed(1)},${optY.toFixed(1)}`,
     ...Array.from({ length: 51 }, (_, i) => {
-      const t = (i / 50) * CHART_YEARS
-      return `${xPix(t).toFixed(1)},${yPix(price * Math.pow(1 + GROWTH, t)).toFixed(1)}`
+      const years = (i / 50) * 5
+      return `${xPix(startT + years).toFixed(1)},${yPix(price * Math.pow(1 + GROWTH, years)).toFixed(1)}`
     }),
-    `${xPix(CHART_YEARS).toFixed(1)},${optY.toFixed(1)}`,
+    `${xPix(endT).toFixed(1)},${optY.toFixed(1)}`,
   ].join(' ')
 
-  // Y grid: 4 evenly spaced ticks
-  const yTicks = [0, 1, 2, 3].map(i => {
-    const v = yMin + (yRange * i) / 3
-    return { v, y: yPix(v) }
-  })
-
-  // Equity callout at midpoint (year 2.5) inside the filled area
-  const midT = CHART_YEARS / 2
-  const mktMid = price * Math.pow(1 + GROWTH, midT)
-  const yMktMid = yPix(mktMid)
-  const yMidFill = (yMktMid + optY) / 2
+  // Equity callout at midpoint of the Homeown term
+  const midT = startT + 2.5
+  const mktMidY = yPix(price * Math.pow(1 + GROWTH, 2.5))
+  const yMidFill = (mktMidY + optY) / 2
 
   return (
     <div>
       <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground mb-2.5">
         While you live there
       </p>
-      <h2 className="text-[clamp(28px,5vw,48px)] leading-[1.08] tracking-tight mb-8"
-        style={{ ...SERIF, fontWeight: 340 }}>
+      <h2 className="text-[clamp(28px,5vw,48px)] font-bold leading-[1.08] tracking-tight mb-8">
         The price is locked. The value isn't.
       </h2>
 
       <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full h-auto overflow-visible" role="img"
         aria-label="Chart showing fixed option price against rising market value over five years">
-        {yTicks.map(({ v, y }) => (
-          <g key={v}>
-            <line stroke="rgba(18,58,40,0.10)" strokeWidth="1" x1={ML} y1={y.toFixed(1)} x2={ML + PW} y2={y.toFixed(1)} />
-            <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
-              textAnchor="end" x={ML - 12} y={(y + 4).toFixed(1)}>{fmtK(v)}</text>
-          </g>
-        ))}
-        {Array.from({ length: CHART_YEARS + 1 }, (_, k) => (
+
+        {/* Y reference lines at starting values */}
+        <line stroke="rgba(18,58,40,0.10)" strokeWidth="1"
+          x1={ML} y1={optY.toFixed(1)} x2={ML + PW} y2={optY.toFixed(1)} />
+        <line stroke="rgba(18,58,40,0.10)" strokeWidth="1"
+          x1={ML} y1={mktStartY.toFixed(1)} x2={ML + PW} y2={mktStartY.toFixed(1)} />
+
+        {/* Y axis labels: strike (option start) and price (market start) */}
+        <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861" textAnchor="end"
+          x={ML - 12} y={(optY + 4).toFixed(1)}>{fmtK(strike)}</text>
+        <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861" textAnchor="end"
+          x={ML - 12} y={(mktStartY + 4).toFixed(1)}>{fmtK(price)}</text>
+
+        {/* X axis labels: Now, Yr 1, ..., Yr {TOTAL_YEARS} */}
+        {Array.from({ length: TOTAL_YEARS + 1 }, (_, k) => (
           <text key={k} fontFamily="Montserrat,sans-serif" fontSize="11" fill="#857861"
             textAnchor="middle" x={xPix(k).toFixed(1)} y={MT + PH + 24}>
             {k === 0 ? 'Now' : `Yr ${k}`}
@@ -419,38 +422,46 @@ function Step3({ price, onNext, onBack }: {
         {/* Equity fill */}
         <polygon points={fillPts} fill="rgba(18,58,40,0.08)" />
 
-        {/* Option price — flat dashed */}
+        {/* Option price — flat dashed, startT → endT */}
         <line stroke="#857861" strokeWidth="2" strokeDasharray="5 5"
-          x1={xPix(0).toFixed(1)} y1={optY.toFixed(1)}
-          x2={xPix(CHART_YEARS).toFixed(1)} y2={optY.toFixed(1)} />
+          x1={xPix(startT).toFixed(1)} y1={optY.toFixed(1)}
+          x2={xPix(endT).toFixed(1)} y2={optY.toFixed(1)} />
 
-        {/* Market value — rising solid */}
+        {/* Market value — rising solid, startT → endT */}
         <polyline fill="none" stroke="#123A28" strokeWidth="2.5" points={mktPts} />
 
-        {/* Labels */}
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
-          x={ML + PW + 8} y={(yPix(mktAtY5) + 4).toFixed(1)}>Value</text>
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
-          x={ML + PW + 8} y={(optY + 4).toFixed(1)}>Option</text>
+        {/* "Start" dashed vertical line + label (only if not immediate) */}
+        {startT > 0.05 && (
+          <>
+            <line stroke="rgba(18,58,40,0.25)" strokeWidth="1" strokeDasharray="4 3"
+              x1={xPix(startT).toFixed(1)} y1={MT} x2={xPix(startT).toFixed(1)} y2={MT + PH} />
+            <text fontFamily="Montserrat,sans-serif" fontSize="11" fontWeight="500" fill="#857861"
+              textAnchor="middle" x={xPix(startT).toFixed(1)} y={MT - 6}>Start</text>
+          </>
+        )}
 
-        {/* Equity label inside fill */}
-        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="600" fill="rgba(18,58,40,0.5)"
-          textAnchor="middle" x={xPix(midT).toFixed(1)} y={(yMidFill - 2).toFixed(1)}>
+        {/* "End" dashed vertical line + label */}
+        <line stroke="rgba(18,58,40,0.25)" strokeWidth="1" strokeDasharray="4 3"
+          x1={xPix(endT).toFixed(1)} y1={MT} x2={xPix(endT).toFixed(1)} y2={MT + PH} />
+        <text fontFamily="Montserrat,sans-serif" fontSize="11" fontWeight="500" fill="#857861"
+          textAnchor="middle" x={xPix(endT).toFixed(1)} y={MT - 6}>End</text>
+
+        {/* Abbreviated values at End line */}
+        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#123A28"
+          x={(xPix(endT) + 8).toFixed(1)} y={(yPix(mktAtEnd) + 4).toFixed(1)}>~{fmtK(mktAtEnd)}</text>
+        <text fontFamily="Montserrat,sans-serif" fontSize="12" fontWeight="500" fill="#857861"
+          x={(xPix(endT) + 8).toFixed(1)} y={(optY + 4).toFixed(1)}>{fmtK(strike)}</text>
+
+        {/* Equity callout inside fill area */}
+        <text fontFamily="Montserrat,sans-serif" fontSize="13" fontWeight="600" fill="#101211"
+          textAnchor="middle" x={xPix(midT).toFixed(1)} y={(yMidFill - 6).toFixed(1)}>
+          + {fmt(equityAtEnd)}
+        </text>
+        <text fontFamily="Montserrat,sans-serif" fontSize="11" fill="rgba(18,58,40,0.45)"
+          textAnchor="middle" x={xPix(midT).toFixed(1)} y={(yMidFill + 10).toFixed(1)}>
           growing equity
         </text>
       </svg>
-
-      <p className="mt-5 text-[15px] text-muted-foreground leading-relaxed">
-        Your option price is fixed at{' '}
-        <strong className="text-foreground">{fmt(strike)}</strong> the day you move in.
-        {' '}By year 5, the market could be worth{' '}
-        <strong className="text-foreground">{fmt(mktAtY5)}</strong> — a{' '}
-        <strong className="text-brand-green">{fmt(equityAtY5)}</strong> difference in your favour.
-      </p>
-
-      <p className="mt-3 text-xs text-muted-foreground">
-        Illustrative only. Assumes 5% annual property appreciation.
-      </p>
 
       <NavRow onBack={onBack} onNext={onNext} nextLabel="Calculate my full numbers" />
     </div>
@@ -648,7 +659,9 @@ export default function Calc2Page() {
             onBack={() => setStep(1)} />
         )}
         {step === 3 && (
-          <Step3 price={price} onNext={() => setStep(4)} onBack={() => setStep(2)} />
+          <Step3 price={price}
+            monthsToStart={Math.max(0, (Math.round(price * 0.01) - savedSoFar) / monthly)}
+            onNext={() => setStep(4)} onBack={() => setStep(2)} />
         )}
         {step === 4 && (
           <Step4 price={price} monthly={monthly} housingCost={housingCost} onBack={() => setStep(3)} />
