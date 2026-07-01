@@ -321,6 +321,12 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
 
           {captionNode}
 
+          <p className="mt-5 text-xs text-muted-foreground leading-relaxed" style={{ maxWidth: '520px' }}>
+            Illustrative only.{' '}
+            <GrowthNotePopover />{' '}
+            The entry stake is not a deposit and the purchase right is contractual, not guaranteed.
+          </p>
+
           <div className="mt-8 pt-6 border-t border-brand-cream">
             <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-brand-taupe mb-5">
               Dublin's average three-bed. Adjust for your own.
@@ -365,11 +371,6 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
             </div>
           </div>
 
-          <p className="mt-8 text-xs text-muted-foreground leading-relaxed max-w-[520px]">
-            Illustrative only.{' '}
-            <GrowthNotePopover />{' '}
-            The entry stake is not a deposit and the purchase right is contractual, not guaranteed.
-          </p>
         </div>
       </section>
 
