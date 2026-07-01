@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
 import { PublicNav } from '@/components/shared/PublicNav'
 import { track } from '@/lib/analytics'
+import { cn } from '@/lib/utils'
+import { useCalcWizard, ROI_COUNTIES, DUBLIN_POSTCODES, computeFromPrice } from '@/lib/calcWizard'
 
 // ── Business constants ─────────────────────────────────────────
 const GROWTH      = 0.05
@@ -18,6 +20,8 @@ const PW = VW - ML - MR   // 492
 const PH = VH - MT - MB   // 188
 
 // ── Types ──────────────────────────────────────────────────────
+type Step = 1 | 2 | 3 | 4
+
 type Camera = {
   mode: 'dep' | 'eq'
   xMax: number
@@ -342,11 +346,49 @@ function Slider({ label, value, display, min, max, step, onChange }: {
   )
 }
 
+// ── Toggle group ───────────────────────────────────────────────
+function ToggleGroup<T extends string | boolean>({ label, value, options, onChange }: {
+  label: string
+  value: T | null
+  options: { v: T; label: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <div>
+      <p className="text-[11px] tracking-[0.09em] uppercase text-muted-foreground mb-2">{label}</p>
+      <div className="flex gap-2">
+        {options.map(o => (
+          <button
+            key={String(o.v)}
+            type="button"
+            onClick={() => onChange(o.v)}
+            className={cn(
+              'flex-1 py-2.5 text-sm rounded-md border transition-colors',
+              value === o.v
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background border-border hover:bg-accent'
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Field label ────────────────────────────────────────────────
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] tracking-[0.09em] uppercase text-muted-foreground mb-2">{children}</p>
+  )
+}
+
 // ── Progress bars ──────────────────────────────────────────────
-function ProgressBars({ step }: { step: 1 | 2 | 3 }) {
+function ProgressBars({ step }: { step: Step }) {
   return (
     <div className="flex gap-1.5 mb-6">
-      {([1, 2, 3] as const).map(s => (
+      {([1, 2, 3, 4] as const).map(s => (
         <div key={s} className="flex-1 h-[3px] rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
@@ -359,39 +401,53 @@ function ProgressBars({ step }: { step: 1 | 2 | 3 }) {
 }
 
 // ── Step titles ────────────────────────────────────────────────
-const TITLES: Record<1 | 2 | 3, string> = {
+const TITLES: Record<Step, string> = {
   1: 'The deposit keeps moving.',
   2: 'A 1% entry stake.',
   3: 'Appreciation working for you.',
+  4: 'Help us prepare for the call.',
 }
 
 // ── Page ───────────────────────────────────────────────────────
 export default function Calc2Page() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { update } = useCalcWizard()
 
   const initPrice   = Math.max(250_000, Math.min(900_000, parseInt(searchParams.get('price') ?? '', 10) || 580_000))
   const initMonthly = Math.max(300, Math.min(3_000, parseInt(searchParams.get('save') ?? '', 10) || 1_000))
 
-  const [step,    setStep]    = useState<1 | 2 | 3>(1)
+  // ── Steps 1–3 state ───────────────────────────────────────────
+  const [step,    setStep]    = useState<Step>(1)
   const [price,   setPrice]   = useState(initPrice)
   const [monthly, setMonthly] = useState(initMonthly)
   const [saved,   setSaved]   = useState(0)
   const [housing, setHousing] = useState(3_500)
 
+  // ── Step 4 state ──────────────────────────────────────────────
+  const [county,         setCounty]         = useState('')
+  const [dublinPostcode, setDublinPostcode] = useState('')
+  const [householdType,  setHouseholdType]  = useState<'solo' | 'couple' | null>(null)
+  const [isFtb,          setIsFtb]          = useState<boolean | null>(null)
+  const [employmentType, setEmploymentType] = useState<'paye' | 'self_employed' | 'mixed' | null>(null)
+  const [ghi,            setGhi]            = useState(80_000)
+  const [age,            setAge]            = useState(32)
+
+  const step4Valid = county !== '' && householdType !== null && isFtb !== null && employmentType !== null
+
   // Refs — animation state
   const svgRef    = useRef<SVGSVGElement>(null)
   const camRef    = useRef<Camera>(cameraForStep(1, { price: initPrice, monthly: initMonthly, saved: 0 }))
   const dataRef   = useRef<ChartData>({ price: initPrice, monthly: initMonthly, saved: 0 })
-  const stepRef   = useRef<1 | 2 | 3>(1)  // mirrors step state; avoids stale closures in effects
-  const tweenRef  = useRef<number | null>(null)
+  // camera step: only ever 1|2|3 (step 4 keeps the step-3 camera)
+  const camStepRef = useRef<1 | 2 | 3>(1)
+  const tweenRef   = useRef<number | null>(null)
   const reducedMotion = useRef(
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   )
 
-  // Keep stepRef in sync (synchronous update before tween starts)
-  const advanceTo = useCallback((target: 1 | 2 | 3) => {
-    stepRef.current = target
+  const advanceTo = useCallback((target: Step) => {
+    if (target <= 3) camStepRef.current = target as 1 | 2 | 3
     setStep(target)
   }, [])
 
@@ -399,7 +455,7 @@ export default function Calc2Page() {
   useEffect(() => {
     dataRef.current = { price, monthly, saved }
     if (tweenRef.current === null) {
-      camRef.current = cameraForStep(stepRef.current, dataRef.current)
+      camRef.current = cameraForStep(camStepRef.current, dataRef.current)
     }
     if (svgRef.current) drawChart(svgRef.current, camRef.current, dataRef.current)
   }, [price, monthly, saved])
@@ -433,7 +489,6 @@ export default function Calc2Page() {
       camRef.current = cam
 
       if (svgRef.current) {
-        // Dip opacity through 0 on mode changes so axis-scale mismatch is hidden
         if (crossFade) {
           svgRef.current.style.opacity = String(t < 0.5 ? 1 - 2 * t : 2 * t - 1)
         }
@@ -450,31 +505,57 @@ export default function Calc2Page() {
   }, [])
 
   function goNext() {
-    if (step >= 3) return
-    const next = (step + 1) as 1 | 2 | 3
-    tweenToStep(next)
+    if (step >= 4) return
+    const next = (step + 1) as Step
+    // Only tween chart between steps 1–3; step 3→4 keeps the equity view
+    if (next <= 3) tweenToStep(next as 1 | 2 | 3)
     advanceTo(next)
   }
 
   function goBack() {
     if (step <= 1) return
-    const prev = (step - 1) as 1 | 2 | 3
-    tweenToStep(prev)
+    const prev = (step - 1) as Step
+    // Tween chart when moving within steps 1–3; step 4→3 chart is already correct
+    if (step <= 3) tweenToStep(prev as 1 | 2 | 3)
     advanceTo(prev)
   }
 
+  function handleBookCall() {
+    const eligible = isFtb === true && (ghi * 4 / 0.9) >= price
+    const variant  = isFtb === false ? 'mover' as const : 'eligible' as const
+
+    update({
+      propertyPrice:    price,
+      currentSavings:   saved,
+      monthlySavings:   monthly,
+      currentHousingCost: housing,
+      ...computeFromPrice(price),
+      county,
+      dublinPostcode:   county === 'Dublin' && dublinPostcode ? dublinPostcode : null,
+      householdType,
+      isFtb,
+      employmentType,
+      ghi,
+      age,
+      eligible,
+      variant,
+    })
+    track('calc2_book_call', { price, variant })
+    navigate('/calc/save')
+  }
+
   // Step 3 derived figures
-  const fee      = serviceFee(price)
-  const stake    = entryStake(price)
-  const strikeVal = strike(price)
-  const mktRef   = valueAtExit(price)  // 5yr reference: price*(1.05^5)
+  const fee        = serviceFee(price)
+  const stake      = entryStake(price)
+  const strikeVal  = strike(price)
+  const mktRef     = valueAtExit(price)
 
-  const tSaveYr  = timeToSaveYr({ price, monthly, saved })
-  const tSaveMo  = Math.round(tSaveYr * 12)
-  const stakeReadyStr = saved >= stake ? 'ready now' : `${tSaveMo} mo`
+  const tSaveYr        = timeToSaveYr({ price, monthly, saved })
+  const tSaveMo        = Math.round(tSaveYr * 12)
+  const stakeReadyStr  = saved >= stake ? 'ready now' : `${tSaveMo} mo`
 
-  const delta  = fee - housing
-  const feeSub = delta <= 0 ? `${fmt(-delta)} less than now` : `vs ${fmt(housing)} now`
+  const delta   = fee - housing
+  const feeSub  = delta <= 0 ? `${fmt(-delta)} less than now` : `vs ${fmt(housing)} now`
 
   const fitRead =
     housing >= fee
@@ -482,6 +563,8 @@ export default function Calc2Page() {
       : housing >= fee * 0.85
       ? 'The monthly is close to what you spend now, worth talking through.'
       : 'The monthly would be a stretch on what you spend now, and we would say so on the call.'
+
+  const selectCls = 'w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20'
 
   return (
     <div className="min-h-screen bg-background">
@@ -499,11 +582,11 @@ export default function Calc2Page() {
           </h2>
         </div>
 
-        {/* Persistent chart — never unmounts */}
+        {/* Persistent chart — never unmounts; hidden on step 4 to give form room */}
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VW} ${VH}`}
-          className="w-full h-auto mb-6 overflow-visible"
+          className={cn('w-full h-auto mb-6 overflow-visible transition-opacity duration-300', step === 4 && 'opacity-0 pointer-events-none h-0 mb-0')}
           role="img"
           aria-label="Pathway comparison chart"
         />
@@ -593,12 +676,118 @@ export default function Calc2Page() {
                   <ArrowLeft className="h-4 w-4" />Back
                 </button>
                 <button
-                  onClick={() => { track('calc2_book_call', { price }); navigate('/calc/save') }}
+                  onClick={goNext}
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97]"
                 >
                   Book a 20-minute call <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-6">
+
+              {/* County */}
+              <div>
+                <FieldLabel>Where are you looking to buy?</FieldLabel>
+                <select
+                  value={county}
+                  onChange={e => { setCounty(e.target.value); if (e.target.value !== 'Dublin') setDublinPostcode('') }}
+                  className={selectCls}
+                >
+                  <option value="">Select county…</option>
+                  {ROI_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              {/* Dublin postcode */}
+              {county === 'Dublin' && (
+                <div>
+                  <FieldLabel>Dublin area (optional)</FieldLabel>
+                  <select
+                    value={dublinPostcode}
+                    onChange={e => setDublinPostcode(e.target.value)}
+                    className={selectCls}
+                  >
+                    <option value="">Select area…</option>
+                    {DUBLIN_POSTCODES.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Household type */}
+              <ToggleGroup
+                label="Your household"
+                value={householdType}
+                options={[
+                  { v: 'solo' as const,   label: 'Buying solo' },
+                  { v: 'couple' as const, label: 'Couple'      },
+                ]}
+                onChange={setHouseholdType}
+              />
+
+              {/* FTB */}
+              <ToggleGroup
+                label="First time buyer?"
+                value={isFtb}
+                options={[
+                  { v: true,  label: 'Yes'                    },
+                  { v: false, label: "No, I've owned before"  },
+                ]}
+                onChange={setIsFtb}
+              />
+
+              {/* Employment */}
+              <ToggleGroup
+                label="Employment"
+                value={employmentType}
+                options={[
+                  { v: 'paye' as const,          label: 'PAYE'          },
+                  { v: 'self_employed' as const,  label: 'Self-employed' },
+                  { v: 'mixed' as const,          label: 'Mixed'         },
+                ]}
+                onChange={setEmploymentType}
+              />
+
+              {/* Income */}
+              <Slider
+                label="Annual household income"
+                value={ghi}
+                display={fmt(ghi)}
+                min={25_000}
+                max={200_000}
+                step={5_000}
+                onChange={setGhi}
+              />
+
+              {/* Age */}
+              <Slider
+                label="Your age"
+                value={age}
+                display={String(age)}
+                min={18}
+                max={65}
+                step={1}
+                onChange={setAge}
+              />
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={goBack}
+                  className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-[background-color,transform] active:scale-[0.97]"
+                >
+                  <ArrowLeft className="h-4 w-4" />Back
+                </button>
+                <button
+                  onClick={handleBookCall}
+                  disabled={!step4Valid}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+                >
+                  Save and request a call <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+
             </div>
           )}
 

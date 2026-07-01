@@ -89,11 +89,13 @@ export const router = createHashRouter([
   { path: '/', element: <HomePage /> },
   { path: '/how-it-works', element: <HowItWorksPage /> },
   { path: '/faq', element: <FaqPage /> },
-  { path: '/calc', element: <Calc2Page /> },
   {
-    path: '/calc/save',
+    path: '/calc',
     element: <CalcWizardProvider />,
-    children: [{ index: true, element: <SavePage /> }],
+    children: [
+      { index: true, element: <Calc2Page /> },
+      { path: 'save', element: <SavePage /> },
+    ],
   },
   { path: '/auth/login', element: <LoginPage /> },
   { path: '/auth/forgot', element: <ForgotPage /> },
