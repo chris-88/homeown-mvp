@@ -7,9 +7,7 @@ import HowItWorksPage from '@/pages/public/HowItWorksPage'
 import FaqPage from '@/pages/public/FaqPage'
 
 // Calc
-import CalcPage from '@/pages/calc/CalcPage'
 import Calc2Page from '@/pages/calc/Calc2Page'
-import ResultsPage from '@/pages/calc/ResultsPage'
 import SavePage from '@/pages/calc/SavePage'
 
 // Auth
@@ -91,16 +89,12 @@ export const router = createHashRouter([
   { path: '/', element: <HomePage /> },
   { path: '/how-it-works', element: <HowItWorksPage /> },
   { path: '/faq', element: <FaqPage /> },
+  { path: '/calc', element: <Calc2Page /> },
   {
-    path: '/calc',
+    path: '/calc/save',
     element: <CalcWizardProvider />,
-    children: [
-      { index: true, element: <CalcPage /> },
-      { path: 'results', element: <ResultsPage /> },
-      { path: 'save', element: <SavePage /> },
-    ],
+    children: [{ index: true, element: <SavePage /> }],
   },
-  { path: '/calc2', element: <Calc2Page /> },
   { path: '/auth/login', element: <LoginPage /> },
   { path: '/auth/forgot', element: <ForgotPage /> },
   { path: '/auth/logout', element: <LogoutPage /> },
