@@ -114,69 +114,73 @@ function ProblemCarousel() {
   }, [])
 
   return (
-    <div className="flex flex-col items-center gap-5 px-4 w-full">
-      {/* Eyebrow — outside the card, matches all other section eyebrows */}
-      <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50">
+    <div className="w-full max-w-3xl mx-auto px-6">
+      {/* Eyebrow — left-aligned in max-w-3xl container, matching section 3 */}
+      <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50 mb-5">
         The Problem
       </p>
 
-      {/* Portrait card — mirrors the Instagram ad format */}
-      <div className="relative w-56 sm:w-64 md:w-72 lg:w-80" style={{ aspectRatio: '9/16' }}>
-        {/* House outline — large, muted, fills the card */}
-        <svg
-          viewBox="0 0 126 175"
-          fill="none"
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full"
-        >
-          <path
-            d={HOUSE_PATH}
-            stroke="#E7D4BB"
-            strokeWidth="6.3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      <div className="flex flex-col items-center gap-5">
+        {/* Portrait card */}
+        <div className="relative w-56 sm:w-64 md:w-72 lg:w-80" style={{ aspectRatio: '9/16' }}>
+          {/* House outline */}
+          <svg
+            viewBox="0 0 126 175"
             fill="none"
-            opacity="0.22"
-          />
-        </svg>
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full"
+          >
+            <path
+              d={HOUSE_PATH}
+              stroke="#E7D4BB"
+              strokeWidth="6.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              opacity="0.22"
+            />
+          </svg>
 
-        {/* Quote text — centered within the house interior (eaves at ~34%, floor at ~98%) */}
-        <div className="absolute inset-x-[10%] top-[35%] bottom-[3%]">
-          {PROBLEM_SLIDES.map((parts, i) => (
-            <p
+          {/* Quote text — centered in the house interior.
+              SVG viewBox 126×175 letterboxes in a 9:16 card: house renders at 77.8% card height
+              with ~11% padding top/bottom. Eave (y=60) → ~38% from card top. Floor (y=172) → ~88%. */}
+          <div className="absolute inset-x-[6%] top-[38%] bottom-[12%] flex items-center justify-center">
+            <div className="grid w-full">
+              {PROBLEM_SLIDES.map((parts, i) => (
+                <p
+                  key={i}
+                  style={{ gridColumn: '1', gridRow: '1' }}
+                  className={cn(
+                    'text-xl sm:text-2xl text-primary-foreground leading-snug font-light text-center',
+                    'transition-opacity duration-700',
+                    i === current ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'
+                  )}
+                >
+                  {parts.map((part, j) =>
+                    part.bold
+                      ? <strong key={j} className="font-bold">{part.text}</strong>
+                      : <span key={j}>{part.text}</span>
+                  )}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation dots */}
+        <div className="flex gap-2">
+          {PROBLEM_SLIDES.map((_, i) => (
+            <button
               key={i}
+              onClick={() => setCurrent(i)}
+              aria-label={`Slide ${i + 1}`}
               className={cn(
-                'absolute inset-0 flex items-center justify-center text-center',
-                'text-xl sm:text-2xl text-primary-foreground leading-snug font-light',
-                'transition-opacity duration-700',
-                i === current ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'
+                'h-[3px] rounded-full bg-primary-foreground transition-all duration-500 cursor-pointer',
+                i === current ? 'w-8 opacity-100' : 'w-3 opacity-30'
               )}
-            >
-              <span className="w-full">
-                {parts.map((part, j) =>
-                  part.bold
-                    ? <strong key={j} className="font-bold">{part.text}</strong>
-                    : <span key={j}>{part.text}</span>
-                )}
-              </span>
-            </p>
+            />
           ))}
         </div>
-      </div>
-
-      {/* Navigation dots */}
-      <div className="flex gap-2">
-        {PROBLEM_SLIDES.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            aria-label={`Slide ${i + 1}`}
-            className={cn(
-              'h-[3px] rounded-full bg-primary-foreground transition-all duration-500 cursor-pointer',
-              i === current ? 'w-8 opacity-100' : 'w-3 opacity-30'
-            )}
-          />
-        ))}
       </div>
     </div>
   )
