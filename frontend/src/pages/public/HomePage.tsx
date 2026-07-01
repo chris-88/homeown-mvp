@@ -114,7 +114,12 @@ function ProblemCarousel() {
   }, [])
 
   return (
-    <div className="flex flex-col items-center gap-6 px-4">
+    <div className="flex flex-col items-center gap-5 px-4 w-full">
+      {/* Eyebrow — outside the card, matches all other section eyebrows */}
+      <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50">
+        The Problem
+      </p>
+
       {/* Portrait card — mirrors the Instagram ad format */}
       <div className="relative w-56 sm:w-64 md:w-72 lg:w-80" style={{ aspectRatio: '9/16' }}>
         {/* House outline — large, muted, fills the card */}
@@ -135,24 +140,19 @@ function ProblemCarousel() {
           />
         </svg>
 
-        {/* "The Problem" eyebrow — top-left, like the Instagram label */}
-        <p className="absolute top-3 left-3.5 text-[9px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50">
-          The Problem
-        </p>
-
-        {/* Quote slides — positioned in the lower house-body area */}
-        <div className="absolute inset-x-[10%] top-[44%] bottom-[10%]">
+        {/* Quote text — centered within the house interior (eaves at ~34%, floor at ~98%) */}
+        <div className="absolute inset-x-[10%] top-[35%] bottom-[3%]">
           {PROBLEM_SLIDES.map((parts, i) => (
             <p
               key={i}
               className={cn(
                 'absolute inset-0 flex items-center justify-center text-center',
-                'text-xl sm:text-2xl md:text-2xl text-primary-foreground leading-snug font-light',
+                'text-xl sm:text-2xl text-primary-foreground leading-snug font-light',
                 'transition-opacity duration-700',
                 i === current ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'
               )}
             >
-              <span>
+              <span className="w-full">
                 {parts.map((part, j) =>
                   part.bold
                     ? <strong key={j} className="font-bold">{part.text}</strong>
