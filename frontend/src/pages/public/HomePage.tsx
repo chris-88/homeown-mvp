@@ -65,48 +65,115 @@ const SECTION_HEAD = 'text-3xl font-normal tracking-tight md:text-[2.5rem]'
 const CTA_BTN = 'inline-flex items-center justify-center rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-colors'
 
 
-const RECOGNITION = [
-  'I can afford the monthly cost. I cannot save the upfront amount.',
-  'Every time I get close, the price moves again.',
-  'My bank will approve the mortgage. The deposit is the part I can never get ahead of.',
-  'I have been searching for years. I am further away now than when I started.',
+type SlidePart = { text: string; bold?: boolean }
+
+const PROBLEM_SLIDES: SlidePart[][] = [
+  [
+    { text: '“I can afford a mortgage, just not the ' },
+    { text: 'wait', bold: true },
+    { text: '…”' },
+  ],
+  [
+    { text: '“I have the ' },
+    { text: 'income', bold: true },
+    { text: ', I just can’t ' },
+    { text: 'save fast enough', bold: true },
+    { text: '…”' },
+  ],
+  [
+    { text: '“I know what I ' },
+    { text: 'want', bold: true },
+    { text: ', I just can’t ' },
+    { text: 'see a way', bold: true },
+    { text: ' to it…”' },
+  ],
+  [
+    { text: '“I have the ' },
+    { text: 'income', bold: true },
+    { text: ', just not the ' },
+    { text: 'deposit', bold: true },
+    { text: '…”' },
+  ],
+  [
+    { text: '“I don’t need ' },
+    { text: 'help buying', bold: true },
+    { text: ', I need ' },
+    { text: 'help starting', bold: true },
+    { text: '…”' },
+  ],
 ]
 
-function RecognitionCarousel({ dark = false }: { dark?: boolean }) {
+const HOUSE_PATH = 'M122.7 171.9 L3.4 171.9 L3.4 60 L65.7 3.1 L122.7 59.8'
+
+function ProblemCarousel() {
   const [current, setCurrent] = useState(0)
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrent(i => (i + 1) % RECOGNITION.length), 4500)
+    const timer = setInterval(() => setCurrent(i => (i + 1) % PROBLEM_SLIDES.length), 4500)
     return () => clearInterval(timer)
   }, [])
 
   return (
-    <div>
-      <div className="grid">
-        {RECOGNITION.map((text, i) => (
-          <p
-            key={i}
-            style={{ gridColumn: '1', gridRow: '1' }}
-            className={cn(
-              'text-xl font-medium leading-snug md:text-2xl transition-opacity duration-700 ease-in-out',
-              dark ? 'text-primary-foreground' : 'text-brand-ink',
-              i === current ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'
-            )}
-          >
-            {text}
-          </p>
-        ))}
+    <div className="flex flex-col items-center gap-6 px-4">
+      {/* Portrait card — mirrors the Instagram ad format */}
+      <div className="relative w-56 sm:w-64 md:w-72 lg:w-80" style={{ aspectRatio: '9/16' }}>
+        {/* House outline — large, muted, fills the card */}
+        <svg
+          viewBox="0 0 126 175"
+          fill="none"
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full"
+        >
+          <path
+            d={HOUSE_PATH}
+            stroke="#E7D4BB"
+            strokeWidth="6.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            opacity="0.22"
+          />
+        </svg>
+
+        {/* "The Problem" eyebrow — top-left, like the Instagram label */}
+        <p className="absolute top-3 left-3.5 text-[9px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50">
+          The Problem
+        </p>
+
+        {/* Quote slides — positioned in the lower house-body area */}
+        <div className="absolute inset-x-[10%] top-[44%] bottom-[10%]">
+          {PROBLEM_SLIDES.map((parts, i) => (
+            <p
+              key={i}
+              className={cn(
+                'absolute inset-0 flex items-center justify-center text-center',
+                'text-xl sm:text-2xl md:text-2xl text-primary-foreground leading-snug font-light',
+                'transition-opacity duration-700',
+                i === current ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'
+              )}
+            >
+              <span>
+                {parts.map((part, j) =>
+                  part.bold
+                    ? <strong key={j} className="font-bold">{part.text}</strong>
+                    : <span key={j}>{part.text}</span>
+                )}
+              </span>
+            </p>
+          ))}
+        </div>
       </div>
-      <div className="flex gap-2 mt-10">
-        {RECOGNITION.map((_, i) => (
+
+      {/* Navigation dots */}
+      <div className="flex gap-2">
+        {PROBLEM_SLIDES.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            aria-label={`Statement ${i + 1}`}
+            aria-label={`Slide ${i + 1}`}
             className={cn(
-              'h-[3px] rounded-full transition-all duration-500 cursor-pointer',
-              dark ? 'bg-primary-foreground' : 'bg-brand-ink',
-              i === current ? 'w-8 opacity-100' : 'w-3 opacity-20'
+              'h-[3px] rounded-full bg-primary-foreground transition-all duration-500 cursor-pointer',
+              i === current ? 'w-8 opacity-100' : 'w-3 opacity-30'
             )}
           />
         ))}
@@ -300,10 +367,7 @@ export default function HomePage() {
 
         {/* ── 2. Problem, felt ──────────────────────────────────────── */}
         <section className="min-h-screen snap-start flex flex-col justify-center bg-primary">
-          <div className="mx-auto max-w-2xl px-6 py-16 w-full">
-            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50 mb-3">The problem</p>
-            <RecognitionCarousel dark />
-          </div>
+          <ProblemCarousel />
         </section>
 
         {/* ── 3. The turn ───────────────────────────────────────────── */}
