@@ -80,7 +80,7 @@ function GrowthNotePopover() {
       <Popover.Trigger asChild>
         <button
           type="button"
-          className="underline underline-offset-2 decoration-primary-foreground/30 hover:decoration-primary-foreground/60 transition-colors cursor-pointer bg-transparent"
+          className="underline underline-offset-2 decoration-current/30 hover:decoration-current/60 transition-colors cursor-pointer bg-transparent"
         >
           Assumes 5% yearly price growth.
         </button>
@@ -364,6 +364,12 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
               </div>
             </div>
           </div>
+
+          <p className="mt-8 text-xs text-muted-foreground leading-relaxed max-w-[520px]">
+            Illustrative only.{' '}
+            <GrowthNotePopover />{' '}
+            The entry stake is not a deposit and the purchase right is contractual, not guaranteed.
+          </p>
         </div>
       </section>
 
@@ -392,11 +398,6 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
             </Link>
             <p className="mt-3 text-sm text-primary-foreground/50">Two minutes. No account required.</p>
           </div>
-          <p className="mt-12 text-xs text-primary-foreground/40 leading-relaxed max-w-[520px] mx-auto">
-            Illustrative only.{' '}
-            <GrowthNotePopover />{' '}
-            The entry stake is not a deposit and the purchase right is contractual, not guaranteed.
-          </p>
         </div>
       </section>
     </>
