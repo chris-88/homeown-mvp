@@ -391,7 +391,7 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
           </p>
           <div className="mt-10">
             <Link
-              to={calcUrl}
+              to={`/calc?price=${price}&save=${monthly}${calcUrl.includes('?') ? '&' + calcUrl.split('?')[1] : ''}`}
               onClick={() => track('turn_cta_click', { price, monthly })}
               className="inline-flex items-center justify-center rounded-lg bg-primary-foreground px-8 py-3.5 text-[15px] font-medium text-primary hover:bg-primary-foreground/90 transition-colors"
             >

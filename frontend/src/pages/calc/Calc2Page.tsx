@@ -13,9 +13,9 @@ const DISCOUNT    = 0.10
 
 // ── Chart layout ───────────────────────────────────────────────
 const VW = 600, VH = 240
-const ML = 52, MR = 56, MT = 16, MB = 32
+const ML = 52, MR = 56, MT = 20, MB = 32
 const PW = VW - ML - MR   // 492
-const PH = VH - MT - MB   // 192
+const PH = VH - MT - MB   // 188
 
 // ── Types ──────────────────────────────────────────────────────
 type Camera = {
@@ -33,11 +33,16 @@ type ChartData = {
   saved: number
 }
 
-// ── Math ───────────────────────────────────────────────────────
+// ── Business math ──────────────────────────────────────────────
 const serviceFee  = (p: number) => Math.round(p * FEE_RATE / 12)
 const strike      = (p: number) => Math.round(p * (1 - DISCOUNT))
 const valueAtExit = (p: number) => Math.round(p * Math.pow(1 + GROWTH, 5))
 const entryStake  = (p: number) => Math.round(p * STAKE_PCT)
+
+function timeToSaveYr(d: ChartData): number {
+  const gap = entryStake(d.price) - d.saved
+  return gap <= 0 ? 0 : gap / (d.monthly * 12)
+}
 
 // ── Format ─────────────────────────────────────────────────────
 function fmt(n: number) {
@@ -63,9 +68,17 @@ function cameraForStep(step: 1 | 2 | 3, d: ChartData): Camera {
     const yMax  = Math.ceil(Math.max(stake * 1.9, proj * 1.25) / 1000) * 1000
     return { mode: 'dep', xMax: 1.5, yMin: 0, yMax, reqPct: STAKE_PCT, reqGrowth: 0 }
   }
-  const s  = strike(d.price)
-  const ve = valueAtExit(d.price)
-  return { mode: 'eq', xMax: 5, yMin: s * 0.94, yMax: ve * 1.07, reqPct: 0, reqGrowth: 0 }
+  // Step 3
+  const s    = strike(d.price)
+  const tSave = timeToSaveYr(d)
+  const endT  = Math.min(tSave + 5, 6)
+  const mktEnd = d.price * Math.pow(1 + GROWTH, endT)
+  return {
+    mode: 'eq', xMax: 6,
+    yMin: s * 0.93,
+    yMax: mktEnd * 1.07,
+    reqPct: 0, reqGrowth: 0,
+  }
 }
 
 // ── Animation ──────────────────────────────────────────────────
@@ -76,7 +89,7 @@ function eioq(t: number) {
 function lerpCam(a: Camera, b: Camera, t: number): Camera {
   const e = eioq(t)
   return {
-    mode:      b.mode,
+    mode:      t < 0.5 ? a.mode : b.mode,
     xMax:      a.xMax      + (b.xMax      - a.xMax)      * e,
     yMin:      a.yMin      + (b.yMin      - a.yMin)      * e,
     yMax:      a.yMax      + (b.yMax      - a.yMax)      * e,
@@ -112,12 +125,6 @@ function drawChart(svg: SVGSVGElement, cam: Camera, d: ChartData): void {
     return Math.max(MT - 8, Math.min(MT + PH + 8, raw))
   }
 
-  const pathD = (fn: (t: number) => number, xMax = cam.xMax, n = 80) =>
-    Array.from({ length: n + 1 }, (_, i) => {
-      const t = (i / n) * xMax
-      return `${i === 0 ? 'M' : 'L'} ${xP(t).toFixed(1)} ${yP(fn(t)).toFixed(1)}`
-    }).join(' ')
-
   // Y grid
   for (let i = 0; i <= 4; i++) {
     const v = cam.yMin + (cam.yMax - cam.yMin) * i / 4
@@ -135,7 +142,7 @@ function drawChart(svg: SVGSVGElement, cam: Camera, d: ChartData): void {
   // X axis labels
   const xLabels: [number, string][] =
     cam.mode === 'eq'
-      ? [[0,'Now'],[1,'Yr 1'],[2,'Yr 2'],[3,'Yr 3'],[4,'Yr 4'],[5,'Yr 5']]
+      ? [[0,'Now'],[1,'Yr 1'],[2,'Yr 2'],[3,'Yr 3'],[4,'Yr 4'],[5,'Yr 5'],[6,'Yr 6']]
       : cam.xMax <= 2
       ? ([[0,'Now'],[0.25,'3mo'],[0.5,'6mo'],[0.75,'9mo'],[1,'1yr'],[1.25,'15mo'],[1.5,'18mo']] as [number,string][])
           .filter(([t]) => t <= cam.xMax + 0.01)
@@ -149,12 +156,18 @@ function drawChart(svg: SVGSVGElement, cam: Camera, d: ChartData): void {
   })
 
   if (cam.mode === 'dep') {
-    const isEntry    = Math.abs(cam.reqPct - STAKE_PCT) < 0.001
-    const targetFn   = (t: number) => d.price * cam.reqPct * Math.pow(1 + cam.reqGrowth, t)
-    const initSaved  = isEntry ? d.saved : 0
-    const savingsFn  = (t: number) => initSaved + d.monthly * 12 * t
+    const isEntry   = Math.abs(cam.reqPct - STAKE_PCT) < 0.001
+    const targetFn  = (t: number) => d.price * cam.reqPct * Math.pow(1 + cam.reqGrowth, t)
+    const initSaved = isEntry ? d.saved : 0
+    const savingsFn = (t: number) => initSaved + d.monthly * 12 * t
 
-    // Taupe dashed savings line (under green line)
+    const pathD = (fn: (t: number) => number, xMax = cam.xMax, n = 80) =>
+      Array.from({ length: n + 1 }, (_, i) => {
+        const t = (i / n) * xMax
+        return `${i === 0 ? 'M' : 'L'} ${xP(t).toFixed(1)} ${yP(fn(t)).toFixed(1)}`
+      }).join(' ')
+
+    // Taupe dashed savings line (drawn under green)
     svg.appendChild(el('path', {
       d: pathD(savingsFn), fill: 'none',
       stroke: '#857861', 'stroke-width': 2, 'stroke-dasharray': '5 4',
@@ -178,12 +191,12 @@ function drawChart(svg: SVGSVGElement, cam: Camera, d: ChartData): void {
       fill: '#857861', x: rX, y: (l2y + 4).toFixed(1),
     }, 'Saved'))
 
-    // Crossing point
+    // Crossing callout
     let crossT: number | null = null
     let prevD = savingsFn(0) - targetFn(0)
     for (let i = 1; i <= 400; i++) {
-      const t  = (i / 400) * cam.xMax
       const t0 = ((i - 1) / 400) * cam.xMax
+      const t  = (i / 400) * cam.xMax
       const dv = savingsFn(t) - targetFn(t)
       if (prevD < 0 && dv >= 0) {
         crossT = t0 + (t - t0) * (-prevD / (dv - prevD))
@@ -220,51 +233,81 @@ function drawChart(svg: SVGSVGElement, cam: Camera, d: ChartData): void {
     }
 
   } else {
-    // Equity mode
-    const s  = strike(d.price)
-    const ve = valueAtExit(d.price)
+    // ── Equity mode ───────────────────────────────────────────
+    const s      = strike(d.price)
+    const tSave  = timeToSaveYr(d)
+    const startT = tSave
+    const endT   = Math.min(tSave + 5, cam.xMax)
 
-    // Fill polygon between market value and strike
+    const mktFn = (t: number) => d.price * Math.pow(1 + GROWTH, t)
+
+    // Equity fill (only between startT and endT)
     const fillD = [
-      `M ${xP(0).toFixed(1)} ${yP(s).toFixed(1)}`,
-      ...Array.from({ length: 81 }, (_, i) => {
-        const t = (i / 80) * 5
-        return `L ${xP(t).toFixed(1)} ${yP(d.price * Math.pow(1 + GROWTH, t)).toFixed(1)}`
+      `M ${xP(startT).toFixed(1)} ${yP(s).toFixed(1)}`,
+      ...Array.from({ length: 61 }, (_, i) => {
+        const t = startT + (i / 60) * (endT - startT)
+        return `L ${xP(t).toFixed(1)} ${yP(mktFn(t)).toFixed(1)}`
       }),
-      `L ${xP(5).toFixed(1)} ${yP(s).toFixed(1)} Z`,
+      `L ${xP(endT).toFixed(1)} ${yP(s).toFixed(1)} Z`,
     ].join(' ')
     svg.appendChild(el('path', { d: fillD, fill: 'rgba(18,58,40,0.08)' }))
 
-    // Strike dashed line
+    // Strike dashed (startT → endT only)
     svg.appendChild(el('path', {
-      d: `M ${xP(0).toFixed(1)} ${yP(s).toFixed(1)} L ${xP(5).toFixed(1)} ${yP(s).toFixed(1)}`,
+      d: `M ${xP(startT).toFixed(1)} ${yP(s).toFixed(1)} L ${xP(endT).toFixed(1)} ${yP(s).toFixed(1)}`,
       fill: 'none', stroke: '#857861', 'stroke-width': 2, 'stroke-dasharray': '5 4',
     }))
 
-    // Market value line
-    svg.appendChild(el('path', {
-      d: pathD(t => d.price * Math.pow(1 + GROWTH, t), 5),
-      fill: 'none', stroke: '#123A28', 'stroke-width': 2.5,
-    }))
+    // Market value solid (startT → endT only)
+    const mktD = Array.from({ length: 61 }, (_, i) => {
+      const t = startT + (i / 60) * (endT - startT)
+      return `${i === 0 ? 'M' : 'L'} ${xP(t).toFixed(1)} ${yP(mktFn(t)).toFixed(1)}`
+    }).join(' ')
+    svg.appendChild(el('path', { d: mktD, fill: 'none', stroke: '#123A28', 'stroke-width': 2.5 }))
 
-    // Right-edge value labels
-    const rX     = ML + PW + 7
-    const mktEndY = yP(ve)
-    const strikeY = yP(s)
+    // Start marker (if meaningful gap exists)
+    if (startT > 0.08) {
+      svg.appendChild(el('line', {
+        x1: xP(startT).toFixed(1), y1: MT,
+        x2: xP(startT).toFixed(1), y2: MT + PH,
+        stroke: 'rgba(18,58,40,0.25)', 'stroke-width': 1, 'stroke-dasharray': '4 3',
+      }))
+      svg.appendChild(txt('text', {
+        'font-family': MONO, 'font-size': 10, 'font-weight': 500, fill: '#857861',
+        'text-anchor': 'middle', x: xP(startT).toFixed(1), y: MT - 5,
+      }, 'Start'))
+    }
+
+    // End marker
+    svg.appendChild(el('line', {
+      x1: xP(endT).toFixed(1), y1: MT,
+      x2: xP(endT).toFixed(1), y2: MT + PH,
+      stroke: 'rgba(18,58,40,0.25)', 'stroke-width': 1, 'stroke-dasharray': '4 3',
+    }))
+    svg.appendChild(txt('text', {
+      'font-family': MONO, 'font-size': 10, 'font-weight': 500, fill: '#857861',
+      'text-anchor': 'middle', x: xP(endT).toFixed(1), y: MT - 5,
+    }, 'End'))
+
+    // Value labels at end of lines
+    const mktAtEnd = mktFn(endT)
+    const strikeY  = yP(s)
+    const mktEndY  = yP(mktAtEnd)
+    const rX = xP(endT) + 6
     svg.appendChild(txt('text', {
       'font-family': MONO, 'font-size': 11, 'font-weight': 500,
       fill: '#123A28', x: rX, y: (mktEndY + 4).toFixed(1),
-    }, `~${fmtK(ve)}`))
+    }, `~${fmtK(mktAtEnd)}`))
     svg.appendChild(txt('text', {
       'font-family': MONO, 'font-size': 11, 'font-weight': 500,
       fill: '#857861', x: rX, y: (strikeY + 4).toFixed(1),
     }, fmtK(s)))
 
     // Equity label inside fill
-    const midT    = 2.5
-    const mktMidY = yP(d.price * Math.pow(1 + GROWTH, midT))
+    const midT     = (startT + endT) / 2
+    const mktMidY  = yP(mktFn(midT))
     const midFillY = (mktMidY + strikeY) / 2
-    const equity  = ve - s
+    const equity   = mktAtEnd - s
     svg.appendChild(txt('text', {
       'font-family': MONO, 'font-size': 13, 'font-weight': 600,
       fill: '#101211', 'text-anchor': 'middle',
@@ -302,7 +345,7 @@ function Slider({ label, value, display, min, max, step, onChange }: {
 // ── Progress bars ──────────────────────────────────────────────
 function ProgressBars({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <div className="flex gap-1.5 mb-10">
+    <div className="flex gap-1.5 mb-6">
       {([1, 2, 3] as const).map(s => (
         <div key={s} className="flex-1 h-[3px] rounded-full bg-muted overflow-hidden">
           <div
@@ -315,15 +358,11 @@ function ProgressBars({ step }: { step: 1 | 2 | 3 }) {
   )
 }
 
-// ── Fig card (step 3) ──────────────────────────────────────────
-function FigCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-lg border bg-card px-4 py-3">
-      <p className="text-[10px] font-semibold tracking-[0.10em] uppercase text-muted-foreground mb-1">{label}</p>
-      <p className="text-xl font-bold tabular-nums numeric text-foreground">{value}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>}
-    </div>
-  )
+// ── Step titles ────────────────────────────────────────────────
+const TITLES: Record<1 | 2 | 3, string> = {
+  1: 'The deposit keeps moving.',
+  2: 'A 1% entry stake.',
+  3: 'Appreciation working for you.',
 }
 
 // ── Page ───────────────────────────────────────────────────────
@@ -338,25 +377,32 @@ export default function Calc2Page() {
   const [price,   setPrice]   = useState(initPrice)
   const [monthly, setMonthly] = useState(initMonthly)
   const [saved,   setSaved]   = useState(0)
-  const [housing, setHousing] = useState(1_800)
+  const [housing, setHousing] = useState(3_500)
 
+  // Refs — animation state
   const svgRef    = useRef<SVGSVGElement>(null)
   const camRef    = useRef<Camera>(cameraForStep(1, { price: initPrice, monthly: initMonthly, saved: 0 }))
   const dataRef   = useRef<ChartData>({ price: initPrice, monthly: initMonthly, saved: 0 })
+  const stepRef   = useRef<1 | 2 | 3>(1)  // mirrors step state; avoids stale closures in effects
   const tweenRef  = useRef<number | null>(null)
   const reducedMotion = useRef(
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   )
 
-  // Sync data + redraw on any slider change
+  // Keep stepRef in sync (synchronous update before tween starts)
+  const advanceTo = useCallback((target: 1 | 2 | 3) => {
+    stepRef.current = target
+    setStep(target)
+  }, [])
+
+  // Sync data + camera on slider change
   useEffect(() => {
     dataRef.current = { price, monthly, saved }
-    // Update camera for current step (only when not mid-tween)
     if (tweenRef.current === null) {
-      camRef.current = cameraForStep(step, dataRef.current)
+      camRef.current = cameraForStep(stepRef.current, dataRef.current)
     }
     if (svgRef.current) drawChart(svgRef.current, camRef.current, dataRef.current)
-  }, [price, monthly, saved, step])
+  }, [price, monthly, saved])
 
   useEffect(() => {
     track(`calc2_step${step}_view`, {})
@@ -366,13 +412,17 @@ export default function Calc2Page() {
   const tweenToStep = useCallback((target: 1 | 2 | 3) => {
     if (tweenRef.current !== null) cancelAnimationFrame(tweenRef.current)
 
-    const fromCam = { ...camRef.current }
-    const toCam   = cameraForStep(target, dataRef.current)
-    const dur     = target === 3 ? 1000 : 950
+    const fromCam   = { ...camRef.current }
+    const toCam     = cameraForStep(target, dataRef.current)
+    const dur       = target === 3 || target === 1 && fromCam.mode === 'eq' ? 1000 : 950
+    const crossFade = fromCam.mode !== toCam.mode
 
     if (reducedMotion.current) {
       camRef.current = toCam
-      if (svgRef.current) drawChart(svgRef.current, toCam, dataRef.current)
+      if (svgRef.current) {
+        svgRef.current.style.opacity = '1'
+        drawChart(svgRef.current, toCam, dataRef.current)
+      }
       return
     }
 
@@ -381,30 +431,51 @@ export default function Calc2Page() {
       const t   = Math.min((now - t0) / dur, 1)
       const cam = lerpCam(fromCam, toCam, t)
       camRef.current = cam
-      if (svgRef.current) drawChart(svgRef.current, cam, dataRef.current)
+
+      if (svgRef.current) {
+        // Dip opacity through 0 on mode changes so axis-scale mismatch is hidden
+        if (crossFade) {
+          svgRef.current.style.opacity = String(t < 0.5 ? 1 - 2 * t : 2 * t - 1)
+        }
+        drawChart(svgRef.current, cam, dataRef.current)
+      }
+
       if (t < 1) tweenRef.current = requestAnimationFrame(tick)
-      else tweenRef.current = null
+      else {
+        tweenRef.current = null
+        if (svgRef.current) svgRef.current.style.opacity = '1'
+      }
     }
     tweenRef.current = requestAnimationFrame(tick)
   }, [])
 
   function goNext() {
-    const next = (step < 3 ? step + 1 : 3) as 1 | 2 | 3
+    if (step >= 3) return
+    const next = (step + 1) as 1 | 2 | 3
     tweenToStep(next)
-    setStep(next)
+    advanceTo(next)
   }
 
   function goBack() {
-    const prev = (step > 1 ? step - 1 : 1) as 1 | 2 | 3
+    if (step <= 1) return
+    const prev = (step - 1) as 1 | 2 | 3
     tweenToStep(prev)
-    setStep(prev)
+    advanceTo(prev)
   }
 
   // Step 3 derived figures
-  const fee    = serviceFee(price)
-  const stake  = entryStake(price)
+  const fee      = serviceFee(price)
+  const stake    = entryStake(price)
+  const strikeVal = strike(price)
+  const mktRef   = valueAtExit(price)  // 5yr reference: price*(1.05^5)
+
+  const tSaveYr  = timeToSaveYr({ price, monthly, saved })
+  const tSaveMo  = Math.round(tSaveYr * 12)
+  const stakeReadyStr = saved >= stake ? 'ready now' : `${tSaveMo} mo`
+
   const delta  = fee - housing
   const feeSub = delta <= 0 ? `${fmt(-delta)} less than now` : `vs ${fmt(housing)} now`
+
   const fitRead =
     housing >= fee
       ? 'On what you already spend, the monthly works.'
@@ -418,39 +489,41 @@ export default function Calc2Page() {
       <main className="mx-auto max-w-[500px] px-6 py-12">
         <ProgressBars step={step} />
 
-        {/* Persistent chart — never unmounts, redrawn via direct DOM manipulation */}
+        {/* Title — above chart, animates on step change */}
+        <div key={`t${step}`} className="animate-step-enter">
+          <h2
+            style={{ fontFamily: "'Fraunces', Georgia, serif" }}
+            className="text-[clamp(28px,7vw,44px)] font-semibold leading-[1.08] tracking-tight mb-5"
+          >
+            {TITLES[step]}
+          </h2>
+        </div>
+
+        {/* Persistent chart — never unmounts */}
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VW} ${VH}`}
-          className="w-full h-auto mb-8 overflow-visible"
+          className="w-full h-auto mb-6 overflow-visible"
           role="img"
           aria-label="Pathway comparison chart"
         />
 
-        {/* Step content — keyed for entrance animation */}
-        <div key={step} className="animate-step-enter">
+        {/* Step controls — keyed for entrance animation */}
+        <div key={`c${step}`} className="animate-step-enter">
 
           {step === 1 && (
-            <div>
-              <h2
-                style={{ fontFamily: "'Fraunces', Georgia, serif" }}
-                className="text-[clamp(28px,7vw,44px)] font-semibold leading-[1.08] tracking-tight mb-8"
-              >
-                The deposit keeps moving.
-              </h2>
-              <div className="space-y-6">
-                <Slider
-                  label="Target price" value={price} display={fmt(price)}
-                  min={250_000} max={900_000} step={10_000} onChange={setPrice}
-                />
-                <Slider
-                  label="Saving / month" value={monthly} display={fmt(monthly)}
-                  min={300} max={3_000} step={50} onChange={setMonthly}
-                />
-              </div>
+            <div className="space-y-6">
+              <Slider
+                label="Target price" value={price} display={fmt(price)}
+                min={250_000} max={900_000} step={10_000} onChange={setPrice}
+              />
+              <Slider
+                label="Saving / month" value={monthly} display={fmt(monthly)}
+                min={300} max={3_000} step={50} onChange={setMonthly}
+              />
               <button
                 onClick={goNext}
-                className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97]"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-[15px] font-medium text-primary-foreground hover:bg-brand-green-light transition-[background-color,transform] active:scale-[0.97]"
               >
                 See what Homeown changes <ArrowRight className="h-4 w-4" />
               </button>
@@ -458,27 +531,21 @@ export default function Calc2Page() {
           )}
 
           {step === 2 && (
-            <div>
-              <h2
-                style={{ fontFamily: "'Fraunces', Georgia, serif" }}
-                className="text-[clamp(28px,7vw,44px)] font-semibold leading-[1.08] tracking-tight mb-8"
-              >
-                A 1% entry stake.
-              </h2>
-              <div className="space-y-6">
+            <div className="space-y-5">
+              <div>
                 <Slider
                   label="Saved so far" value={saved} display={fmt(saved)}
                   min={0} max={40_000} step={500} onChange={setSaved}
                 />
-                <Slider
-                  label="Housing cost / month" value={housing} display={fmt(housing)}
-                  min={800} max={5_500} step={50} onChange={setHousing}
-                />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Entry stake: <span className="font-semibold text-foreground">{fmt(stake)}</span>
+                </p>
               </div>
-              <p className="mt-4 text-sm text-muted-foreground">
-                Entry stake: <span className="font-semibold text-foreground">{fmt(stake)}</span>
-              </p>
-              <div className="mt-8 flex gap-3">
+              <Slider
+                label="Housing cost / month" value={housing} display={fmt(housing)}
+                min={800} max={5_500} step={50} onChange={setHousing}
+              />
+              <div className="flex gap-3 pt-1">
                 <button
                   onClick={goBack}
                   className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium hover:bg-accent transition-[background-color,transform] active:scale-[0.97]"
@@ -497,18 +564,27 @@ export default function Calc2Page() {
 
           {step === 3 && (
             <div>
-              <h2
-                style={{ fontFamily: "'Fraunces', Georgia, serif" }}
-                className="text-[clamp(28px,7vw,44px)] font-semibold leading-[1.08] tracking-tight mb-6"
-              >
-                Appreciation working for you.
-              </h2>
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                <FigCard label="Entry stake" value={fmt(stake)} />
-                <FigCard label="Monthly" value={fmt(fee)} sub={feeSub} />
-                <FigCard label="Option price" value={fmt(strike(price))} />
+              {/* Figure table */}
+              <div className="space-y-3 mb-5">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-muted-foreground w-28">Entry stake</span>
+                  <span className="text-lg font-bold tabular-nums numeric flex-1 text-right">{fmt(stake)}</span>
+                  <span className="text-xs text-muted-foreground w-28 text-right">{stakeReadyStr}</span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-muted-foreground w-28">Service fee</span>
+                  <span className="text-lg font-bold tabular-nums numeric flex-1 text-right">{fmt(fee)}</span>
+                  <span className="text-xs text-muted-foreground w-28 text-right">{feeSub}</span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-muted-foreground w-28">Option price</span>
+                  <span className="text-lg font-bold tabular-nums numeric flex-1 text-right">{fmt(strikeVal)}</span>
+                  <span className="text-xs text-muted-foreground w-28 text-right">vs {fmt(mktRef)}</span>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-8 leading-relaxed">{fitRead}</p>
+
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{fitRead}</p>
+
               <div className="flex gap-3">
                 <button
                   onClick={goBack}
