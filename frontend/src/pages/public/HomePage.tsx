@@ -72,7 +72,7 @@ const RECOGNITION = [
   'I have been searching for years. I am further away now than when I started.',
 ]
 
-function RecognitionCarousel() {
+function RecognitionCarousel({ dark = false }: { dark?: boolean }) {
   const [current, setCurrent] = useState(0)
 
   useEffect(() => {
@@ -82,15 +82,14 @@ function RecognitionCarousel() {
 
   return (
     <div>
-      {/* All statements stacked in the same grid cell; only one is visible */}
       <div className="grid">
         {RECOGNITION.map((text, i) => (
           <p
             key={i}
             style={{ gridColumn: '1', gridRow: '1' }}
             className={cn(
-              'text-xl font-medium leading-snug md:text-2xl text-brand-ink',
-              'transition-opacity duration-700 ease-in-out',
+              'text-xl font-medium leading-snug md:text-2xl transition-opacity duration-700 ease-in-out',
+              dark ? 'text-primary-foreground' : 'text-brand-ink',
               i === current ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'
             )}
           >
@@ -98,7 +97,6 @@ function RecognitionCarousel() {
           </p>
         ))}
       </div>
-      {/* Progress dots */}
       <div className="flex gap-2 mt-10">
         {RECOGNITION.map((_, i) => (
           <button
@@ -106,7 +104,8 @@ function RecognitionCarousel() {
             onClick={() => setCurrent(i)}
             aria-label={`Statement ${i + 1}`}
             className={cn(
-              'h-[3px] rounded-full bg-brand-ink transition-all duration-500 cursor-pointer',
+              'h-[3px] rounded-full transition-all duration-500 cursor-pointer',
+              dark ? 'bg-primary-foreground' : 'bg-brand-ink',
               i === current ? 'w-8 opacity-100' : 'w-3 opacity-20'
             )}
           />
@@ -300,10 +299,10 @@ export default function HomePage() {
         </section>
 
         {/* ── 2. Problem, felt ──────────────────────────────────────── */}
-        <section className="border-b min-h-screen snap-start flex flex-col justify-center">
+        <section className="min-h-screen snap-start flex flex-col justify-center bg-primary">
           <div className="mx-auto max-w-2xl px-6 py-16 w-full">
-            <p className={EYEBROW}>The problem</p>
-            <RecognitionCarousel />
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50 mb-3">The problem</p>
+            <RecognitionCarousel dark />
           </div>
         </section>
 
@@ -341,19 +340,19 @@ export default function HomePage() {
         </section>
 
         {/* ── 5. Why it's safe ──────────────────────────────────────── */}
-        <section className="border-b min-h-screen snap-start flex flex-col justify-center bg-muted/20">
+        <section className="min-h-screen snap-start flex flex-col justify-center bg-primary">
           <div className="mx-auto max-w-3xl px-6 py-16 w-full">
-            <p className={EYEBROW}>How you're protected</p>
-            <h2 className={cn(SECTION_HEAD, 'mb-12')}>The structure is designed to protect you.</h2>
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50 mb-3">How you're protected</p>
+            <h2 className={cn(SECTION_HEAD, 'mb-12 text-primary-foreground')}>The structure is designed to protect you.</h2>
             <div ref={cardsRef} className="grid gap-5 sm:grid-cols-2">
               {PROTECTION_CARDS.map(({ Icon, heading, body }) => (
                 <div
                   key={heading}
-                  className="rounded-lg border bg-card p-6 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+                  className="rounded-lg border border-primary-foreground/20 bg-primary-foreground/8 p-6 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-primary-foreground/12"
                 >
-                  <Icon className="h-5 w-5 text-brand-green mb-4" />
-                  <h3 className="font-semibold mb-2 text-[15px] leading-snug">{heading}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+                  <Icon className="h-5 w-5 text-primary-foreground/70 mb-4" />
+                  <h3 className="font-semibold mb-2 text-[15px] leading-snug text-primary-foreground">{heading}</h3>
+                  <p className="text-sm text-primary-foreground/65 leading-relaxed">{body}</p>
                 </div>
               ))}
             </div>
