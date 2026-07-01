@@ -215,6 +215,12 @@ export default function HomePage() {
   const cardsRef = useStaggerReveal(80)
 
   useEffect(() => {
+    const html = document.documentElement
+    html.style.scrollSnapType = 'y proximity'
+    return () => { html.style.scrollSnapType = '' }
+  }, [])
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const knownHooks = ['rent-trap', 'twin-cost', 'fairness', 'futility']
     const hookParam = params.get('hook') ?? ''
@@ -256,7 +262,7 @@ export default function HomePage() {
 
       <main>
         {/* ── 1. Belief ─────────────────────────────────────────────── */}
-        <section ref={heroRef} className="-mt-16 min-h-screen flex flex-col justify-center border-b">
+        <section ref={heroRef} className="-mt-16 min-h-screen snap-start flex flex-col justify-center border-b">
           <div className="mx-auto w-full max-w-3xl px-6 py-16 text-center">
             <div className="flex justify-center mb-12 animate-hero-enter" style={{ animationDelay: '80ms' }}>
               <AnimatedEmblem className="h-28 w-auto" />
@@ -294,8 +300,8 @@ export default function HomePage() {
         </section>
 
         {/* ── 2. Problem, felt ──────────────────────────────────────── */}
-        <section className="border-b py-20 md:py-28">
-          <div className="mx-auto max-w-2xl px-6">
+        <section className="border-b min-h-screen snap-start flex flex-col justify-center">
+          <div className="mx-auto max-w-2xl px-6 py-16 w-full">
             <p className={EYEBROW}>The problem</p>
             <RecognitionCarousel />
           </div>
@@ -305,8 +311,8 @@ export default function HomePage() {
         <TheTurnSection calcUrl={calcUrl} />
 
         {/* ── 4. What actually happens ──────────────────────────────── */}
-        <section className="border-b py-20 md:py-28">
-          <div className="mx-auto max-w-3xl px-6">
+        <section className="border-b min-h-screen snap-start flex flex-col justify-center">
+          <div className="mx-auto max-w-3xl px-6 py-16 w-full">
             <p className={EYEBROW}>The pathway</p>
             <h2 className={cn(SECTION_HEAD, 'mb-12')}>What actually happens</h2>
             <div ref={stagesRef} className="space-y-10">
@@ -335,8 +341,8 @@ export default function HomePage() {
         </section>
 
         {/* ── 5. Why it's safe ──────────────────────────────────────── */}
-        <section className="border-b py-20 md:py-28 bg-muted/20">
-          <div className="mx-auto max-w-3xl px-6">
+        <section className="border-b min-h-screen snap-start flex flex-col justify-center bg-muted/20">
+          <div className="mx-auto max-w-3xl px-6 py-16 w-full">
             <p className={EYEBROW}>How you're protected</p>
             <h2 className={cn(SECTION_HEAD, 'mb-12')}>The structure is designed to protect you.</h2>
             <div ref={cardsRef} className="grid gap-5 sm:grid-cols-2">
@@ -355,8 +361,8 @@ export default function HomePage() {
         </section>
 
         {/* ── 6. Residual questions ─────────────────────────────────── */}
-        <section className="border-b py-20 md:py-28">
-          <div className="mx-auto max-w-3xl px-6">
+        <section className="border-b min-h-screen snap-start flex flex-col justify-center">
+          <div className="mx-auto max-w-3xl px-6 py-16 w-full">
             <p className={EYEBROW}>Questions</p>
             <h2 className={cn(SECTION_HEAD, 'mb-10')}>The questions people ask first.</h2>
             <Accordion type="single" collapsible className="divide-y border-y">
@@ -383,8 +389,8 @@ export default function HomePage() {
         </section>
 
         {/* ── 7. The ask ────────────────────────────────────────────── */}
-        <section className="bg-primary py-24 md:py-32">
-          <div className="mx-auto max-w-2xl px-6 text-center">
+        <section className="bg-primary min-h-screen snap-start flex flex-col justify-center">
+          <div className="mx-auto max-w-2xl px-6 py-16 text-center w-full">
             <h2 className="text-4xl font-normal tracking-tight text-primary-foreground md:text-5xl leading-tight">
               Ready to see if the programme fits?
             </h2>

@@ -72,8 +72,6 @@ function yearsLabel(t: number) {
   return r + (r === 1 ? ' year' : ' years')
 }
 
-const DISPLAY: React.CSSProperties = { fontFamily: "'Fraunces', Georgia, serif" }
-
 const GROWTH_NOTE = `The 5% annual appreciation assumption is benchmarked against the CSO Residential Property Price Index, the official measure of Irish residential property price trends. Over the five complete years from 2021 to 2025, national residential property prices increased at an average annual rate of approximately 8.5%, based on CSO December year-on-year RPPI releases. The model applies a more conservative long-term assumption of 5.0% p.a.`
 
 function GrowthNotePopover() {
@@ -262,14 +260,14 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
   return (
     <>
       {/* ── Chart + sliders — light background ─────────────────────── */}
-      <section ref={sectionRef} className="border-b py-20 md:py-28">
-        <div className="mx-auto max-w-3xl px-6">
+      <section ref={sectionRef} className="border-b min-h-screen snap-start flex flex-col justify-center">
+        <div className="mx-auto max-w-3xl px-6 py-16 w-full">
           <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-brand-taupe mb-2.5">
             The Traditional Route
           </p>
           <h2
             className="text-[clamp(34px,6vw,52px)] leading-[1.02] tracking-tight text-brand-ink mb-8"
-            style={{ ...DISPLAY, fontWeight: 340 }}
+            style={{ fontWeight: 340 }}
           >
             The deposit keeps moving.
           </h2>
@@ -370,14 +368,14 @@ export function TheTurnSection({ calcUrl }: { calcUrl: string }) {
       </section>
 
       {/* ── Pivot — dark green, full section ───────────────────────── */}
-      <section className="bg-primary py-24 md:py-32">
-        <div className="mx-auto max-w-2xl px-6 text-center">
+      <section className="bg-primary min-h-screen snap-start flex flex-col justify-center">
+        <div className="mx-auto max-w-2xl px-6 py-16 text-center w-full">
           <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-primary-foreground/50 mb-4">
             The Homeown pathway
           </p>
           <h2
             className="text-[clamp(34px,6vw,56px)] leading-[1.08] tracking-tight text-primary-foreground"
-            style={{ ...DISPLAY, fontWeight: 340 }}
+            style={{ fontWeight: 340 }}
           >
             Stop chasing the deposit.
           </h2>
